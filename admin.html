@@ -304,30 +304,31 @@
         };
 
         window.editarNomeEscola = async () => {
-            const nomeAtual = document.getElementById('nomeEscolaAdmin').innerText;
+            const el = document.getElementById('nomeEscolaAdmin');
+            const nomeAtual = el ? el.innerText : 'NOME DA ESCOLA';
             const novoNome = prompt("DIGITE O NOME DA ESCOLA:", nomeAtual);
-            if (novoNome && novoNome.trim() !== '') {
+            if (novoNome && novoNome.trim() !== "") {
+                const nomeFormatado = novoNome.toUpperCase().trim();
                 try {
-                    const nomeFormatado = novoNome.toUpperCase().trim();
-                    await window.DB.atualizarNomeEscola(nomeFormatado);
-                    document.getElementById('nomeEscolaAdmin').innerText = nomeFormatado;
-                    alert('Nome da escola atualizado com sucesso!');
-                } catch(err) {
-                    alert('Erro ao atualizar nome da escola: ' + err.message);
-                    console.error('Erro:', err);
+                    await window.DB.setConfig('nomeEscola', nomeFormatado);
+                    await atualizarNomesEscola();
+                } catch (err) {
+                    console.error("Erro ao salvar nome da escola:", err);
+                    alert("ERRO AO SALVAR O NOME DA ESCOLA.");
                 }
             }
         };
 
         async function atualizarNomesEscola() {
             try {
-                const nome = await window.DB.getNomeEscola();
+                const config = await window.DB.getConfig();
+                const nome = config.nomeEscola || localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
                 const el = document.getElementById('nomeEscolaAdmin');
                 if (el) el.innerText = nome;
-            } catch(err) {
-                console.error('Erro ao carregar nome da escola:', err);
-                const el = document.getElementById('nomeEscolaAdmin');
-                if (el) el.innerText = 'NOME DA ESCOLA';
+                // Atualizar o título da página também se desejar
+                // document.title = `PAINEL - ${nome}`;
+            } catch (err) {
+                console.error("Erro ao carregar nome da escola:", err);
             }
         }
 
@@ -335,7 +336,8 @@
             while(!window.DB) await new Promise(r => setTimeout(r, 100));
             await window.DB.checkAuth();
             
-            atualizarNomesEscola();
+            await atualizarNomesEscola();
+            window.DB.onConfigChange(() => atualizarNomesEscola());
 
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -354,11 +356,6 @@
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
-            window.DB.onConfiguracaoChange(async () => {
-                const nome = await window.DB.getNomeEscola();
-                const el = document.getElementById('nomeEscolaAdmin');
-                if (el) el.innerText = nome;
-            });
             load();
         }
 
@@ -726,22 +723,6 @@
             e.preventDefault();
             try {
                 const titulo = document.getElementById('titulo').value.toUpperCase().trim();
-                const isbn = document.getElementById('isbn').value.trim();
-                const quantidade = parseInt(document.getElementById('quantidade').value);
-                
-                // Validações obrigatórias
-                if (!titulo) {
-                    document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ TÍTULO É OBRIGATÓRIO</span>';
-                    console.error('Validação: Título vazio');
-                    return;
-                }
-                
-                if (quantidade < 1) {
-                    document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ QUANTIDADE DEVE SER MAIOR QUE ZERO</span>';
-                    console.error('Validação: Quantidade inválida');
-                    return;
-                }
-                
                 const livros = await window.DB.getLivros();
                 const livroExistente = livros.find(l => l.titulo.toUpperCase() === titulo);
                 
@@ -766,15 +747,10 @@
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
                     sinopse: document.getElementById('sinopse').value
                 });
-                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ CADASTRADO COM SUCESSO!</span>';
-                console.log('Livro cadastrado com sucesso no Supabase');
+                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ CADASTRADO!</span>';
                 e.target.reset();
                 load();
-            } catch(err) {
-                const mensagem = err.message || 'Erro desconhecido ao cadastrar livro';
-                document.getElementById('msgLivro').innerHTML = `<span style="color:var(--danger)">❌ ERRO: ${mensagem}</span>`;
-                console.error('Erro ao cadastrar livro:', err);
-            }
+            } catch(err) { document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ ERRO</span>'; }
         });
 
         window.toggleTipoPessoa = () => {

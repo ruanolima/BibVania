@@ -57,23 +57,21 @@
             localStorage.setItem('theme', theme);
         };
 
-        function aplicarPreferencias() {
+        async function aplicarPreferencias() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             const btn = document.getElementById('darkModeBtn');
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = await (async () => {
             try {
-                return await window.DB.getNomeEscola();
-            } catch(err) {
-                console.error('Erro ao carregar nome da escola:', err);
-                return 'NOME DA ESCOLA';
+                const config = await window.DB.getConfig();
+                const nome = config.nomeEscola || localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
+                const el = document.getElementById('nomeEscolaLogin');
+                if (el) el.innerText = nome;
+            } catch (err) {
+                console.error("Erro ao carregar nome da escola:", err);
             }
-        })();
-            const el = document.getElementById('nomeEscolaLogin');
-            if (el) el.innerText = nome;
         }
 
         async function aguardarDB() {
@@ -82,7 +80,8 @@
 
         (async () => {
             await aguardarDB();
-            aplicarPreferencias();
+            await aplicarPreferencias();
+            window.DB.onConfigChange(() => aplicarPreferencias());
             await window.DB.redirectIfLoggedIn();
         })();
 
