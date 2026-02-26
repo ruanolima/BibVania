@@ -150,7 +150,6 @@ Este projeto está licenciado sob [CC-BY-4.0](https://creativecommons.org/licens
 
 ---
 
-**Desenvolvido com ❤️ por Ruan Oliveira Lima**
+**© 2026 Desenvolvido com ❤️ por Ruan Oliveira Lima**
 
-**Versão**: 1.0  
-**Data**: 2026
+**Versão**: 1.0
