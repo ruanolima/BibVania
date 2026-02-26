@@ -87,7 +87,14 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'NOME DA ESCOLA';
+            const nome = await (async () => {
+            try {
+                return await window.DB.getNomeEscola();
+            } catch(err) {
+                console.error('Erro ao carregar nome da escola:', err);
+                return 'NOME DA ESCOLA';
+            }
+        })();
             const el = document.getElementById('nomeEscolaRelatorio');
             if (el) el.innerText = nome;
         }
@@ -108,7 +115,7 @@
             const livros = await window.DB.getLivros();
             const emprestimos = await window.DB.getEmprestimos();
             const filtro = document.getElementById('filtroMes').value;
-            const nomeEscola = localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
+            const nomeEscola = await window.DB.getNomeEscola();
             const agora = new Date();
             
             let empFiltrados = emprestimos;

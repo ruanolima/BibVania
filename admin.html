@@ -303,19 +303,32 @@
             localStorage.setItem('theme', theme);
         };
 
-        window.editarNomeEscola = () => {
-            const novoNome = prompt("DIGITE O NOME DA ESCOLA:", document.getElementById('nomeEscolaAdmin').innerText);
-            if (novoNome) {
-                const nomeFormatado = novoNome.toUpperCase().trim();
-                
-                atualizarNomesEscola();
+        window.editarNomeEscola = async () => {
+            const nomeAtual = document.getElementById('nomeEscolaAdmin').innerText;
+            const novoNome = prompt("DIGITE O NOME DA ESCOLA:", nomeAtual);
+            if (novoNome && novoNome.trim() !== '') {
+                try {
+                    const nomeFormatado = novoNome.toUpperCase().trim();
+                    await window.DB.atualizarNomeEscola(nomeFormatado);
+                    document.getElementById('nomeEscolaAdmin').innerText = nomeFormatado;
+                    alert('Nome da escola atualizado com sucesso!');
+                } catch(err) {
+                    alert('Erro ao atualizar nome da escola: ' + err.message);
+                    console.error('Erro:', err);
+                }
             }
         };
 
-        function atualizarNomesEscola() {
-            const nome = 'NOME DA ESCOLA';
-            const el = document.getElementById('nomeEscolaAdmin');
-            if (el) el.innerText = nome;
+        async function atualizarNomesEscola() {
+            try {
+                const nome = await window.DB.getNomeEscola();
+                const el = document.getElementById('nomeEscolaAdmin');
+                if (el) el.innerText = nome;
+            } catch(err) {
+                console.error('Erro ao carregar nome da escola:', err);
+                const el = document.getElementById('nomeEscolaAdmin');
+                if (el) el.innerText = 'NOME DA ESCOLA';
+            }
         }
 
         async function init() {
@@ -341,6 +354,11 @@
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
+            window.DB.onConfiguracaoChange(async () => {
+                const nome = await window.DB.getNomeEscola();
+                const el = document.getElementById('nomeEscolaAdmin');
+                if (el) el.innerText = nome;
+            });
             load();
         }
 
@@ -708,6 +726,22 @@
             e.preventDefault();
             try {
                 const titulo = document.getElementById('titulo').value.toUpperCase().trim();
+                const isbn = document.getElementById('isbn').value.trim();
+                const quantidade = parseInt(document.getElementById('quantidade').value);
+                
+                // Validações obrigatórias
+                if (!titulo) {
+                    document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ TÍTULO É OBRIGATÓRIO</span>';
+                    console.error('Validação: Título vazio');
+                    return;
+                }
+                
+                if (quantidade < 1) {
+                    document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ QUANTIDADE DEVE SER MAIOR QUE ZERO</span>';
+                    console.error('Validação: Quantidade inválida');
+                    return;
+                }
+                
                 const livros = await window.DB.getLivros();
                 const livroExistente = livros.find(l => l.titulo.toUpperCase() === titulo);
                 
@@ -732,10 +766,15 @@
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
                     sinopse: document.getElementById('sinopse').value
                 });
-                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ CADASTRADO!</span>';
+                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ CADASTRADO COM SUCESSO!</span>';
+                console.log('Livro cadastrado com sucesso no Supabase');
                 e.target.reset();
                 load();
-            } catch(err) { document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ ERRO</span>'; }
+            } catch(err) {
+                const mensagem = err.message || 'Erro desconhecido ao cadastrar livro';
+                document.getElementById('msgLivro').innerHTML = `<span style="color:var(--danger)">❌ ERRO: ${mensagem}</span>`;
+                console.error('Erro ao cadastrar livro:', err);
+            }
         });
 
         window.toggleTipoPessoa = () => {

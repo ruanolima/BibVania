@@ -96,6 +96,62 @@ const DB = {
     },
 
     // ========================================================================
+    // FUNÇÕES PARA CONFIGURAÇÕES DA ESCOLA
+    // ========================================================================
+    async getNomeEscola() {
+        try {
+            const { data, error } = await supabase
+                .from("configuracoes")
+                .select("valor")
+                .eq("chave", "nome_escola")
+                .single();
+            
+            if (error && error.code !== 'PGRST116') throw error;
+            return data ? data.valor : "NOME DA ESCOLA";
+        } catch (error) {
+            console.error("Erro ao obter nome da escola:", error.message);
+            return "NOME DA ESCOLA";
+        }
+    },
+
+    async atualizarNomeEscola(novoNome) {
+        try {
+            novoNome = toUpper(novoNome);
+            
+            const { data: existing } = await supabase
+                .from("configuracoes")
+                .select("*")
+                .eq("chave", "nome_escola")
+                .single();
+            
+            if (existing) {
+                const { error } = await supabase
+                    .from("configuracoes")
+                    .update({ valor: novoNome })
+                    .eq("chave", "nome_escola");
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from("configuracoes")
+                    .insert([{ chave: "nome_escola", valor: novoNome }]);
+                if (error) throw error;
+            }
+            
+            return novoNome;
+        } catch (error) {
+            console.error("Erro ao atualizar nome da escola:", error.message);
+            throw error;
+        }
+    },
+
+    onConfiguracaoChange(callback) {
+        return supabase
+            .channel('configuracoes-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, callback)
+            .subscribe();
+    },
+
+        // ========================================================================
     // FUNÇÕES PARA LIVROS
     // ========================================================================
     async getLivros() {

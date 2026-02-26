@@ -64,7 +64,14 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'NOME DA ESCOLA';
+            const nome = await (async () => {
+            try {
+                return await window.DB.getNomeEscola();
+            } catch(err) {
+                console.error('Erro ao carregar nome da escola:', err);
+                return 'NOME DA ESCOLA';
+            }
+        })();
             const el = document.getElementById('nomeEscolaLogin');
             if (el) el.innerText = nome;
         }
