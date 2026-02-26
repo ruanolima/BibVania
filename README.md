@@ -1,2 +1,2 @@
 # BibVania
-Sistema Online da Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares - Mucambo/CE
+Sistema Online da Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares - Mucambo/CE.
