@@ -445,54 +445,6 @@ const DB = {
             .channel('emprestimos-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'emprestimos' }, callback)
             .subscribe();
-    },
-
-    // ========================================================================
-    // CONFIGURAÇÕES
-    // ========================================================================
-    async getConfig() {
-        try {
-            const { data, error } = await supabase
-                .from("configuracoes")
-                .select("*");
-            if (error) {
-                console.warn("Tabela configuracoes não encontrada ou erro ao acessar. Usando localStorage.");
-                return JSON.parse(localStorage.getItem('bibvania_config') || '{}');
-            }
-            const config = {};
-            data.forEach(item => {
-                config[item.chave] = item.valor;
-            });
-            return config;
-        } catch (error) {
-            return JSON.parse(localStorage.getItem('bibvania_config') || '{}');
-        }
-    },
-
-    async setConfig(chave, valor) {
-        try {
-            localStorage.setItem('nomeEscola', valor); // Fallback e compatibilidade
-            const configLocal = JSON.parse(localStorage.getItem('bibvania_config') || '{}');
-            configLocal[chave] = valor;
-            localStorage.setItem('bibvania_config', JSON.stringify(configLocal));
-
-            const { error } = await supabase
-                .from("configuracoes")
-                .upsert({ chave, valor }, { onConflict: 'chave' });
-            
-            if (error) throw error;
-            return true;
-        } catch (error) {
-            console.error("Erro ao salvar configuração no Supabase:", error);
-            return true; // Retorna true pois salvou no localStorage
-        }
-    },
-
-    onConfigChange(callback) {
-        return supabase
-            .channel('config-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, callback)
-            .subscribe();
     }
 };
 

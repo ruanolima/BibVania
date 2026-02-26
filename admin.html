@@ -76,8 +76,7 @@
     <header>
         <h1>📚 PAINEL ADMINISTRATIVO</h1>
         <div class="school-header-edit">
-            <div class="school-name" id="nomeEscolaAdmin">NOME DA ESCOLA</div>
-            <button class="edit-school-btn" onclick="editarNomeEscola()">EDITAR</button>
+            <div class="school-name" id="nomeEscolaAdmin" style="text-align: center; width: 100%;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
         </div>
     </header>
 
@@ -303,41 +302,17 @@
             localStorage.setItem('theme', theme);
         };
 
-        window.editarNomeEscola = async () => {
+        function atualizarNomesEscola() {
+            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const el = document.getElementById('nomeEscolaAdmin');
-            const nomeAtual = el ? el.innerText : 'NOME DA ESCOLA';
-            const novoNome = prompt("DIGITE O NOME DA ESCOLA:", nomeAtual);
-            if (novoNome && novoNome.trim() !== "") {
-                const nomeFormatado = novoNome.toUpperCase().trim();
-                try {
-                    await window.DB.setConfig('nomeEscola', nomeFormatado);
-                    await atualizarNomesEscola();
-                } catch (err) {
-                    console.error("Erro ao salvar nome da escola:", err);
-                    alert("ERRO AO SALVAR O NOME DA ESCOLA.");
-                }
-            }
-        };
-
-        async function atualizarNomesEscola() {
-            try {
-                const config = await window.DB.getConfig();
-                const nome = config.nomeEscola || localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
-                const el = document.getElementById('nomeEscolaAdmin');
-                if (el) el.innerText = nome;
-                // Atualizar o título da página também se desejar
-                // document.title = `PAINEL - ${nome}`;
-            } catch (err) {
-                console.error("Erro ao carregar nome da escola:", err);
-            }
+            if (el) el.innerText = nome;
         }
 
         async function init() {
             while(!window.DB) await new Promise(r => setTimeout(r, 100));
             await window.DB.checkAuth();
             
-            await atualizarNomesEscola();
-            window.DB.onConfigChange(() => atualizarNomesEscola());
+            atualizarNomesEscola();
 
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);

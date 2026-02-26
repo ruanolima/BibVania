@@ -17,7 +17,7 @@
     <div class="login-box">
         <div style="margin-bottom: 2rem;">
             <h1 style="color: var(--primary); font-size: 1.5rem; margin-bottom: 0.5rem;">📚 BIBVANIA</h1>
-            <p id="nomeEscolaLogin" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600;">NOME DA ESCOLA</p>
+            <p id="nomeEscolaLogin" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-align: center;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</p>
         </div>
 
         <form id="loginForm" style="text-align: left;">
@@ -57,21 +57,16 @@
             localStorage.setItem('theme', theme);
         };
 
-        async function aplicarPreferencias() {
+        function aplicarPreferencias() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             const btn = document.getElementById('darkModeBtn');
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            try {
-                const config = await window.DB.getConfig();
-                const nome = config.nomeEscola || localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
-                const el = document.getElementById('nomeEscolaLogin');
-                if (el) el.innerText = nome;
-            } catch (err) {
-                console.error("Erro ao carregar nome da escola:", err);
-            }
+            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const el = document.getElementById('nomeEscolaLogin');
+            if (el) el.innerText = nome;
         }
 
         async function aguardarDB() {
@@ -80,8 +75,7 @@
 
         (async () => {
             await aguardarDB();
-            await aplicarPreferencias();
-            window.DB.onConfigChange(() => aplicarPreferencias());
+            aplicarPreferencias();
             await window.DB.redirectIfLoggedIn();
         })();
 

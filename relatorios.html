@@ -31,7 +31,7 @@
 
     <header>
         <h1>📊 RELATÓRIOS DETALHADOS</h1>
-        <div class="school-name" id="nomeEscolaRelatorio">NOME DA ESCOLA</div>
+        <div class="school-name" id="nomeEscolaRelatorio" style="text-align: center; width: 100%;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
     </header>
 
     <div class="container">
@@ -80,31 +80,22 @@
             localStorage.setItem('theme', theme);
         };
 
-        async function aplicarPreferencias() {
+        function aplicarPreferencias() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             const btn = document.getElementById('darkModeBtn');
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            try {
-                const config = await window.DB.getConfig();
-                const nome = config.nomeEscola || localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
-                const el = document.getElementById('nomeEscolaRelatorio');
-                if (el) el.innerText = nome;
-            } catch (err) {
-                console.error("Erro ao carregar nome da escola:", err);
-            }
+            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const el = document.getElementById('nomeEscolaRelatorio');
+            if (el) el.innerText = nome;
         }
 
         async function init() {
             while(!window.DB) await new Promise(r => setTimeout(r, 100));
             await window.DB.checkAuth();
-            await aplicarPreferencias();
-            window.DB.onConfigChange(() => {
-                aplicarPreferencias();
-                gerar();
-            });
+            aplicarPreferencias();
             gerar();
         }
 
@@ -117,7 +108,7 @@
             const livros = await window.DB.getLivros();
             const emprestimos = await window.DB.getEmprestimos();
             const filtro = document.getElementById('filtroMes').value;
-            const nomeEscola = localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
+            const nomeEscola = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const agora = new Date();
             
             let empFiltrados = emprestimos;

@@ -16,7 +16,7 @@
 
     <header>
         <h1>📚 BIBVANIA</h1>
-        <div class="school-name" id="nomeEscolaExibicao">NOME DA ESCOLA</div>
+        <div class="school-name" id="nomeEscolaExibicao" style="text-align: center; width: 100%;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
     </header>
 
     <div class="container">
@@ -62,21 +62,18 @@
             document.documentElement.setAttribute('data-theme', theme);
             document.getElementById('darkModeBtn').innerText = theme === 'dark' ? '☀️' : '🌙';
             localStorage.setItem('theme', theme);
-               async function aplicarPreferencias() {
+        };
+
+        function aplicarPreferencias() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             const btn = document.getElementById('darkModeBtn');
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            try {
-                const config = await window.DB.getConfig();
-                const nome = config.nomeEscola || localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
-                const el = document.getElementById('nomeEscolaExibicao');
-                if (el) el.innerText = nome;
-            } catch (err) {
-                console.error("Erro ao carregar nome da escola:", err);
-            }
+            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const el = document.getElementById('nomeEscolaExibicao');
+            if (el) el.innerText = nome;
         }
 
         async function aguardarDB() {
@@ -85,8 +82,8 @@
 
         (async () => {
             await aguardarDB();
-            await aplicarPreferencias();
-            window.DB.onConfigChange(() => aplicarPreferencias());            
+            aplicarPreferencias();
+            
             const categorias = ['TODOS', ...window.DB.CATEGORIAS];
             document.getElementById('category-tabs').innerHTML = categorias.map(c => 
                 `<button class="tab-btn ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
