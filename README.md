@@ -1,6 +1,8 @@
-# BibVania 1.0 - Sistema de Biblioteca Escolar
+# BibVania 1.0 - Sistema da Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares
 
 **BibVania** é um sistema de gerenciamento de biblioteca escolar desenvolvido com HTML, CSS e JavaScript, utilizando **Supabase** como banco de dados online. O sistema oferece funcionalidades completas para alunos, professores e bibliotecários.
+
+🌐 Acessar o [Site dos Leitores](https://ruanolima.github.io/BibVania/).
 
 ## Características
 
