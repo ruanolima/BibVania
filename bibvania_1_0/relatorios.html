@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RELATÓRIOS - BIBLIOTECA</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #previewRelatorio {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
+            color: var(--text);
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="accessibility-bar">
+        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="margin-right: auto;">GitHub</button>
+        <button class="control-btn" onclick="changeFontSize(1)">A+</button>
+        <button class="control-btn" onclick="changeFontSize(-1)">A-</button>
+        <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn">🌙</button>
+    </div>
+
+    <header>
+        <h1>📊 RELATÓRIOS DETALHADOS</h1>
+        <div class="school-name" id="nomeEscolaRelatorio">NOME DA ESCOLA</div>
+    </header>
+
+    <div class="container">
+        <nav style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+            <button onclick="window.location.href='admin.html'" class="btn-outline" style="min-width: auto;"><span>←</span> VOLTAR AO PAINEL</button>
+            <button onclick="window.DB.signOut()" class="btn-danger" style="min-width: auto;">SAIR</button>
+        </nav>
+
+        <div class="card">
+            <h2>CONFIGURAR RELATÓRIO</h2>
+            <div class="form-group">
+                <label>TIPO DE RELATÓRIO</label>
+                <select id="tipoRelatorio" onchange="gerar()">
+                    <option value="GERAL">GERAL (ANUAL)</option>
+                    <option value="MENSAL">MENSAL</option>
+                </select>
+            </div>
+            <div id="containerMes" class="form-group hidden">
+                <label>SELECIONE O MÊS/ANO</label>
+                <input type="month" id="filtroMes" onchange="gerar()">
+            </div>
+            <button onclick="baixar()" class="btn-block btn-primary" style="margin-top: 1rem;">📥 BAIXAR ARQUIVO .TXT</button>
+        </div>
+
+        <div class="card">
+            <h2>PRÉ-VISUALIZAÇÃO</h2>
+            <div id="previewRelatorio">CARREGANDO DADOS...</div>
+        </div>
+    </div>
+
+    <script src="database.js" type="module"></script>
+    <script type="module">
+        let relatorioTexto = '';
+        let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+
+        window.changeFontSize = (delta) => {
+            fontSize = Math.min(Math.max(fontSize + delta, 12), 24);
+            document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+            localStorage.setItem('fontSize', fontSize);
+        };
+
+        window.toggleDarkMode = () => {
+            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('darkModeBtn').innerText = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        };
+
+        function aplicarPreferencias() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            const btn = document.getElementById('darkModeBtn');
+            if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
+            document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+            
+            const nome = 'NOME DA ESCOLA';
+            const el = document.getElementById('nomeEscolaRelatorio');
+            if (el) el.innerText = nome;
+        }
+
+        async function init() {
+            while(!window.DB) await new Promise(r => setTimeout(r, 100));
+            await window.DB.checkAuth();
+            aplicarPreferencias();
+            gerar();
+        }
+
+        window.gerar = async () => {
+            const tipo = document.getElementById('tipoRelatorio').value;
+            const containerMes = document.getElementById('containerMes');
+            if (tipo === 'MENSAL') containerMes.classList.remove('hidden');
+            else containerMes.classList.add('hidden');
+
+            const livros = await window.DB.getLivros();
+            const emprestimos = await window.DB.getEmprestimos();
+            const filtro = document.getElementById('filtroMes').value;
+            const nomeEscola = localStorage.getItem('nomeEscola') || 'NOME DA ESCOLA';
+            const agora = new Date();
+            
+            let empFiltrados = emprestimos;
+            let cabecalhoPeriodo = `RELATÓRIO DE ${agora.getFullYear()} DA BIBLIOTECA ESCOLAR`;
+            
+            if (tipo === 'MENSAL' && filtro) {
+                const [ano, mes] = filtro.split('-');
+                const meses = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+                cabecalhoPeriodo = `RELATÓRIO DE ${meses[parseInt(mes)-1]} DE ${ano} DA BIBLIOTECA ESCOLAR`;
+                empFiltrados = emprestimos.filter(e => {
+                    const d = new Date(e.data_emprestimo);
+                    return d.getFullYear() === parseInt(ano) && (d.getMonth() + 1) === parseInt(mes);
+                });
+            }
+
+            // 1. Livros Cadastrados
+            let secaoLivros = "1. LIVROS CADASTRADOS (DETALHADO)\n" + "=".repeat(40) + "\n";
+            livros.forEach(l => {
+                secaoLivros += `ID: ${l.id} | TÍTULO: ${l.titulo}\nAUTOR: ${l.autor || 'N/A'} | ISBN: ${l.isbn || 'N/A'}\nCATEGORIA: ${l.categoria}\nQTD: ${l.quantidade_disponivel}/${l.quantidade_total} | SINOPSE: ${l.sinopse || 'N/A'}\n${"-".repeat(40)}\n`;
+            });
+
+            // 2. Empréstimos - Usar apenas o registro mais recente de cada empréstimo para evitar duplicidade
+            let secaoEmprestimos = "2. REGISTRO DE EMPRÉSTIMOS (ALUNOS E FUNCIONÁRIOS)\n" + "=".repeat(40) + "\n";
+            // Agrupar por ID de empréstimo e pegar apenas o mais recente
+            const emprestimosUnicos = {};
+            empFiltrados.forEach(e => {
+                if (!emprestimosUnicos[e.id] || new Date(e.data_emprestimo) > new Date(emprestimosUnicos[e.id].data_emprestimo)) {
+                    emprestimosUnicos[e.id] = e;
+                }
+            });
+            
+            Object.values(emprestimosUnicos).forEach(e => {
+                const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'DESCONHECIDO' };
+                const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
+                let responsavel;
+                if (isFuncionario) {
+                    const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
+                    responsavel = `${e.nome_aluno} (${rotulo})`;
+                } else {
+                    const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
+                    responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno} | ANO: ${e.ano_aluno || 'N/A'}`;
+                }
+                
+                secaoEmprestimos += `DATA: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')} | STATUS: ${e.status.toUpperCase()}\n`;
+                secaoEmprestimos += `LIVRO: ${l.titulo} (ID: ${e.livro_id})\n`;
+                secaoEmprestimos += `RESPONSÁVEL: ${responsavel}\n`;
+                secaoEmprestimos += `PREVISÃO DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}\n`;
+                if(e.data_devolucao) secaoEmprestimos += `DEVOLVIDO EM: ${new Date(e.data_devolucao).toLocaleDateString('pt-BR')}\n`;
+                secaoEmprestimos += `${'-'.repeat(40)}\n`;
+            });
+
+            // 3 & 4. Rankings por Sala - Usar dados únicos
+            let secaoRankingsSala = "3 & 4. RANKINGS POR SALA (ANO E TURMA)\n" + "=".repeat(40) + "\n";
+            const empAlunos = Object.values(emprestimosUnicos).filter(e => e.sexo !== 'P' && (e.turma_aluno !== 'PROF/FUNC' && e.turma_aluno !== 'PROFESSOR' && e.turma_aluno !== 'FUNCIONARIO'));
+            const salas = [...new Set(empAlunos.map(e => `${e.ano_aluno}º ${e.turma_aluno}`))].sort();
+
+            salas.forEach(sala => {
+                const [ano, turma] = sala.split('º ');
+                const empSala = empAlunos.filter(e => e.ano_aluno == ano && e.turma_aluno == turma);
+                
+                // Top Livros da Sala
+                const contL = {};
+                empSala.forEach(e => contL[e.livro_id] = (contL[e.livro_id] || 0) + 1);
+                const topLivrosSala = Object.entries(contL).sort((a,b) => b[1]-a[1]).slice(0,2);
+                
+                // Top Alunos da Sala
+                const contM = {}, contF = {};
+                empSala.forEach(e => {
+                    if (e.sexo === 'M') contM[e.nome_aluno] = (contM[e.nome_aluno] || 0) + 1;
+                    if (e.sexo === 'F') contF[e.nome_aluno] = (contF[e.nome_aluno] || 0) + 1;
+                });
+                const topM = Object.entries(contM).sort((a,b) => b[1]-a[1])[0]?.[0] || 'N/A';
+                const topF = Object.entries(contF).sort((a,b) => b[1]-a[1])[0]?.[0] || 'N/A';
+
+                secaoRankingsSala += `SALA: ${sala}\n`;
+                secaoRankingsSala += `- 2 LIVROS MAIS LIDOS:\n`;
+                topLivrosSala.forEach(([id, qtd], i) => {
+                    const t = livros.find(liv => liv.id == id)?.titulo || 'N/A';
+                    secaoRankingsSala += `  ${i+1}º ${t} (${qtd} VEZES)\n`;
+                });
+                secaoRankingsSala += `- ALUNO DESTAQUE: ${topM}\n`;
+                secaoRankingsSala += `- ALUNA DESTAQUE: ${topF}\n`;
+                secaoRankingsSala += `${'-'.repeat(40)}\n`;
+            });
+
+            // 5. Top 13 Geral - Usar dados únicos
+            let secaoTop13 = "5. OS 13 LIVROS MAIS LIDOS (GERAL - ALUNOS)\n" + "=".repeat(40) + "\n";
+            const contGeral = {};
+            empAlunos.forEach(e => contGeral[e.livro_id] = (contGeral[e.livro_id] || 0) + 1);
+            const top13 = Object.entries(contGeral).sort((a,b) => b[1]-a[1]).slice(0,13);
+            top13.forEach(([id, qtd], i) => {
+                const t = livros.find(liv => liv.id == id)?.titulo || 'N/A';
+                secaoTop13 += `${(i+1).toString().padStart(2, '0')}º ${t.padEnd(30)} | ${qtd} LEITURAS\n`;
+            });
+
+            // 5.5. Livros com Devolução Atrasada
+            let secaoAtrasados = "5.5. LIVROS COM DEVOLUÇÃO ATRASADA\n" + "=".repeat(40) + "\n";
+            const hoje = new Date();
+            const atrasados = emprestimos.filter(e => {
+                if (e.status !== 'emprestado' || e.sem_data_definida) return false;
+                const dataPrevista = new Date(e.data_prevista_devolucao);
+                return dataPrevista < hoje;
+            });
+            
+            if (atrasados.length > 0) {
+                atrasados.forEach(e => {
+                    const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'N/A', categoria: 'N/A' };
+                    const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
+                    let responsavel;
+                    if (isFuncionario) {
+                        const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
+                        responsavel = `${e.nome_aluno} (${rotulo})`;
+                    } else {
+                        const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
+                        responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno}`;
+                    }
+                    
+                    const dataPrevista = new Date(e.data_prevista_devolucao);
+                    const diasAtraso = Math.floor((hoje - dataPrevista) / (1000 * 60 * 60 * 24));
+                    
+                    secaoAtrasados += `LIVRO: ${l.titulo} (ID: ${e.livro_id}) | CAT: ${l.categoria}\n`;
+                    secaoAtrasados += `RESPONSÁVEL: ${responsavel}\n`;
+                    secaoAtrasados += `DATA EMPRÉSTIMO: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}\n`;
+                    secaoAtrasados += `DATA PREVISTA: ${dataPrevista.toLocaleDateString('pt-BR')}\n`;
+                    secaoAtrasados += `DIAS EM ATRASO: ${diasAtraso}\n`;
+                    secaoAtrasados += `${'-'.repeat(40)}\n`;
+                });
+            } else {
+                secaoAtrasados += "NENHUM LIVRO COM ATRASO.\n";
+            }
+
+            // 5.6. Livros sem Prazo de Entrega
+            let secaoSemPrazo = "5.6. LIVROS SEM PRAZO DE ENTREGA\n" + "=".repeat(40) + "\n";
+            const semPrazo = emprestimos.filter(e => e.status === 'emprestado' && e.sem_data_definida);
+            
+            if (semPrazo.length > 0) {
+                semPrazo.forEach(e => {
+                    const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'N/A', categoria: 'N/A', autor: 'N/A', isbn: 'N/A', sinopse: 'N/A' };
+                    const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
+                    let responsavel;
+                    if (isFuncionario) {
+                        const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
+                        responsavel = `${e.nome_aluno} (${rotulo})`;
+                    } else {
+                        const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
+                        responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno}`;
+                    }
+                    
+                    secaoSemPrazo += `LIVRO: ${l.titulo} (ID: ${e.livro_id})\n`;
+                    secaoSemPrazo += `AUTOR: ${l.autor} | ISBN: ${l.isbn}\n`;
+                    secaoSemPrazo += `CATEGORIA: ${l.categoria}\n`;
+                    secaoSemPrazo += `SINOPSE: ${l.sinopse}\n`;
+                    secaoSemPrazo += `RESPONSÁVEL: ${responsavel}\n`;
+                    secaoSemPrazo += `DATA EMPRÉSTIMO: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}\n`;
+                    secaoSemPrazo += `${'-'.repeat(40)}\n`;
+                });
+            } else {
+                secaoSemPrazo += "NENHUM LIVRO SEM PRAZO DE ENTREGA.\n";
+            }
+
+            // 6. Pendências
+            let secaoPendencias = "6. LIVROS QUE FALTAM SER DEVOLVIDOS (PENDÊNCIAS)\n" + "=".repeat(40) + "\n";
+            const pendentes = emprestimos.filter(e => e.status === 'emprestado');
+            pendentes.forEach(e => {
+                const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'N/A', categoria: 'N/A' };
+                const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
+                let responsavel;
+                if (isFuncionario) {
+                    const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
+                    responsavel = `${e.nome_aluno} (${rotulo})`;
+                } else {
+                    const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
+                    responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno}`;
+                }
+                
+                secaoPendencias += `LIVRO: ${l.titulo} (ID: ${e.livro_id}) | CAT: ${l.categoria}\n`;
+                secaoPendencias += `RESPONSÁVEL: ${responsavel}\n`;
+                secaoPendencias += `DATA EMPRÉSTIMO: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}\n`;
+                secaoPendencias += `PREVISÃO DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}\n`;
+                secaoPendencias += `${'-'.repeat(40)}\n`;
+            });
+
+            relatorioTexto = `${nomeEscola}\n${cabecalhoPeriodo}\nREGISTRO EM: ${agora.toLocaleDateString('pt-BR')} ÀS ${agora.toLocaleTimeString('pt-BR')}\n\n` +
+                secaoLivros + "\n" +
+                secaoEmprestimos + "\n" +
+                secaoRankingsSala + "\n" +
+                secaoTop13 + "\n" +
+                secaoAtrasados + "\n" +
+                secaoSemPrazo + "\n" +
+                secaoPendencias + "\n" +
+                "\n=== FIM DO RELATÓRIO ===";
+
+            document.getElementById('previewRelatorio').innerText = relatorioTexto;
+        };
+
+        window.baixar = () => {
+            const blob = new Blob([relatorioTexto], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `RELATORIO_BIBLIOTECA_${new Date().getTime()}.txt`;
+            a.click();
+        };
+
+        init();
+    </script></body>
+</html>
