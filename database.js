@@ -103,7 +103,7 @@ const DB = {
             const { data, error } = await supabase
                 .from("livros")
                 .select("*")
-                .order("id", { ascending: false });
+                .order("id", { ascending: true });
             if (error) throw error;
             if (!data) {
                 console.error("Nenhum dado retornado do Supabase");
@@ -123,7 +123,7 @@ const DB = {
     },
 
     async getProximoIdDisponivel() {
-        const { data, error } = await supabase.from("livros").select("id").order("id", { ascending: false });
+        const { data, error } = await supabase.from("livros").select("id").order("id", { ascending: true });
         if (error) throw error;
         
         const ids = data.map(l => l.id);
