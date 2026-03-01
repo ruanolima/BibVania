@@ -34,7 +34,7 @@
 
     <header>
         <h1>📊 RELATÓRIOS DETALHADOS</h1>
-        <div class="school-name" id="nomeEscolaRelatorio" style="text-align: center; width: 100%;">BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
+        <div class="school-name" id="nomeEscolaRelatorio" style="text-align: center; width: 100%;">BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
     </header>
 
     <div class="container">
@@ -67,6 +67,8 @@
 
     <script src="database.js" type="module"></script>
     <script type="module">
+        import DB from './database.js';
+        window.DB = DB;
         let relatorioTexto = '';
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
 
@@ -90,7 +92,7 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const nome = 'BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const el = document.getElementById('nomeEscolaRelatorio');
             if (el) el.innerText = nome;
         }

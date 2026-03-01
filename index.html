@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BibVania - Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares</title>
+    <title>BibVania Online</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -20,7 +20,7 @@
 
     <header>
         <h1>📚 BIBVANIA</h1>
-        <div class="school-name" id="nomeEscolaExibicao" style="text-align: center; width: 100%;">BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
+        <div class="school-name" id="nomeEscolaExibicao" style="text-align: center; width: 100%;">BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
     </header>
 
     <div class="container">
@@ -64,6 +64,8 @@
 
     <script src="database.js" type="module"></script>
     <script type="module">
+        import DB from './database.js';
+        window.DB = DB;
         let currentCategory = 'TODOS';
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
         let isReading = false;
@@ -108,7 +110,7 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const nome = 'BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const el = document.getElementById('nomeEscolaExibicao');
             if (el) el.innerText = nome;
         }

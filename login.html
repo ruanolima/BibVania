@@ -21,7 +21,7 @@
     <div class="login-box">
         <div style="margin-bottom: 2rem;">
             <h1 style="color: var(--primary); font-size: 1.5rem; margin-bottom: 0.5rem;">📚 BIBVANIA</h1>
-            <p id="nomeEscolaLogin" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-align: center;">BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</p>
+            <p id="nomeEscolaLogin" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-align: center;">BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</p>
         </div>
 
         <form id="loginForm" style="text-align: left;">
@@ -58,6 +58,8 @@
 
     <script src="database.js" type="module"></script>
     <script type="module">
+        import DB from './database.js';
+        window.DB = DB;
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
         let isReading = false;
         const synth = window.speechSynthesis;
@@ -101,7 +103,7 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const nome = 'BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const el = document.getElementById('nomeEscolaLogin');
             if (el) el.innerText = nome;
         }
