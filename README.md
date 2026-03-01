@@ -2,21 +2,21 @@
   <img src="logo.png" alt="BibVania Logo" width="200">
 </p>
 
-# BibVania 1.0 - Sistema de Biblioteca Escolar
+# BibVania Online 1.1
 
-**BibVania** é um sistema de gerenciamento de biblioteca escolar desenvolvido com HTML, CSS e JavaScript, utilizando **Supabase** como banco de dados online. O sistema oferece funcionalidades completas para alunos, professores e bibliotecários.
+**BibVania Online** é um sistema de gerenciamento da biblioteca escolar BibVania desenvolvido com HTML, CSS e JavaScript, utilizando **Supabase** como banco de dados online. O sistema oferece funcionalidades completas para alunos, professores e bibliotecários.
 
 🌐 Acessar o [Site dos Leitores](https://ruanolima.github.io/BibVania/).
 
 ## Características
 
-- 📚 **Acervo Digital**: Consulta de livros por título, autor, ISBN e sinopse
+- 📚 **Acervo Físico**: Consulta de livros por título, autor, ISBN e sinopse
 - 📖 **Gerenciamento de Empréstimos**: Registro e controle de saídas e devoluções
 - 📊 **Relatórios Detalhados**: Geração de relatórios em texto com estatísticas de uso
 - 👥 **Controle de Acesso**: Autenticação segura para bibliotecários
 - 🎨 **Design Responsivo**: Interface acessível e intuitiva
 - 🌙 **Modo Escuro**: Suporte a tema claro/escuro
-- ♿ **Acessibilidade**: Controles de tamanho de fonte
+- ♿ **Acessibilidade**: Controles de tamanho de fonte, leitor de texto, e transcrição em libras.
 
 ## Instalação e Configuração
 
@@ -53,29 +53,21 @@
 3. Digite o e-mail e a senha do bibliotecário
 4. **Importante**: Desmarque "Send lookup email" para que o usuário possa logar imediatamente, ou confirme o e-mail manualmente se necessário
 
-### 5. Ativar Realtime (Atualizações em Tempo Real)
-
-1. Vá em **Database** → **Replication**
-2. Na linha `supabase_realtime`, clique em 'tables'
-3. Ative para as tabelas `livros` e `emprestimos`
-
-### 6. Configurar Row Level Security (RLS)
-
-O arquivo `supabase_schema.sql` já configura o RLS com políticas abertas por padrão. Para aumentar a segurança:
-
-1. Vá em **Database** → **Policies**
-2. Configure as políticas conforme necessário para restringir acesso
-
 ## Publicação
 
 Faça o upload dos seguintes arquivos para sua hospedagem (GitHub Pages, Netlify, Vercel, etc):
 
-- `index.html` - Site dos Leitores
-- `login.html` - Página de Login
-- `admin.html` - Painel Administrativo
-- `relatorios.html` - Gerador de Relatórios
-- `database.js` - Conexão com Supabase
-- `style.css` - Estilos CSS
+- `index.html` - Site dos Leitores  
+- `login.html` - Página de Login  
+- `admin.html` - Painel Administrativo  
+- `relatorios.html` - Gerador de Relatórios  
+- `database.js` - Conexão com Supabase  
+- `style.css` - Estilos CSS  
+- `supabase_schema.sql` - Script de criação do banco  
+- `logo.png` - Logo do projeto  
+- `favicon.ico` - Favicon (Desktop)  
+- `favicon-192.png` - Favicon (Android)  
+- `apple-touch-icon.png` - Favicon (iOS)
 
 ## Uso
 
@@ -87,9 +79,9 @@ Faça o upload dos seguintes arquivos para sua hospedagem (GitHub Pages, Netlify
 ### Para Bibliotecários
 - Acesse `login.html` com suas credenciais
 - No painel admin, gerencie:
-  - **Acervo**: Adicione, edite ou remova livros
+  - **Cadastro e Acervo**: Procure, adicione, edite ou remova livros
   - **Empréstimos**: Registre saídas, devoluções e renovações
-  - **Relatórios**: Gere estatísticas de uso
+  - **Relatórios**: Gere estatísticas de cadastros, de empréstimos, de devoluções, de livros mais lidos, entre outras coisas
 
 ## Estrutura de Arquivos
 
@@ -128,7 +120,7 @@ BibVania/
 ## Funcionalidades Principais
 
 ### Acervo
-- Busca avançada por ID, ISBN, título, autor e sinopse
+- Busca avançada por ISBN, título, autor e sinopse
 - Filtro por categoria
 - Visualização de disponibilidade
 - Destaque de livros com devolução atrasada
@@ -162,4 +154,3 @@ Este projeto está licenciado sob [CC-BY-4.0](https://creativecommons.org/licens
 
 **Versão**: 1.1  
 **Data**: 2026
-
