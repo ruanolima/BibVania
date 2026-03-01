@@ -6,9 +6,11 @@
 
 **BibVania** é um sistema de gerenciamento de biblioteca escolar desenvolvido com HTML, CSS e JavaScript, utilizando **Supabase** como banco de dados online. O sistema oferece funcionalidades completas para alunos, professores e bibliotecários.
 
+🌐 Acessar o [Site dos Leitores](https://ruanolima.github.io/BibVania/).
+
 ## Características
 
-- 📚 **Acervo Digital**: Consulta de livros por título, autor, ISBN, ID e sinopse
+- 📚 **Acervo Digital**: Consulta de livros por título, autor, ISBN e sinopse
 - 📖 **Gerenciamento de Empréstimos**: Registro e controle de saídas e devoluções
 - 📊 **Relatórios Detalhados**: Geração de relatórios em texto com estatísticas de uso
 - 👥 **Controle de Acesso**: Autenticação segura para bibliotecários
