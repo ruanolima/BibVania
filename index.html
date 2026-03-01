@@ -3,20 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIBVANIA</title>
+    <title>BibVania - Biblioteca Escolar da EMTI Professora Maria VÂnia Farias Linhares</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="accessibility-bar">
-        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="margin-right: auto;">GitHub</button>
-        <button class="control-btn" onclick="changeFontSize(1)">A+</button>
-        <button class="control-btn" onclick="changeFontSize(-1)">A-</button>
-        <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn">🌙</button>
+        <button class="control-btn repository-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="margin-right: auto;">REPOSITÓRIO</button>
+        <button class="control-btn" onclick="changeFontSize(1)" title="Aumentar Fonte">A+</button>
+        <button class="control-btn" onclick="changeFontSize(-1)" title="Diminuir Fonte">A-</button>
+        <button class="control-btn" onclick="toggleReadAloud()" id="readAloudBtn" title="Ouvir Site">🔊</button>
+        <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn" title="Alternar Modo Escuro">🌙</button>
     </div>
 
     <header>
-        <h1>📚 BIBVANIA</h1>
-        <div class="school-name" id="nomeEscolaExibicao" style="text-align: center; width: 100%;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
+        <div class="header-container">
+            <img src="assets/logo.png" alt="Logo BibVania" class="header-logo">
+            <div class="header-text">
+                <h1>BibVania</h1>
+                <div class="school-info">
+                    <div>Biblioteca Escolar da EMTI</div>
+                    <div>Professora Maria Vânia Farias Linhares.</div>
+                </div>
+            </div>
+        </div>
     </header>
 
     <div class="container">
@@ -29,7 +39,7 @@
         <div class="card">
             <div class="form-group">
                 <label>BUSCAR NO ACERVO</label>
-                <input type="text" id="buscaLivros" placeholder="BUSCAR LIVRO...">
+                <input type="text" id="buscaLivros" placeholder="BUSCAR LIVRO POR TÍTULO, AUTOR OU SINOPSE...">
             </div>
             
             <div id="category-tabs" class="category-tabs"></div>
@@ -46,10 +56,24 @@
         </div>
     </div>
 
+    <!-- VLibras Widget -->
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper>
+            <div class="vw-plugin-top-wrapper"></div>
+        </div>
+    </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+    </script>
+
     <script src="database.js" type="module"></script>
     <script type="module">
         let currentCategory = 'TODOS';
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+        let isReading = false;
+        const synth = window.speechSynthesis;
 
         window.changeFontSize = (delta) => {
             fontSize = Math.min(Math.max(fontSize + delta, 12), 24);
@@ -64,6 +88,25 @@
             localStorage.setItem('theme', theme);
         };
 
+        window.toggleReadAloud = () => {
+            if (isReading) {
+                synth.cancel();
+                isReading = false;
+                document.getElementById('readAloudBtn').innerText = '🔊';
+            } else {
+                const textToRead = document.body.innerText;
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'pt-BR';
+                utterance.onend = () => {
+                    isReading = false;
+                    document.getElementById('readAloudBtn').innerText = '🔊';
+                };
+                synth.speak(utterance);
+                isReading = true;
+                document.getElementById('readAloudBtn').innerText = '⏹️';
+            }
+        };
+
         function aplicarPreferencias() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -71,7 +114,7 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const nome = 'BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const el = document.getElementById('nomeEscolaExibicao');
             if (el) el.innerText = nome;
         }
@@ -107,7 +150,6 @@
             if (currentCategory !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCategory);
             if (termo) {
                 filtrados = filtrados.filter(l =>
-                    l.id.toString().includes(termo) ||
                     l.titulo.toUpperCase().includes(termo) ||
                     (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
                     (l.autor && l.autor.toUpperCase().includes(termo)) ||
@@ -115,6 +157,7 @@
                 );
             }
 
+            // Ordenação Alfabética por Título
             filtrados.sort((a, b) => a.titulo.localeCompare(b.titulo));
 
             // Atrasados (apenas da categoria selecionada)
@@ -148,22 +191,22 @@
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
                         <div class="accordion-indicator">▼</div>
-                        <div class="book-title">${isAtrasado ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
+                        <div class="book-title">${isAtrasado ? '⚠️ ' : ''}${l.titulo}</div>
                         <div class="book-meta-box">
                             <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
                             <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
                             <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}</div>
-                            ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
+                            ${l.sinopse ? \`<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> \${l.sinopse}</div>\` : ''}
                         </div>
                         <div class="book-status-row">
-                            ${isAtrasado ? '<span class="atrasado-label">⚠️ ATRASO</span>' : '<span></span>'}
-                            <span class="badge ${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
-                                ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
+                            \${isAtrasado ? '<span class="atrasado-label">⚠️ ATRASO</span>' : '<span></span>'}
+                            <span class="badge \${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
+                                \${l.quantidade_disponivel}/\${l.quantidade_total} DISPONÍVEIS
                             </span>
                         </div>
                     </div>
-                    <div class="book-details" id="${prefix}details-${l.id}" data-livro-id="${l.id}">
-                        <div id="${prefix}loans-${l.id}"></div>
+                    <div class="book-details" id="\${prefix}details-\${l.id}" data-livro-id="\${l.id}">
+                        <div id="\${prefix}loans-\${l.id}"></div>
                     </div>
                 </div>
             `;
@@ -187,30 +230,30 @@
         };
 
         function obterRotuloGenero(sexo, turmaAluno, anoAluno) {
-            // Verificar se é funcionário/professor
             if (turmaAluno === 'PROF/FUNC' || turmaAluno === 'PROFESSOR' || turmaAluno === 'FUNCIONARIO') {
                 return sexo === 'M' ? 'Funcionário' : 'Funcionária';
             } else {
                 const genero = sexo === 'M' ? 'Aluno' : 'Aluna';
-                return `${genero}, ${anoAluno}º ano, ${turmaAluno}`;
+                return \`\${genero}, \${anoAluno}º ano, \${turmaAluno}\`;
             }
         }
 
         async function carregarEmprestimos(livroId, prefix) {
-            const container = document.getElementById(`${prefix}loans-${livroId}`);
+            const container = document.getElementById(\`\${prefix}loans-\${livroId}\`);
             const emps = await window.DB.getEmprestimosAtivos(parseInt(livroId));
             if (emps.length === 0) { container.innerHTML = '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>'; return; }
             
             container.innerHTML = emps.map(e => {
                 const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
-                return `
+                return \`
                 <div class="loan-item" style="background: var(--card); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);">
-                    <strong>${e.nome_aluno}</strong> (${rotulo})<br>
-                    DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
-                    ${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
+                    <strong>\${e.nome_aluno}</strong> (\${rotulo})<br>
+                    DEVOLUÇÃO: \${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
+                    \${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
                 </div>
-            `;
+            \`;
             }).join('');
         }
-    </script></body>
+    </script>
+</body>
 </html>

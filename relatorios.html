@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RELATÓRIOS - BIBLIOTECA</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="style.css">
     <style>
         #previewRelatorio {
@@ -30,8 +31,16 @@
     </div>
 
     <header>
-        <h1>📊 RELATÓRIOS DETALHADOS</h1>
-        <div class="school-name" id="nomeEscolaRelatorio" style="text-align: center; width: 100%;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
+        <div class="header-container">
+            <img src="assets/logo.png" alt="Logo BibVania" class="header-logo">
+            <div class="header-text">
+                <h1>BibVania</h1>
+                <div class="school-info">
+                    <div>Biblioteca Escolar da EMTI</div>
+                    <div>Professora Maria Vânia Farias Linhares.</div>
+                </div>
+            </div>
+        </div>
     </header>
 
     <div class="container">
@@ -87,7 +96,7 @@
             if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             
-            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const nome = 'BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const el = document.getElementById('nomeEscolaRelatorio');
             if (el) el.innerText = nome;
         }
@@ -108,7 +117,7 @@
             const livros = await window.DB.getLivros();
             const emprestimos = await window.DB.getEmprestimos();
             const filtro = document.getElementById('filtroMes').value;
-            const nomeEscola = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const nomeEscola = 'BIBVANIA - BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
             const agora = new Date();
             
             let empFiltrados = emprestimos;
