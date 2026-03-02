@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BIBVANIA</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="accessibility-bar">
+        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="margin-right: auto;">GitHub</button>
+        <button class="control-btn" onclick="changeFontSize(1)">A+</button>
+        <button class="control-btn" onclick="changeFontSize(-1)">A-</button>
+        <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn">🌙</button>
+    </div>
+
+    <header>
+        <h1>📚 BIBVANIA</h1>
+        <div class="school-name" id="nomeEscolaExibicao" style="text-align: center; width: 100%;">SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES</div>
+    </header>
+
+    <div class="container">
+        <nav>
+            <button onclick="window.location.href='login.html'" class="btn-primary">
+                <span>🔑</span> ÁREA DO BIBLIOTECÁRIO
+            </button>
+        </nav>
+
+        <div class="card">
+            <div class="form-group">
+                <label>BUSCAR NO ACERVO</label>
+                <input type="text" id="buscaLivros" placeholder="BUSCAR LIVRO...">
+            </div>
+            
+            <div id="category-tabs" class="category-tabs"></div>
+        </div>
+
+        <!-- SEÇÃO DE ATRASADOS -->
+        <div id="secaoAtrasados" class="atrasados-section hidden">
+            <h2 style="color: var(--danger); border: none; margin-bottom: 0.5rem;">⚠️ DEVOLUÇÕES EM ATRASO</h2>
+            <div id="listaAtrasados"></div>
+        </div>
+
+        <div id="listaLivros">
+            <div style="text-align: center; padding: 2rem; color: var(--text-light);">CARREGANDO ACERVO...</div>
+        </div>
+    </div>
+
+    <script src="database.js" type="module"></script>
+    <script type="module">
+        let currentCategory = 'TODOS';
+        let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+
+        window.changeFontSize = (delta) => {
+            fontSize = Math.min(Math.max(fontSize + delta, 12), 24);
+            document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+            localStorage.setItem('fontSize', fontSize);
+        };
+
+        window.toggleDarkMode = () => {
+            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('darkModeBtn').innerText = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        };
+
+        function aplicarPreferencias() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            const btn = document.getElementById('darkModeBtn');
+            if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
+            document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+            
+            const nome = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
+            const el = document.getElementById('nomeEscolaExibicao');
+            if (el) el.innerText = nome;
+        }
+
+        async function aguardarDB() {
+            while (!window.DB) await new Promise(r => setTimeout(r, 100));
+        }
+
+        (async () => {
+            await aguardarDB();
+            aplicarPreferencias();
+            
+            const categorias = ['TODOS', ...window.DB.CATEGORIAS];
+            document.getElementById('category-tabs').innerHTML = categorias.map(c => 
+                `<button class="tab-btn ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
+            ).join('');
+
+            window.DB.onLivrosChange(() => carregarLivros());
+            window.DB.onEmprestimosChange(() => carregarLivros());
+            carregarLivros();
+        })();
+
+        document.getElementById('buscaLivros').addEventListener('input', carregarLivros);
+
+        async function carregarLivros() {
+            const livros = await window.DB.getLivros();
+            const emprestimosAtivos = await window.DB.getEmprestimosAtivos();
+            const termo = document.getElementById('buscaLivros').value.toUpperCase();
+            
+            const idsLivrosComAtraso = [...new Set(emprestimosAtivos.filter(e => e.atrasado).map(e => e.livro_id))];
+            
+            let filtrados = livros;
+            if (currentCategory !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCategory);
+            if (termo) {
+                filtrados = filtrados.filter(l =>
+                    l.id.toString().includes(termo) ||
+                    l.titulo.toUpperCase().includes(termo) ||
+                    (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
+                    (l.autor && l.autor.toUpperCase().includes(termo)) ||
+                    (l.sinopse && l.sinopse.toUpperCase().includes(termo))
+                );
+            }
+
+            filtrados.sort((a, b) => a.titulo.localeCompare(b.titulo));
+
+            // Atrasados (apenas da categoria selecionada)
+            const atrasadosNaCategoria = filtrados.filter(l => idsLivrosComAtraso.includes(l.id));
+            const secao = document.getElementById('secaoAtrasados');
+            if (atrasadosNaCategoria.length > 0) {
+                secao.classList.remove('hidden');
+                document.getElementById('listaAtrasados').innerHTML = atrasadosNaCategoria.map(l => renderizarLivro(l, true)).join('');
+            } else {
+                secao.classList.add('hidden');
+            }
+
+            // Se estiver filtrando por categoria específica, mostrar apenas atrasados dessa categoria
+            if (currentCategory !== 'TODOS') {
+                const atrasadosCat = livros.filter(l => l.categoria === currentCategory && idsLivrosComAtraso.includes(l.id));
+                if (atrasadosCat.length > 0) {
+                    secao.classList.remove('hidden');
+                    document.getElementById('listaAtrasados').innerHTML = atrasadosCat.map(l => renderizarLivro(l, true)).join('');
+                } else {
+                    secao.classList.add('hidden');
+                }
+            }
+
+            document.getElementById('listaLivros').innerHTML = filtrados.map(l => renderizarLivro(l, false)).join('') || '<p style="text-align: center; padding: 2rem;">NENHUM LIVRO ENCONTRADO.</p>';
+        }
+
+        function renderizarLivro(l, isAtrasado) {
+            const prefix = isAtrasado ? 'atr-' : 'list-';
+            const borderStyle = isAtrasado ? 'style="border-color: var(--danger); border-width: 2px;"' : '';
+            return `
+                <div class="book-item" ${borderStyle}>
+                    <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
+                        <div class="accordion-indicator">▼</div>
+                        <div class="book-title">${isAtrasado ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
+                        <div class="book-meta-box">
+                            <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
+                            <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
+                            <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}</div>
+                            ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
+                        </div>
+                        <div class="book-status-row">
+                            ${isAtrasado ? '<span class="atrasado-label">⚠️ ATRASO</span>' : '<span></span>'}
+                            <span class="badge ${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
+                                ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
+                            </span>
+                        </div>
+                    </div>
+                    <div class="book-details" id="${prefix}details-${l.id}" data-livro-id="${l.id}">
+                        <div id="${prefix}loans-${l.id}"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.setCategory = (cat) => { 
+            currentCategory = cat; 
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText === cat));
+            carregarLivros(); 
+        };
+
+        window.obterRotuloGenero = obterRotuloGenero;
+
+        window.toggleAccordion = (el, prefix) => {
+            const content = el.nextElementSibling;
+            const indicator = el.querySelector('.accordion-indicator');
+            content.classList.toggle('active');
+            el.classList.toggle('active');
+            if (indicator) indicator.classList.toggle('active');
+            if (content.classList.contains('active')) carregarEmprestimos(content.dataset.livroId, prefix);
+        };
+
+        function obterRotuloGenero(sexo, turmaAluno, anoAluno) {
+            // Verificar se é funcionário/professor
+            if (turmaAluno === 'PROF/FUNC' || turmaAluno === 'PROFESSOR' || turmaAluno === 'FUNCIONARIO') {
+                return sexo === 'M' ? 'Funcionário' : 'Funcionária';
+            } else {
+                const genero = sexo === 'M' ? 'Aluno' : 'Aluna';
+                return `${genero}, ${anoAluno}º ano, ${turmaAluno}`;
+            }
+        }
+
+        async function carregarEmprestimos(livroId, prefix) {
+            const container = document.getElementById(`${prefix}loans-${livroId}`);
+            const emps = await window.DB.getEmprestimosAtivos(parseInt(livroId));
+            if (emps.length === 0) { container.innerHTML = '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>'; return; }
+            
+            container.innerHTML = emps.map(e => {
+                const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
+                return `
+                <div class="loan-item" style="background: var(--card); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);">
+                    <strong>${e.nome_aluno}</strong> (${rotulo})<br>
+                    DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
+                    ${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
+                </div>
+            `;
+            }).join('');
+        }
+    </script></body>
+</html>
