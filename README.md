@@ -6,7 +6,7 @@
 
 ## Características
 
-- 📚 **Acervo Físico**: Consulta de livros por título, autor, ISBN, ID e sinopse
+- 📚 **Acervo Físico**: Consulta de livros por título, autor, ISBN e sinopse
 - 📖 **Gerenciamento de Empréstimos**: Registro e controle de saídas e devoluções
 - 📊 **Relatórios Detalhados**: Geração de relatórios em texto com estatísticas de uso
 - 👥 **Controle de Acesso**: Autenticação segura para bibliotecários
@@ -48,19 +48,6 @@
 2. Clique em **Add User** → **Create new user**
 3. Digite o e-mail e a senha do bibliotecário
 4. **Importante**: Desmarque "Send lookup email" para que o usuário possa logar imediatamente, ou confirme o e-mail manualmente se necessário
-
-### 5. Ativar Realtime (Atualizações em Tempo Real)
-
-1. Vá em **Database** → **Replication**
-2. Na linha `supabase_realtime`, clique em 'tables'
-3. Ative para as tabelas `livros` e `emprestimos`
-
-### 6. Configurar Row Level Security (RLS)
-
-O arquivo `supabase_schema.sql` já configura o RLS com políticas abertas por padrão. Para aumentar a segurança:
-
-1. Vá em **Database** → **Policies**
-2. Configure as políticas conforme necessário para restringir acesso
 
 ## Publicação
 
@@ -152,4 +139,4 @@ Este projeto está licenciado sob [CC-BY-4.0](https://creativecommons.org/licens
 
 **© 2026 Desenvolvido com ❤️ por Ruan Oliveira Lima**
 
-**Versão**: 1.0
+**Versão**: 1.1
