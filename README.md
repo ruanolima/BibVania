@@ -42,6 +42,13 @@ Acesso restrito por login. Organizada em três abas:
 - Atualização imediata do acervo após cada ação (empréstimo, devolução, edição, exclusão)
 - Feedback visual "SALVANDO..." em todos os botões de confirmação
 
+**DEVOLUÇÕES**
+- Empréstimos ativos agrupados por turma (ex: 7º ANO — TURMA D) em ordem crescente de ano e turma
+- Professores e funcionários agrupados numa seção separada
+- Cada pessoa aparece uma única vez, com todos os livros que possui listados dentro do menu retrátil
+- Badge "DEVOLVER HOJE!" em destaque laranja quando a data de devolução é o dia atual
+- Ações por livro dentro do acordeão: Devolver, Editar, Renovar, Excluir
+
 ### Relatórios (`relatorios.html`)
 - Acesso direto do painel do bibliotecário
 - Geração de relatório geral (anual) ou mensal exportado em arquivo `.txt`
@@ -154,30 +161,4 @@ const supabaseKey = "sua-chave-anon-aqui";
 2. Vá em **Settings → Pages** e defina a source para o branch principal
 3. O site ficará disponível em `https://seu-usuario.github.io/nome-do-repositorio/`
 
----
 
-## Atualização de Banco Existente
-Se o banco já foi criado antes das últimas versões, execute no **SQL Editor** do Supabase:
-```sql
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS colaboradores JSONB DEFAULT '[]';
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS editora TEXT;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS pub_independente BOOLEAN DEFAULT FALSE;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS acabamento TEXT;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
-```
-> O `supabase_setup.sql` já inclui esses comandos — basta executá-lo por completo.
-
----
-
-## Resolução de Problemas
-
-| Problema | Solução |
-|---|---|
-| Acervo não carrega | Aguarde alguns segundos e recarregue. Verifique as credenciais em `database.js` |
-| Login não funciona | Confirme o e-mail em Authentication → Users. A senha é case-sensitive |
-| Disponibilidade incorreta | Execute `supabase_setup.sql` para reinstalar o trigger |
-| Colunas não encontradas | Execute os `ALTER TABLE` da seção "Atualização de Banco Existente" |
-| VLibras não aparece | Requer conexão com a internet |
-| Botão fica em "SALVANDO..." | Recarregue a página — problema corrigido na v1.3 |
-| Dados não atualizam sem recarregar | Habilite Realtime no Supabase (Database → Replication) |

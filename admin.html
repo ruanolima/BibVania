@@ -1060,37 +1060,69 @@
         };
 
         function renderGrupoDevolucao(titulo, key, itens, hoje) {
-            const alunosHtml = itens.map(e => {
-                const dataPrev = e.data_prevista_devolucao ? new Date(e.data_prevista_devolucao) : null;
-                if (dataPrev) dataPrev.setHours(0,0,0,0);
-                const atrasado   = dataPrev && dataPrev < hoje;
-                const devolverHj = dataPrev && dataPrev.getTime() === hoje.getTime();
-                const livro      = e.livros || {};
+            // Agrupar empréstimos pelo nome da pessoa — uma linha por pessoa, vários livros dentro
+            const pessoaMap = {};
+            itens.forEach(e => {
+                const nome = e.nome_aluno;
+                if (!pessoaMap[nome]) pessoaMap[nome] = [];
+                pessoaMap[nome].push(e);
+            });
 
-                const badgeHoje    = devolverHj ? '<span style="background:#f59e0b;color:#fff;font-size:0.65rem;font-weight:800;padding:0.2rem 0.5rem;border-radius:6px;margin-left:0.4rem;">DEVOLVER HOJE!</span>' : '';
-                const badgeAtraso  = atrasado   ? '<span class="atrasado-label" style="margin-left:0.4rem;">⚠️ ATRASADO</span>' : '';
-                const empId = `dev-${e.id}`;
+            const pessoasOrdenadas = Object.keys(pessoaMap).sort();
+            let totalPessoas = pessoasOrdenadas.length;
+
+            const alunosHtml = pessoasOrdenadas.map(nome => {
+                const emprestimos = pessoaMap[nome];
+                const pessoaId = `dev-${key}-${nome.replace(/\s+/g, '_')}`;
+
+                // Badges: mostrar se qualquer empréstimo tiver aviso
+                const temHoje    = emprestimos.some(e => {
+                    if (!e.data_prevista_devolucao) return false;
+                    const d = new Date(e.data_prevista_devolucao); d.setHours(0,0,0,0);
+                    return d.getTime() === hoje.getTime();
+                });
+                const temAtrasado = emprestimos.some(e => {
+                    if (!e.data_prevista_devolucao) return false;
+                    const d = new Date(e.data_prevista_devolucao); d.setHours(0,0,0,0);
+                    return d < hoje;
+                });
+
+                const badgeHoje   = temHoje    ? '<span style="background:#f59e0b;color:#fff;font-size:0.65rem;font-weight:800;padding:0.2rem 0.5rem;border-radius:6px;margin-left:0.4rem;">DEVOLVER HOJE!</span>' : '';
+                const badgeAtraso = temAtrasado ? '<span class="atrasado-label" style="margin-left:0.4rem;">⚠️ ATRASADO</span>' : '';
+                const contLivros  = emprestimos.length > 1 ? `<span style="font-size:0.7rem;font-weight:400;color:var(--text-light);margin-left:0.4rem;">(${emprestimos.length} livros)</span>` : '';
+
+                // Renderizar cada livro dentro do acordeão
+                const livrosHtml = emprestimos.map((e, idx) => {
+                    const dataPrev = e.data_prevista_devolucao ? new Date(e.data_prevista_devolucao) : null;
+                    if (dataPrev) dataPrev.setHours(0,0,0,0);
+                    const livro = e.livros || {};
+                    const separador = idx > 0 ? 'border-top:1px solid var(--border);margin-top:0.75rem;padding-top:0.75rem;' : '';
+                    return `
+                        <div style="${separador}">
+                            <div style="margin-bottom:0.3rem;"><strong>LIVRO ${emprestimos.length > 1 ? idx+1 + ':' : ':'}</strong> ${livro.titulo || '—'}</div>
+                            <div style="margin-bottom:0.3rem;"><strong>AUTOR:</strong> ${livro.autor || 'NÃO INFORMADO'}</div>
+                            <div style="margin-bottom:0.3rem;"><strong>CATEGORIA:</strong> ${livro.categoria || '—'}${livro.prateleira ? ' | ' + livro.prateleira : ''}</div>
+                            <div style="margin-bottom:0.3rem;"><strong>EMPRÉSTIMO:</strong> ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}</div>
+                            <div style="margin-bottom:0.75rem;"><strong>DEVOLUÇÃO:</strong> ${e.sem_data_definida ? 'SEM DATA' : (dataPrev ? dataPrev.toLocaleDateString('pt-BR') : '—')}</div>
+                            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                <button onclick="devolverEAtualizar(${e.id})" class="btn-small btn-success" style="flex:1;min-width:80px;">DEVOLVER</button>
+                                <button onclick="openEditEmp(${JSON.stringify(e).replace(/"/g, '&quot;')})" class="btn-small btn-primary" style="flex:1;min-width:80px;">EDITAR</button>
+                                <button onclick="openRenovarEmp(${e.id})" class="btn-small" style="background:var(--warning);color:white;flex:1;min-width:80px;">RENOVAR</button>
+                                <button onclick="delEmpEAtualizar(${e.id})" class="btn-small btn-danger" style="flex:1;min-width:80px;">EXCLUIR</button>
+                            </div>
+                        </div>`;
+                }).join('');
 
                 return `
                 <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">
-                    <div onclick="toggleDevAcc('${empId}')" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;cursor:pointer;background:var(--card);">
+                    <div onclick="toggleDevAcc('${pessoaId}')" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;cursor:pointer;background:var(--card);">
                         <div style="font-size:0.82rem;font-weight:700;flex:1;">
-                            ${e.nome_aluno}${badgeHoje}${badgeAtraso}
+                            ${nome}${contLivros}${badgeHoje}${badgeAtraso}
                         </div>
-                        <span id="${empId}-ind" style="font-size:0.75rem;color:var(--text-light);transition:transform 0.2s;">▼</span>
+                        <span id="${pessoaId}-ind" style="font-size:0.75rem;color:var(--text-light);transition:transform 0.2s;">▼</span>
                     </div>
-                    <div id="${empId}" style="display:none;padding:0.75rem 1rem;border-top:1px solid var(--border);background:var(--bg);font-size:0.78rem;">
-                        <div style="margin-bottom:0.3rem;"><strong>LIVRO:</strong> ${livro.titulo || '—'}</div>
-                        <div style="margin-bottom:0.3rem;"><strong>AUTOR:</strong> ${livro.autor || 'NÃO INFORMADO'}</div>
-                        <div style="margin-bottom:0.3rem;"><strong>CATEGORIA:</strong> ${livro.categoria || '—'}${livro.prateleira ? ' | ' + livro.prateleira : ''}</div>
-                        <div style="margin-bottom:0.3rem;"><strong>EMPRÉSTIMO:</strong> ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}</div>
-                        <div style="margin-bottom:0.75rem;"><strong>DEVOLUÇÃO:</strong> ${e.sem_data_definida ? 'SEM DATA' : (dataPrev ? dataPrev.toLocaleDateString('pt-BR') : '—')}</div>
-                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                            <button onclick="devolverEAtualizar(${e.id})" class="btn-small btn-success" style="flex:1;min-width:80px;">DEVOLVER</button>
-                            <button onclick="openEditEmp(${JSON.stringify(e).replace(/"/g, '&quot;')})" class="btn-small btn-primary" style="flex:1;min-width:80px;">EDITAR</button>
-                            <button onclick="openRenovarEmp(${e.id})" class="btn-small" style="background:var(--warning);color:white;flex:1;min-width:80px;">RENOVAR</button>
-                            <button onclick="delEmpEAtualizar(${e.id})" class="btn-small btn-danger" style="flex:1;min-width:80px;">EXCLUIR</button>
-                        </div>
+                    <div id="${pessoaId}" style="display:none;padding:0.75rem 1rem;border-top:1px solid var(--border);background:var(--bg);font-size:0.78rem;">
+                        ${livrosHtml}
                     </div>
                 </div>`;
             }).join('');
@@ -1098,7 +1130,7 @@
             return `
             <div class="card" style="margin-bottom:1rem;">
                 <h3 style="font-size:0.85rem;font-weight:800;color:var(--primary);border:none;margin-bottom:0.75rem;letter-spacing:0.05em;">
-                    ${titulo} <span style="font-weight:400;color:var(--text-light);">(${itens.length})</span>
+                    ${titulo} <span style="font-weight:400;color:var(--text-light);">(${totalPessoas})</span>
                 </h3>
                 ${alunosHtml}
             </div>`;
