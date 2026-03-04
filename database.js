@@ -415,6 +415,31 @@ const DB = {
         }
     },
 
+    // Busca empréstimos ativos com dados do livro (join via FK)
+    async getEmprestimosAtivosComLivro() {
+        try {
+            const { data, error } = await supabase
+                .from("emprestimos")
+                .select("*, livros(titulo, autor, categoria, prateleira)")
+                .eq("status", "emprestado")
+                .order("ano_aluno", { ascending: true })
+                .order("turma_aluno", { ascending: true })
+                .order("nome_aluno",  { ascending: true });
+            if (error) throw error;
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            return (data || []).map(e => {
+                if (e.data_prevista_devolucao) {
+                    const d = new Date(e.data_prevista_devolucao); d.setHours(0,0,0,0);
+                    if (d < hoje) e.atrasado = true;
+                }
+                return e;
+            });
+        } catch (error) {
+            console.error("Erro ao buscar empréstimos com livro:", error);
+            throw error;
+        }
+    },
+
     async getEmprestimosAtivos(livroId = null) {
         try {
             let query = supabase

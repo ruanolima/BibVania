@@ -91,6 +91,7 @@
             <button class="tab-btn active" onclick="switchTab(event, 'tab-cadastro')">CADASTRO</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-emprestimo')">EMPRÉSTIMO</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-registro')">ACERVO</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-devolucoes'); carregarDevolucoes()">DEVOLUÇÕES</button>
         </div>
 
         <!-- TAB: CADASTRO -->
@@ -278,6 +279,11 @@
             </form>
         </div>
     </div>
+
+        <!-- TAB: DEVOLUÇÕES -->
+        <div id="tab-devolucoes" class="tab-content">
+            <div id="listaDevolucoes"></div>
+        </div>
 
     <!-- MODAL RENOVAÇÃO EMPRÉSTIMO -->
     <div id="modalRenovarEmp" class="modal hidden">
@@ -1000,6 +1006,131 @@
 
         document.getElementById('buscaAdmin').addEventListener('input', renderAcervo);
         init();
+
+        // ── ABA DEVOLUÇÕES ────────────────────────────────────────────────────
+        window.carregarDevolucoes = async () => {
+            const container = document.getElementById('listaDevolucoes');
+            container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
+
+            const emps = await window.DB.getEmprestimosAtivosComLivro();
+
+            if (!emps.length) {
+                container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM EMPRÉSTIMO ATIVO.</p>';
+                return;
+            }
+
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+            // Separar professores/funcionários dos alunos
+            const funcGroup  = { label: 'PROFESSORES E FUNCIONÁRIOS', key: 'func', itens: [] };
+            const turmaMap   = {}; // "ANO|TURMA" → []
+
+            emps.forEach(e => {
+                if (e.turma_aluno === 'PROF/FUNC') {
+                    funcGroup.itens.push(e);
+                } else {
+                    const key = `${e.ano_aluno}|${e.turma_aluno}`;
+                    if (!turmaMap[key]) turmaMap[key] = [];
+                    turmaMap[key].push(e);
+                }
+            });
+
+            // Ordenar turmas: primeiro por ano, depois por turma
+            const turmaKeys = Object.keys(turmaMap).sort((a, b) => {
+                const [anoA, turA] = a.split('|');
+                const [anoB, turB] = b.split('|');
+                return anoA - anoB || turA.localeCompare(turB);
+            });
+
+            let html = '';
+
+            // Renderizar grupos de turma
+            turmaKeys.forEach(key => {
+                const [ano, turma] = key.split('|');
+                const itens = turmaMap[key];
+                html += renderGrupoDevolucao(`${ano}º ANO — TURMA ${turma}`, key, itens, hoje);
+            });
+
+            // Renderizar professores/funcionários
+            if (funcGroup.itens.length) {
+                html += renderGrupoDevolucao(funcGroup.label, funcGroup.key, funcGroup.itens, hoje);
+            }
+
+            container.innerHTML = html;
+        };
+
+        function renderGrupoDevolucao(titulo, key, itens, hoje) {
+            const alunosHtml = itens.map(e => {
+                const dataPrev = e.data_prevista_devolucao ? new Date(e.data_prevista_devolucao) : null;
+                if (dataPrev) dataPrev.setHours(0,0,0,0);
+                const atrasado   = dataPrev && dataPrev < hoje;
+                const devolverHj = dataPrev && dataPrev.getTime() === hoje.getTime();
+                const livro      = e.livros || {};
+
+                const badgeHoje    = devolverHj ? '<span style="background:#f59e0b;color:#fff;font-size:0.65rem;font-weight:800;padding:0.2rem 0.5rem;border-radius:6px;margin-left:0.4rem;">DEVOLVER HOJE!</span>' : '';
+                const badgeAtraso  = atrasado   ? '<span class="atrasado-label" style="margin-left:0.4rem;">⚠️ ATRASADO</span>' : '';
+                const empId = `dev-${e.id}`;
+
+                return `
+                <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">
+                    <div onclick="toggleDevAcc('${empId}')" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;cursor:pointer;background:var(--card);">
+                        <div style="font-size:0.82rem;font-weight:700;flex:1;">
+                            ${e.nome_aluno}${badgeHoje}${badgeAtraso}
+                        </div>
+                        <span id="${empId}-ind" style="font-size:0.75rem;color:var(--text-light);transition:transform 0.2s;">▼</span>
+                    </div>
+                    <div id="${empId}" style="display:none;padding:0.75rem 1rem;border-top:1px solid var(--border);background:var(--bg);font-size:0.78rem;">
+                        <div style="margin-bottom:0.3rem;"><strong>LIVRO:</strong> ${livro.titulo || '—'}</div>
+                        <div style="margin-bottom:0.3rem;"><strong>AUTOR:</strong> ${livro.autor || 'NÃO INFORMADO'}</div>
+                        <div style="margin-bottom:0.3rem;"><strong>CATEGORIA:</strong> ${livro.categoria || '—'}${livro.prateleira ? ' | ' + livro.prateleira : ''}</div>
+                        <div style="margin-bottom:0.3rem;"><strong>EMPRÉSTIMO:</strong> ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}</div>
+                        <div style="margin-bottom:0.75rem;"><strong>DEVOLUÇÃO:</strong> ${e.sem_data_definida ? 'SEM DATA' : (dataPrev ? dataPrev.toLocaleDateString('pt-BR') : '—')}</div>
+                        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                            <button onclick="devolverEAtualizar(${e.id})" class="btn-small btn-success" style="flex:1;min-width:80px;">DEVOLVER</button>
+                            <button onclick="openEditEmp(${JSON.stringify(e).replace(/"/g, '&quot;')})" class="btn-small btn-primary" style="flex:1;min-width:80px;">EDITAR</button>
+                            <button onclick="openRenovarEmp(${e.id})" class="btn-small" style="background:var(--warning);color:white;flex:1;min-width:80px;">RENOVAR</button>
+                            <button onclick="delEmpEAtualizar(${e.id})" class="btn-small btn-danger" style="flex:1;min-width:80px;">EXCLUIR</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            return `
+            <div class="card" style="margin-bottom:1rem;">
+                <h3 style="font-size:0.85rem;font-weight:800;color:var(--primary);border:none;margin-bottom:0.75rem;letter-spacing:0.05em;">
+                    ${titulo} <span style="font-weight:400;color:var(--text-light);">(${itens.length})</span>
+                </h3>
+                ${alunosHtml}
+            </div>`;
+        }
+
+        window.toggleDevAcc = (id) => {
+            const el  = document.getElementById(id);
+            const ind = document.getElementById(id + '-ind');
+            const open = el.style.display === 'block';
+            el.style.display  = open ? 'none' : 'block';
+            if (ind) ind.style.transform = open ? '' : 'rotate(180deg)';
+        };
+
+        // Devolver e recarregar a aba de devoluções
+        window.devolverEAtualizar = async (id) => {
+            if (!confirm('CONFIRMAR DEVOLUÇÃO?')) return;
+            try {
+                await window.DB.registrarDevolucao(id, new Date().toISOString());
+                load();
+                carregarDevolucoes();
+            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+        };
+
+        window.delEmpEAtualizar = async (id) => {
+            if (!confirm('EXCLUIR REGISTRO DE EMPRÉSTIMO?')) return;
+            try {
+                await window.DB.excluirEmprestimo(id);
+                load();
+                carregarDevolucoes();
+            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+        };
+        // ── FIM ABA DEVOLUÇÕES ────────────────────────────────────────────────
     </script>
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
