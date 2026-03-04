@@ -92,60 +92,59 @@
                 clearTimeout(_indexTimer);
                 _indexTimer = setTimeout(carregarLivros, 150);
             }
-            window.DB.onLivrosChange(carregarLivrosDebounced);
-            window.DB.onEmprestimosChange(carregarLivrosDebounced);
+            let _realtimeTimer = null;
+            function realtimeDebounced() { clearTimeout(_realtimeTimer); _realtimeTimer = setTimeout(carregarLivros, 300); }
+            window.DB.onLivrosChange(realtimeDebounced);
+            window.DB.onEmprestimosChange(realtimeDebounced);
             setInterval(carregarLivros, 30000);
             carregarLivros();
         })();
 
-        document.getElementById('buscaLivros').addEventListener('input', carregarLivros);
+        // Cache local
+        let todosLivros = [];
+        let idsAtrasadosCache = [];
 
+        // carregarLivros(): vai ao Supabase buscar dados frescos
         async function carregarLivros() {
-            const livros = await window.DB.getLivros();
+            todosLivros = await window.DB.getLivros();
             const emprestimosAtivos = await window.DB.getEmprestimosAtivos();
+            idsAtrasadosCache = [...new Set(emprestimosAtivos.filter(e => e.atrasado).map(e => e.livro_id))];
+            renderAcervo();
+        }
+
+        // renderAcervo(): filtra e exibe sem ir ao Supabase — instantâneo
+        function renderAcervo() {
             const termo = document.getElementById('buscaLivros').value.toUpperCase();
-            
-            const idsLivrosComAtraso = [...new Set(emprestimosAtivos.filter(e => e.atrasado).map(e => e.livro_id))];
-            
-            let filtrados = livros;
+
+            let filtrados = todosLivros;
             if (currentCategory !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCategory);
-            if (termo) {
-                filtrados = filtrados.filter(l =>
-                    l.id.toString().includes(termo) ||
-                    l.titulo.toUpperCase().includes(termo) ||
-                    (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
-                    (l.autor && l.autor.toUpperCase().includes(termo)) ||
-                    (l.sinopse && l.sinopse.toUpperCase().includes(termo)) ||
-                    (l.editora && l.editora.toUpperCase().includes(termo)) ||
-                    (l.colaboradores && l.colaboradores.some(co => co.nome && co.nome.toUpperCase().includes(termo)))
-                );
-            }
+            if (termo) filtrados = filtrados.filter(l =>
+                l.id.toString().includes(termo) ||
+                l.titulo.toUpperCase().includes(termo) ||
+                (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
+                (l.autor && l.autor.toUpperCase().includes(termo)) ||
+                (l.sinopse && l.sinopse.toUpperCase().includes(termo)) ||
+                (l.editora && l.editora.toUpperCase().includes(termo)) ||
+                (l.colaboradores && l.colaboradores.some(co => co.nome && co.nome.toUpperCase().includes(termo)))
+            );
 
             filtrados.sort((a, b) => a.titulo.localeCompare(b.titulo));
 
-            // Atrasados (apenas da categoria selecionada)
-            const atrasadosNaCategoria = filtrados.filter(l => idsLivrosComAtraso.includes(l.id));
+            const atrasados = filtrados.filter(l => idsAtrasadosCache.includes(l.id));
             const secao = document.getElementById('secaoAtrasados');
-            if (atrasadosNaCategoria.length > 0) {
+            if (atrasados.length > 0) {
                 secao.classList.remove('hidden');
-                document.getElementById('listaAtrasados').innerHTML = atrasadosNaCategoria.map(l => renderizarLivro(l, true)).join('');
+                document.getElementById('listaAtrasados').innerHTML = atrasados.map(l => renderizarLivro(l, true)).join('');
             } else {
                 secao.classList.add('hidden');
             }
 
-            // Se estiver filtrando por categoria específica, mostrar apenas atrasados dessa categoria
-            if (currentCategory !== 'TODOS') {
-                const atrasadosCat = livros.filter(l => l.categoria === currentCategory && idsLivrosComAtraso.includes(l.id));
-                if (atrasadosCat.length > 0) {
-                    secao.classList.remove('hidden');
-                    document.getElementById('listaAtrasados').innerHTML = atrasadosCat.map(l => renderizarLivro(l, true)).join('');
-                } else {
-                    secao.classList.add('hidden');
-                }
-            }
-
-            document.getElementById('listaLivros').innerHTML = filtrados.map(l => renderizarLivro(l, false)).join('') || '<p style="text-align: center; padding: 2rem;">NENHUM LIVRO ENCONTRADO.</p>';
+            document.getElementById('listaLivros').innerHTML =
+                filtrados.length ? filtrados.map(l => renderizarLivro(l, false)).join('') :
+                '<p style="text-align:center;padding:2rem;">NENHUM LIVRO ENCONTRADO.</p>';
         }
+
+        document.getElementById('buscaLivros').addEventListener('input', renderAcervo);
 
         function renderizarLivro(l, isAtrasado) {
             const prefix = isAtrasado ? 'atr-' : 'list-';
@@ -153,7 +152,7 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
-                        <div class="book-cover-wrap">
+                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" ${l.imagem_url ? `onclick="abrirLightbox('${l.imagem_url.replace(/'/g, "\\'")}', '${l.titulo.replace(/'/g, "\\'")}")" title="Clique para ampliar"` : ''}>
                             <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png'; this.className='cover-placeholder';">
                         </div>
                         <div class="book-header-inner">
@@ -186,7 +185,7 @@
         window.setCategory = (cat) => { 
             currentCategory = cat; 
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText === cat));
-            carregarLivros(); 
+            renderAcervo(); 
         };
 
         window.obterRotuloGenero = obterRotuloGenero;
@@ -231,5 +230,26 @@
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+
+    <!-- Lightbox de capa -->
+    <div class="lightbox-overlay" id="capLightbox">
+        <div class="lightbox-bg" onclick="fecharLightbox()"></div>
+        <div class="lightbox-img-wrap">
+            <img id="capLightboxImg" src="" alt="Capa ampliada">
+            <div class="lightbox-img-title" id="capLightboxTitle"></div>
+        </div>
+        <button class="lightbox-back" onclick="fecharLightbox()">← VOLTAR</button>
+    </div>
+    <script>
+        function abrirLightbox(src, titulo) {
+            document.getElementById('capLightboxImg').src = src;
+            document.getElementById('capLightboxTitle').textContent = titulo;
+            document.getElementById('capLightbox').classList.add('open');
+        }
+        function fecharLightbox() {
+            document.getElementById('capLightbox').classList.remove('open');
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLightbox(); });
+    </script>
 </body>
 </html>

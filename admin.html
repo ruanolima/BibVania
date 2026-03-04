@@ -401,8 +401,9 @@
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
-            // Atualização periódica como segurança (caso o realtime falhe)
             setInterval(load, 30000);
+            // Mostrar "carregando" apenas no primeiro load
+            document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             load();
         }
 
@@ -416,22 +417,24 @@
         window.setCat = (c) => {
             currentCat = c;
             document.querySelectorAll('#admin-cats .tab-btn').forEach(b => b.classList.toggle('active', b.innerText === c));
-            load();
+            renderAcervo();
         };
 
-        let _loadTimer = null;
-        function load() {
-            clearTimeout(_loadTimer);
-            _loadTimer = setTimeout(_doLoad, 150);
+        // Cache local — evita chamadas desnecessárias ao Supabase na busca/filtro
+        let idsAtrasadosCache = [];
+
+        // load(): busca dados do Supabase e re-renderiza
+        async function load() {
+            todosLivros = await window.DB.getLivros();
+            todosLivros = [...todosLivros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
+            const emps = await window.DB.getEmprestimosAtivos();
+            idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
+            renderAcervo();
         }
 
-        async function _doLoad() {
-            document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
-            todosLivros = await window.DB.getLivros();
-            todosLivros = [...todosLivros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro)); // Mais recente primeiro
-            const emps = await window.DB.getEmprestimosAtivos();
+        // renderAcervo(): filtra e exibe sem ir ao Supabase — instantâneo
+        function renderAcervo() {
             const termo = document.getElementById('buscaAdmin').value.toUpperCase();
-            const idsAtrasados = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
 
             let filtrados = todosLivros;
             if (currentCat !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCat);
@@ -445,26 +448,16 @@
                 (l.colaboradores && l.colaboradores.some(co => co.nome && co.nome.toUpperCase().includes(termo)))
             );
 
-            // Atrasados apenas da categoria selecionada
-            const atrasados = filtrados.filter(l => idsAtrasados.includes(l.id));
+            const atrasados = filtrados.filter(l => idsAtrasadosCache.includes(l.id));
             const secao = document.getElementById('secaoAtrasadosAdmin');
             if (atrasados.length > 0) {
                 secao.classList.remove('hidden');
                 document.getElementById('listaAtrasadosAdmin').innerHTML = atrasados.map(l => renderLivro(l, true)).join('');
             } else secao.classList.add('hidden');
 
-            // Se estiver filtrando por categoria específica, mostrar apenas atrasados dessa categoria
-            if (currentCat !== 'TODOS') {
-                const atrasadosCat = todosLivros.filter(l => l.categoria === currentCat && idsAtrasados.includes(l.id));
-                if (atrasadosCat.length > 0) {
-                    secao.classList.remove('hidden');
-                    document.getElementById('listaAtrasadosAdmin').innerHTML = atrasadosCat.map(l => renderLivro(l, true)).join('');
-                } else {
-                    secao.classList.add('hidden');
-                }
-            }
-
-            document.getElementById('listaAdmin').innerHTML = filtrados.map(l => renderLivro(l, false)).join('');
+            document.getElementById('listaAdmin').innerHTML =
+                filtrados.length ? filtrados.map(l => renderLivro(l, false)).join('') :
+                '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM LIVRO ENCONTRADO.</p>';
         }
 
         function renderLivro(l, isAtr) {
@@ -473,7 +466,7 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAcc(this, '${prefix}')">
-                        <div class="book-cover-wrap">
+                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" ${l.imagem_url ? `onclick="abrirLightbox('${l.imagem_url.replace(/'/g, "\\'")}', '${l.titulo.replace(/'/g, "\\'")}")" title="Clique para ampliar"` : ''}>
                             <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png'; this.className='cover-placeholder';">
                         </div>
                         <div class="book-header-inner">
@@ -1003,7 +996,7 @@
             } catch(err) { btnEmp.textContent = lblEmp; btnEmp.disabled = false; mostrarMsg('msgEmp', '❌ ' + err.message, 'danger'); }
         });
 
-        document.getElementById('buscaAdmin').addEventListener('input', load);
+        document.getElementById('buscaAdmin').addEventListener('input', renderAcervo);
         init();
     </script>
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
@@ -1161,6 +1154,27 @@
         `;
     };
 
+    </script>
+
+    <!-- Lightbox de capa -->
+    <div class="lightbox-overlay" id="capLightbox">
+        <div class="lightbox-bg" onclick="fecharLightbox()"></div>
+        <div class="lightbox-img-wrap">
+            <img id="capLightboxImg" src="" alt="Capa ampliada">
+            <div class="lightbox-img-title" id="capLightboxTitle"></div>
+        </div>
+        <button class="lightbox-back" onclick="fecharLightbox()">← VOLTAR</button>
+    </div>
+    <script>
+        function abrirLightbox(src, titulo) {
+            document.getElementById('capLightboxImg').src = src;
+            document.getElementById('capLightboxTitle').textContent = titulo;
+            document.getElementById('capLightbox').classList.add('open');
+        }
+        function fecharLightbox() {
+            document.getElementById('capLightbox').classList.remove('open');
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLightbox(); });
     </script>
 </body>
 </html>

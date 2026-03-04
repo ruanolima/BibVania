@@ -11,7 +11,7 @@ Sistema de gerenciamento de biblioteca escolar da **EMTI Professora Maria Vânia
 ### Site dos Leitores (`index.html`)
 - Consulta ao acervo completo com busca por título, autor, ISBN, sinopse, editora e nome de colaborador
 - Filtro por categoria com abas deslizantes
-- Capa do livro exibida à esquerda de cada card (logo da biblioteca como placeholder quando não há capa)
+- Capa do livro exibida à esquerda de cada card (logo da biblioteca como placeholder quando não há capa); clique na capa para ampliar
 - Cada livro exibe: autor, colaboradores, editora (ou "Publicação Independente"), ISBN, acabamento, categoria, prateleira e disponibilidade
 - Empréstimos ativos visíveis com nome do leitor e prazo de devolução
 - Destaque visual para livros com devolução atrasada (⚠️)
@@ -36,7 +36,7 @@ Acesso restrito por login. Organizada em três abas:
 **ACERVO**
 - Busca e filtro por categoria
 - Livros ordenados do mais recente para o mais antigo (por data de cadastro)
-- Capa do livro: no cadastro e na edição há um retângulo de pré-visualização com opções de escolher, trocar ou excluir a imagem antes de salvar; se não houver capa, exibe a logo da biblioteca
+- Capa do livro: no cadastro e na edição há um retângulo de pré-visualização com opções de escolher, trocar ou excluir a imagem antes de salvar; se não houver capa, exibe a logo da biblioteca; clique na capa para ampliar em lightbox
 - Ações por livro: editar todos os campos ou excluir (bloqueado se houver empréstimos ativos)
 - Lista de empréstimos ativos por livro, com identificação de atrasos
 - Atualização imediata do acervo após cada ação (empréstimo, devolução, edição, exclusão)
@@ -153,3 +153,5 @@ const supabaseKey = "sua-chave-anon-aqui";
 1. Suba os arquivos marcados com ✅ na tabela acima para um repositório no GitHub
 2. Vá em **Settings → Pages** e defina a source para o branch principal
 3. O site ficará disponível em `https://seu-usuario.github.io/nome-do-repositorio/`
+
+
