@@ -411,6 +411,17 @@
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             load();
+
+            // Restaurar aba ativa após atualizar a página
+            const tabSalva = sessionStorage.getItem('bibvania_tab');
+            if (tabSalva && document.getElementById(tabSalva)) {
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('nav .tab-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(tabSalva).classList.add('active');
+                const btn = document.querySelector(`nav .tab-btn[onclick*="${tabSalva}"]`);
+                if (btn) btn.classList.add('active');
+                if (tabSalva === 'tab-devolucoes') carregarDevolucoes();
+            }
         }
 
         window.switchTab = (e, id) => {
@@ -418,6 +429,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             e.currentTarget.classList.add('active');
+            sessionStorage.setItem('bibvania_tab', id);
         };
 
         window.setCat = (c) => {
@@ -577,6 +589,7 @@
                 await window.DB.registrarDevolucao(id, new Date().toISOString());
                 mostrarMsg('msgEmp', '✓ DEVOLUÇÃO REGISTRADA!', 'success');
                 load();
+                carregarDevolucoes();
             } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
         window.delEmp = async (id) => {
@@ -585,6 +598,7 @@
                 await window.DB.excluirEmprestimo(id);
                 mostrarMsg('msgEmp', '✓ EXCLUÍDO!', 'success');
                 load();
+                carregarDevolucoes();
             } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
         
@@ -624,7 +638,7 @@
                 l.colaboradores.forEach(co => adicionarColaboradorEdit(co.funcao, co.nome));
             }
             // Capa no modal de edição
-            window._editCapaBase64 = null;
+            window._editCapaFile = null;
             window._editCapaExcluir = false;
             const editImg = document.getElementById('editCapaPreview');
             if (l.imagem_url) {
@@ -667,10 +681,10 @@
                     sinopse: document.getElementById('editSinopse').value
                 });
                 // Capa: upload novo arquivo ou remover
-                if (window._editCapaBase64) {
+                if (window._editCapaFile) {
                     try {
                         const livroId = parseInt(document.getElementById('editId').value);
-                        await window.DB.uploadCapa(livroId, window._editCapaBase64);
+                        await window.DB.uploadCapa(livroId, window._editCapaFile);
                     } catch(capErr) { console.warn('Capa não salva:', capErr); }
                 } else if (window._editCapaExcluir) {
                     try {
@@ -758,6 +772,7 @@
                 closeModalRenovar();
                 mostrarMsg('msgEmp', '✓ RENOVADO!', 'success');
                 load();
+                carregarDevolucoes();
             } catch(err) {
                 console.error('Erro ao renovar:', err);
                 mostrarMsg('msgEmp', '❌ ERRO AO RENOVAR: ' + (err.message || 'Erro desconhecido'), 'danger');
@@ -836,6 +851,7 @@
                 document.getElementById('modalEditEmp').classList.add('hidden');
                 mostrarMsg('msgEmp', '✓ EMPRÉSTIMO ATUALIZADO!', 'success');
                 load();
+                carregarDevolucoes();
             } catch(err) {
                 if (btnEE) { btnEE.textContent = lblEE; btnEE.disabled = false; }
                 mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger');
@@ -909,12 +925,12 @@
                     sinopse: document.getElementById('sinopse').value
                 });
                 // Salvar capa (base64) se houver imagem selecionada
-                if (window._capaBase64 && resultado && resultado.data) {
+                if (window._capaFile && resultado && resultado.data) {
                     try {
-                        await window.DB.uploadCapa(resultado.data.id, window._capaBase64);
+                        await window.DB.uploadCapa(resultado.data.id, window._capaFile);
                     } catch(capErr) { console.warn('Capa não salva:', capErr); }
                 }
-                window._capaBase64 = null;
+                window._capaFile = null;
                 // Reset preview capa
                 const capaImg = document.getElementById('capaPreview');
                 capaImg.src = 'logo.png'; capaImg.className = 'cover-placeholder';
@@ -1262,9 +1278,9 @@
     // =====================================================================
 
     // Base64 da capa selecionada no cadastro
-    window._capaBase64 = null;
+    window._capaFile = null;
     // Base64 e flags para edição
-    window._editCapaBase64 = null;
+    window._editCapaFile = null;
     window._editCapaExcluir = false;
 
     // Pré-visualiza a imagem escolhida e mostra botões Trocar/Excluir
@@ -1272,40 +1288,22 @@
         const file = input.files[0];
         if (!file) return;
 
-        if (!isEdit) {
-            const submitBtn = document.querySelector('#formLivro button[type="submit"]');
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'AGUARDANDO IMAGEM...'; }
-        }
-
         const reader = new FileReader();
         reader.onload = (e) => {
-            // Comprimir via canvas antes de salvar (máx 300px, JPEG 70%)
-            const original = new Image();
-            original.onload = () => {
-                const MAX = 300;
-                const scale = Math.min(1, MAX / Math.max(original.width, original.height));
-                const canvas = document.createElement('canvas');
-                canvas.width  = Math.round(original.width  * scale);
-                canvas.height = Math.round(original.height * scale);
-                canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
-                const base64 = canvas.toDataURL('image/jpeg', 0.7);
+            const img = document.getElementById(imgId);
+            img.src = e.target.result;
+            img.className = '';
 
-                const img = document.getElementById(imgId);
-                img.src = base64;
-                img.className = '';
-
-                if (isEdit) {
-                    window._editCapaBase64 = base64;
-                    window._editCapaExcluir = false;
-                    renderBotoesCapa('edit');
-                } else {
-                    window._capaBase64 = base64;
-                    renderBotoesCapa('cadastro');
-                    const submitBtn = document.querySelector('#formLivro button[type="submit"]');
-                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
-                }
-            };
-            original.src = e.target.result;
+            if (isEdit) {
+                window._editCapaFile = file;
+                window._editCapaExcluir = false;
+                renderBotoesCapa('edit');
+            } else {
+                window._capaFile = file;
+                renderBotoesCapa('cadastro');
+                const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
+            }
         };
         reader.readAsDataURL(file);
     };
@@ -1331,10 +1329,10 @@
         img.src = 'logo.png';
         img.className = 'cover-placeholder';
         if (modo === 'edit') {
-            window._editCapaBase64 = null;
+            window._editCapaFile = null;
             window._editCapaExcluir = true;
         } else {
-            window._capaBase64 = null;
+            window._capaFile = null;
             // Garantir que o submit esteja habilitado (sem imagem = pode cadastrar)
             const submitBtn = document.querySelector('#formLivro button[type="submit"]');
             if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }

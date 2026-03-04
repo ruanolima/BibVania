@@ -480,6 +480,8 @@ const DB = {
 
     async removerCapa(livroId) {
         try {
+            // Tentar remover arquivos do Storage (jpg e png)
+            await supabase.storage.from('capas').remove([`livro-${livroId}.jpg`, `livro-${livroId}.png`]);
             await supabase.from("livros").update({ imagem_url: null }).eq("id", livroId);
         } catch (error) {
             console.error("Erro ao remover capa:", error);
@@ -487,14 +489,37 @@ const DB = {
         }
     },
 
-    async uploadCapa(livroId, base64url) {
+    async uploadCapa(livroId, file) {
         try {
-            const { error } = await supabase
+            // Se for base64 legado, converter para Blob
+            let uploadFile = file;
+            if (typeof file === 'string' && file.startsWith('data:')) {
+                const res = await fetch(file);
+                uploadFile = await res.blob();
+            }
+
+            // Determinar extensão pelo tipo do arquivo
+            const ext = (uploadFile.type === 'image/png') ? 'png' : 'jpg';
+            const filePath = `livro-${livroId}.${ext}`;
+
+            // Upload com upsert (substitui se já existir)
+            const { error: upError } = await supabase.storage
+                .from('capas')
+                .upload(filePath, uploadFile, { upsert: true, contentType: uploadFile.type || 'image/jpeg' });
+            if (upError) throw upError;
+
+            // Gerar URL pública com cache-busting
+            const { data } = supabase.storage.from('capas').getPublicUrl(filePath);
+            const publicUrl = data.publicUrl + '?t=' + Date.now();
+
+            // Salvar URL na tabela
+            const { error: dbError } = await supabase
                 .from('livros')
-                .update({ imagem_url: base64url })
+                .update({ imagem_url: publicUrl })
                 .eq('id', livroId);
-            if (error) throw error;
-            return base64url;
+            if (dbError) throw dbError;
+
+            return publicUrl;
         } catch (error) {
             console.error('Erro ao salvar capa:', error);
             throw error;
