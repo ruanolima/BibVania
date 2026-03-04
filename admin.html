@@ -438,6 +438,24 @@
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
             idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
             renderAcervo();
+            // Carrega capas em segundo plano sem bloquear a interface
+            carregarCapasLazy();
+        }
+
+        async function carregarCapasLazy() {
+            const ids = todosLivros.map(l => l.id);
+            if (ids.length === 0) return;
+            const capas = await window.DB.getCapas(ids);
+            // Atualiza cache local
+            todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
+            // Atualiza apenas as imagens já renderizadas no DOM
+            Object.entries(capas).forEach(([id, url]) => {
+                document.querySelectorAll(`[data-lightbox-id="${id}"] img`).forEach(img => {
+                    img.src = url;
+                    img.classList.remove('cover-placeholder');
+                    img.closest('.book-cover-wrap').classList.add('has-image');
+                });
+            });
         }
 
         // renderAcervo(): filtra e exibe sem ir ao Supabase — instantâneo
@@ -463,9 +481,10 @@
                 document.getElementById('listaAtrasadosAdmin').innerHTML = atrasados.map(l => renderLivro(l, true)).join('');
             } else secao.classList.add('hidden');
 
+            const naoAtrasados = filtrados.filter(l => !idsAtrasadosCache.includes(l.id));
             document.getElementById('listaAdmin').innerHTML =
-                filtrados.length ? filtrados.map(l => renderLivro(l, false)).join('') :
-                '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM LIVRO ENCONTRADO.</p>';
+                naoAtrasados.length ? naoAtrasados.map(l => renderLivro(l, false)).join('') :
+                (atrasados.length ? '' : '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM LIVRO ENCONTRADO.</p>');
         }
 
         function renderLivro(l, isAtr) {

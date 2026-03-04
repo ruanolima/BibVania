@@ -110,7 +110,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("*")
+                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
@@ -152,15 +152,10 @@ const DB = {
     },
 
     async getProximoIdDisponivel() {
-        const { data, error } = await supabase.from("livros").select("id").order("titulo", { ascending: true });
+        // Busca apenas o maior ID existente — muito mais eficiente que carregar todos os IDs
+        const { data, error } = await supabase.from("livros").select("id").order("id", { ascending: false }).limit(1);
         if (error) throw error;
-        
-        const ids = data.map(l => l.id);
-        let proximoId = 1;
-        while (ids.includes(proximoId)) {
-            proximoId++;
-        }
-        return proximoId;
+        return data && data.length > 0 ? data[0].id + 1 : 1;
     },
 
     async salvarLivro(livro) {
