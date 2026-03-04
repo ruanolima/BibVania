@@ -186,6 +186,16 @@
 
         document.getElementById('buscaLivros').addEventListener('input', renderAcervo);
 
+        function obterRotuloGenero(sexo, turmaAluno, anoAluno) {
+            // Verificar se é funcionário/professor
+            if (turmaAluno === 'PROF/FUNC' || turmaAluno === 'PROFESSOR' || turmaAluno === 'FUNCIONARIO') {
+                return sexo === 'M' ? 'Funcionário' : 'Funcionária';
+            } else {
+                const genero = sexo === 'M' ? 'Aluno' : 'Aluna';
+                return `${genero}, ${anoAluno}º ano, ${turmaAluno}`;
+            }
+        }
+
         function renderizarEmprestimos(livroId) {
             const emps = empsAtivosCache[livroId] || [];
             if (emps.length === 0) return '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>';
@@ -251,15 +261,7 @@
             if (indicator) indicator.classList.toggle('active');
         };
 
-        function obterRotuloGenero(sexo, turmaAluno, anoAluno) {
-            // Verificar se é funcionário/professor
-            if (turmaAluno === 'PROF/FUNC' || turmaAluno === 'PROFESSOR' || turmaAluno === 'FUNCIONARIO') {
-                return sexo === 'M' ? 'Funcionário' : 'Funcionária';
-            } else {
-                const genero = sexo === 'M' ? 'Aluno' : 'Aluna';
-                return `${genero}, ${anoAluno}º ano, ${turmaAluno}`;
-            }
-        }
+
 
         // Pré-popula o conteúdo de empréstimos de todos os livros de uma vez
         // chamado após renderAcervo() + cache preenchido — sem delay no clique
