@@ -103,15 +103,31 @@
         // Cache local
         let todosLivros = [];
         let idsAtrasadosCache = [];
+        let empsAtivosCache = {}; // livro_id → [empréstimos] — accordion instantâneo
 
         // carregarLivros(): busca livros e empréstimos em paralelo (mais rápido)
         async function carregarLivros() {
+            // Preservar capas já carregadas para evitar piscada
+            const capasCache = {};
+            todosLivros.forEach(l => { if (l.imagem_url) capasCache[l.id] = l.imagem_url; });
+
             const [livros, emps] = await Promise.all([
                 window.DB.getLivros(),
                 window.DB.getEmprestimosAtivos()
             ]);
             todosLivros = livros;
             idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
+
+            // Restaurar capas do cache — sem piscada ao re-renderizar
+            todosLivros.forEach(l => { if (capasCache[l.id]) l.imagem_url = capasCache[l.id]; });
+
+            // Cachear empréstimos por livro para accordion instantâneo
+            empsAtivosCache = {};
+            emps.forEach(e => {
+                if (!empsAtivosCache[e.livro_id]) empsAtivosCache[e.livro_id] = [];
+                empsAtivosCache[e.livro_id].push(e);
+            });
+
             renderAcervo();
             // Carrega capas em segundo plano sem bloquear a interface
             carregarCapasLazy();
@@ -235,7 +251,8 @@
 
         async function carregarEmprestimos(livroId, prefix) {
             const container = document.getElementById(`${prefix}loans-${livroId}`);
-            const emps = await window.DB.getEmprestimosAtivos(parseInt(livroId));
+            // Usa cache carregado pelo carregarLivros() — resposta instantânea
+            const emps = empsAtivosCache[parseInt(livroId)] || [];
             if (emps.length === 0) { container.innerHTML = '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>'; return; }
             
             container.innerHTML = emps.map(e => {
