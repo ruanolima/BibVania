@@ -684,12 +684,19 @@
                     try {
                         const livroId = parseInt(document.getElementById('editId').value);
                         await window.DB.uploadCapa(livroId, window._editCapaBase64);
-                    } catch(capErr) { console.warn('Capa não salva:', capErr); }
+                        window._editCapaBase64 = null;
+                    } catch(capErr) {
+                        console.error('Capa não salva:', capErr);
+                        mostrarMsg('msgLivro', '⚠️ DADOS SALVOS, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
+                    }
                 } else if (window._editCapaExcluir) {
                     try {
                         const livroId = parseInt(document.getElementById('editId').value);
                         await window.DB.removerCapa(livroId);
-                    } catch(capErr) { console.warn('Erro ao remover capa:', capErr); }
+                    } catch(capErr) {
+                        console.error('Erro ao remover capa:', capErr);
+                        mostrarMsg('msgLivro', '⚠️ ERRO AO REMOVER CAPA: ' + (capErr.message || capErr), 'danger');
+                    }
                 }
                 btnEdit.textContent = lblEdit; btnEdit.disabled = false;
                 mostrarMsg('msgLivro', '✓ ALTERAÇÕES SALVAS!', 'success');
@@ -927,7 +934,10 @@
                 if (window._capaBase64 && resultado && resultado.data) {
                     try {
                         await window.DB.uploadCapa(resultado.data.id, window._capaBase64);
-                    } catch(capErr) { console.warn('Capa não salva:', capErr); }
+                    } catch(capErr) {
+                        console.error('Capa não salva:', capErr);
+                        mostrarMsg('msgLivro', '⚠️ LIVRO SALVO, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
+                    }
                 }
                 window._capaBase64 = null;
                 // Reset preview capa
@@ -1282,45 +1292,67 @@
     window._editCapaBase64 = null;
     window._editCapaExcluir = false;
 
+    // Comprime imagem garantindo que o base64 final caiba no Supabase (<800KB)
+    function comprimirImagem(imageSrc) {
+        return new Promise((resolve) => {
+            const original = new Image();
+            original.onload = () => {
+                // Começa com 800px e vai reduzindo até caber
+                const LIMITE = 800000; // 800KB em caracteres base64 ≈ ~600KB real
+                let maxPx = 800;
+                let qualidade = 0.82;
+                let base64;
+
+                do {
+                    const scale = Math.min(1, maxPx / Math.max(original.width, original.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width  = Math.round(original.width  * scale);
+                    canvas.height = Math.round(original.height * scale);
+                    canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
+                    base64 = canvas.toDataURL('image/jpeg', qualidade);
+
+                    // Reduz progressivamente até caber
+                    if (base64.length > LIMITE) {
+                        if (qualidade > 0.40) {
+                            qualidade = Math.max(0.40, qualidade - 0.12);
+                        } else {
+                            maxPx = Math.round(maxPx * 0.75);
+                            qualidade = 0.70;
+                        }
+                    }
+                } while (base64.length > LIMITE && maxPx > 150);
+
+                resolve(base64);
+            };
+            original.src = imageSrc;
+        });
+    }
+
     // Pré-visualiza a imagem escolhida e mostra botões Trocar/Excluir
     window.preVisualizarCapa = (input, imgId, btnsId, isEdit) => {
         const file = input.files[0];
         if (!file) return;
 
-        if (!isEdit) {
-            const submitBtn = document.querySelector('#formLivro button[type="submit"]');
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'AGUARDANDO IMAGEM...'; }
-        }
+        const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+        if (!isEdit && submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'PROCESSANDO IMAGEM...'; }
 
         const reader = new FileReader();
-        reader.onload = (e) => {
-            // Comprimir via canvas antes de salvar (máx 300px, JPEG 70%)
-            const original = new Image();
-            original.onload = () => {
-                const MAX = 300;
-                const scale = Math.min(1, MAX / Math.max(original.width, original.height));
-                const canvas = document.createElement('canvas');
-                canvas.width  = Math.round(original.width  * scale);
-                canvas.height = Math.round(original.height * scale);
-                canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
-                const base64 = canvas.toDataURL('image/jpeg', 0.7);
+        reader.onload = async (e) => {
+            const base64 = await comprimirImagem(e.target.result);
 
-                const img = document.getElementById(imgId);
-                img.src = base64;
-                img.className = '';
+            const img = document.getElementById(imgId);
+            img.src = base64;
+            img.className = '';
 
-                if (isEdit) {
-                    window._editCapaBase64 = base64;
-                    window._editCapaExcluir = false;
-                    renderBotoesCapa('edit');
-                } else {
-                    window._capaBase64 = base64;
-                    renderBotoesCapa('cadastro');
-                    const submitBtn = document.querySelector('#formLivro button[type="submit"]');
-                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
-                }
-            };
-            original.src = e.target.result;
+            if (isEdit) {
+                window._editCapaBase64 = base64;
+                window._editCapaExcluir = false;
+                renderBotoesCapa('edit');
+            } else {
+                window._capaBase64 = base64;
+                renderBotoesCapa('cadastro');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
+            }
         };
         reader.readAsDataURL(file);
     };

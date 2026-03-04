@@ -489,6 +489,11 @@ const DB = {
 
     async uploadCapa(livroId, base64url) {
         try {
+            // Verificar tamanho — Supabase tem limite ~1MB por campo de texto
+            const sizeKB = Math.round(base64url.length / 1024);
+            if (base64url.length > 900000) {
+                throw new Error(`Imagem muito grande após compressão (${sizeKB}KB). Tente uma imagem menor.`);
+            }
             const { error } = await supabase
                 .from('livros')
                 .update({ imagem_url: base64url })
