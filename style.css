@@ -436,14 +436,18 @@ input:disabled {
 
 /* Detalhes do Livro */
 .book-details {
-    display: none;
-    padding: 1.25rem;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 1.25rem;
     background: var(--bg);
-    border-top: 1px solid var(--border);
+    border-top: 0px solid var(--border);
+    transition: max-height 0.22s ease, padding 0.22s ease, border-top-width 0.22s ease;
 }
 
 .book-details.active {
-    display: block;
+    max-height: 600px;
+    padding: 1.25rem;
+    border-top: 1px solid var(--border);
 }
 
 /* Seção de Atrasados */

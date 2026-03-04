@@ -43,8 +43,9 @@
         </div>
     </div>
 
-    <script src="database.js" type="module"></script>
     <script type="module">
+        import DB from './database.js';
+        window.DB = DB;
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
 
         window.changeFontSize = (delta) => {
@@ -71,12 +72,7 @@
             if (el) el.innerHTML = '<span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span>';
         }
 
-        async function aguardarDB() {
-            while (!window.DB) await new Promise(r => setTimeout(r, 100));
-        }
-
         (async () => {
-            await aguardarDB();
             aplicarPreferencias();
             await window.DB.redirectIfLoggedIn();
         })();

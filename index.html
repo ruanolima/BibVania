@@ -78,7 +78,8 @@
             if (el) el.innerHTML = '<span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span>';
         }
 
-        (async () => {
+        // Inicialização — executada após todas as funções serem declaradas
+        async function inicializar() {
             document.getElementById('listaLivros').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO ACERVO...</p>';
             aplicarPreferencias();
             
@@ -87,18 +88,13 @@
                 `<button class="tab-btn ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
             ).join('');
 
-            let _indexTimer = null;
-            function carregarLivrosDebounced() {
-                clearTimeout(_indexTimer);
-                _indexTimer = setTimeout(carregarLivros, 150);
-            }
             let _realtimeTimer = null;
             function realtimeDebounced() { clearTimeout(_realtimeTimer); _realtimeTimer = setTimeout(carregarLivros, 300); }
             window.DB.onLivrosChange(realtimeDebounced);
             window.DB.onEmprestimosChange(realtimeDebounced);
             setInterval(carregarLivros, 30000);
-            carregarLivros();
-        })();
+            await carregarLivros();
+        }
 
         // Cache local
         let todosLivros = [];
@@ -107,6 +103,7 @@
 
         // carregarLivros(): busca livros e empréstimos em paralelo (mais rápido)
         async function carregarLivros() {
+            try {
             // Preservar capas já carregadas para evitar piscada
             const capasCache = {};
             todosLivros.forEach(l => { if (l.imagem_url) capasCache[l.id] = l.imagem_url; });
@@ -131,6 +128,11 @@
             renderAcervo();
             // Carrega capas em segundo plano sem bloquear a interface
             carregarCapasLazy();
+            } catch(err) {
+                console.error('Erro ao carregar acervo:', err);
+                document.getElementById('listaLivros').innerHTML =
+                    '<p style="text-align:center;padding:2rem;color:var(--danger);">⚠️ ERRO AO CARREGAR ACERVO. Verifique sua conexão e recarregue a página.</p>';
+            }
         }
 
         async function carregarCapasLazy() {
@@ -253,6 +255,9 @@
 
         window.obterRotuloGenero = obterRotuloGenero;
 
+        // Iniciar após todas as funções serem declaradas
+        inicializar();
+
         window.toggleAccordion = (el, prefix) => {
             const content = el.nextElementSibling;
             const indicator = el.querySelector('.accordion-indicator');
@@ -263,28 +268,7 @@
 
 
 
-        // Pré-popula o conteúdo de empréstimos de todos os livros de uma vez
-        // chamado após renderAcervo() + cache preenchido — sem delay no clique
-        function prePopularEmprestimos(prefix) {
-            todosLivros.forEach(l => {
-                const container = document.getElementById(`${prefix}loans-${l.id}`);
-                if (!container) return;
-                const emps = empsAtivosCache[l.id] || [];
-                if (emps.length === 0) {
-                    container.innerHTML = '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>';
-                    return;
-                }
-                container.innerHTML = emps.map(e => {
-                    const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
-                    return `
-                    <div class="loan-item" style="background: var(--card); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);">
-                        <strong>${e.nome_aluno}</strong> (${rotulo})<br>
-                        DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
-                        ${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
-                    </div>`;
-                }).join('');
-            });
-        }
+
     </script>
     <!-- VLibras widget placeholder -->
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>

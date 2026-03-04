@@ -411,7 +411,6 @@
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             load();
-            carregarCapasLazy();
 
             // Restaurar aba ativa após atualizar a página
             const tabSalva = sessionStorage.getItem('bibvania_tab');
@@ -1198,7 +1197,7 @@
                         </div>
                         <span id="${pessoaId}-ind" style="font-size:0.75rem;color:var(--text-light);transition:transform 0.2s;">▼</span>
                     </div>
-                    <div id="${pessoaId}" style="display:none;padding:0.75rem 1rem;border-top:1px solid var(--border);background:var(--bg);font-size:0.78rem;">
+                    <div id="${pessoaId}" class="book-details" style="font-size:0.78rem;">
                         ${livrosHtml}
                     </div>
                 </div>`;
@@ -1216,9 +1215,8 @@
         window.toggleDevAcc = (id) => {
             const el  = document.getElementById(id);
             const ind = document.getElementById(id + '-ind');
-            const open = el.style.display === 'block';
-            el.style.display  = open ? 'none' : 'block';
-            if (ind) ind.style.transform = open ? '' : 'rotate(180deg)';
+            el.classList.toggle('active');
+            if (ind) ind.style.transform = el.classList.contains('active') ? 'rotate(180deg)' : '';
         };
 
         // Devolver e recarregar a aba de devoluções
