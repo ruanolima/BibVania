@@ -130,6 +130,27 @@ const DB = {
         return data;
     },
 
+    async getCapa(id) {
+        const { data, error } = await supabase
+            .from("livros").select("imagem_url").eq("id", id).single();
+        if (error || !data) return null;
+        return data.imagem_url || null;
+    },
+
+    // Busca capas de vários livros de uma vez (1 request só)
+    async getCapas(ids) {
+        if (!ids || ids.length === 0) return {};
+        const { data, error } = await supabase
+            .from("livros")
+            .select("id, imagem_url")
+            .in("id", ids)
+            .not("imagem_url", "is", null);
+        if (error || !data) return {};
+        const map = {};
+        data.forEach(l => { if (l.imagem_url) map[l.id] = l.imagem_url; });
+        return map;
+    },
+
     async getProximoIdDisponivel() {
         const { data, error } = await supabase.from("livros").select("id").order("titulo", { ascending: true });
         if (error) throw error;

@@ -104,11 +104,14 @@
         let todosLivros = [];
         let idsAtrasadosCache = [];
 
-        // carregarLivros(): vai ao Supabase buscar dados frescos
+        // carregarLivros(): busca livros e empréstimos em paralelo (mais rápido)
         async function carregarLivros() {
-            todosLivros = await window.DB.getLivros();
-            const emprestimosAtivos = await window.DB.getEmprestimosAtivos();
-            idsAtrasadosCache = [...new Set(emprestimosAtivos.filter(e => e.atrasado).map(e => e.livro_id))];
+            const [livros, emps] = await Promise.all([
+                window.DB.getLivros(),
+                window.DB.getEmprestimosAtivos()
+            ]);
+            todosLivros = livros;
+            idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
             renderAcervo();
         }
 
@@ -152,8 +155,8 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
-                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" ${l.imagem_url ? `onclick="abrirLightbox('${l.imagem_url.replace(/'/g, "\\'")}', '${l.titulo.replace(/'/g, "\\'")}")" title="Clique para ampliar"` : ''}>
-                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png'; this.className='cover-placeholder';">
+                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png';this.className='cover-placeholder';">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
@@ -241,15 +244,24 @@
         <button class="lightbox-back" onclick="fecharLightbox()">← VOLTAR</button>
     </div>
     <script>
-        function abrirLightbox(src, titulo) {
-            document.getElementById('capLightboxImg').src = src;
-            document.getElementById('capLightboxTitle').textContent = titulo;
-            document.getElementById('capLightbox').classList.add('open');
-        }
         function fecharLightbox() {
             document.getElementById('capLightbox').classList.remove('open');
         }
         document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLightbox(); });
+
+        // Delegação de evento — evita conflito com toggleAccordion
+        document.addEventListener('click', e => {
+            const wrap = e.target.closest('.book-cover-wrap.has-image');
+            if (!wrap) return;
+            e.stopPropagation();
+            const src = wrap.querySelector('img') ? wrap.querySelector('img').src : null;
+            const titulo = wrap.dataset.lightboxTitulo || '';
+            if (!src) return;
+            const img = document.getElementById('capLightboxImg');
+            img.src = src;
+            document.getElementById('capLightboxTitle').textContent = titulo;
+            document.getElementById('capLightbox').classList.add('open');
+        }, true); // true = captura, antes do toggleAccordion
     </script>
 </body>
 </html>

@@ -423,11 +423,13 @@
         // Cache local — evita chamadas desnecessárias ao Supabase na busca/filtro
         let idsAtrasadosCache = [];
 
-        // load(): busca dados do Supabase e re-renderiza
+        // load(): busca livros e empréstimos em paralelo (mais rápido)
         async function load() {
-            todosLivros = await window.DB.getLivros();
-            todosLivros = [...todosLivros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
-            const emps = await window.DB.getEmprestimosAtivos();
+            const [livros, emps] = await Promise.all([
+                window.DB.getLivros(),
+                window.DB.getEmprestimosAtivos()
+            ]);
+            todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
             idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
             renderAcervo();
         }
@@ -466,8 +468,8 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAcc(this, '${prefix}')">
-                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" ${l.imagem_url ? `onclick="abrirLightbox('${l.imagem_url.replace(/'/g, "\\'")}', '${l.titulo.replace(/'/g, "\\'")}")" title="Clique para ampliar"` : ''}>
-                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png'; this.className='cover-placeholder';">
+                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png';this.className='cover-placeholder';">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
@@ -1088,7 +1090,6 @@
         const file = input.files[0];
         if (!file) return;
 
-        // Bloquear submit enquanto a imagem não terminou de carregar
         if (!isEdit) {
             const submitBtn = document.querySelector('#formLivro button[type="submit"]');
             if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'AGUARDANDO IMAGEM...'; }
@@ -1096,23 +1097,33 @@
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            const base64 = e.target.result; // data:image/...;base64,...
-            const img = document.getElementById(imgId);
-            img.src = base64;
-            img.className = '';
+            // Comprimir via canvas antes de salvar (máx 300px, JPEG 70%)
+            const original = new Image();
+            original.onload = () => {
+                const MAX = 300;
+                const scale = Math.min(1, MAX / Math.max(original.width, original.height));
+                const canvas = document.createElement('canvas');
+                canvas.width  = Math.round(original.width  * scale);
+                canvas.height = Math.round(original.height * scale);
+                canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
+                const base64 = canvas.toDataURL('image/jpeg', 0.7);
 
-            // Guardar base64 (não o File) — é o que será salvo no banco
-            if (isEdit) {
-                window._editCapaBase64 = base64;
-                window._editCapaExcluir = false;
-                renderBotoesCapa('edit');
-            } else {
-                window._capaBase64 = base64;
-                renderBotoesCapa('cadastro');
-                // Reabilitar submit: imagem já está visível
-                const submitBtn = document.querySelector('#formLivro button[type="submit"]');
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
-            }
+                const img = document.getElementById(imgId);
+                img.src = base64;
+                img.className = '';
+
+                if (isEdit) {
+                    window._editCapaBase64 = base64;
+                    window._editCapaExcluir = false;
+                    renderBotoesCapa('edit');
+                } else {
+                    window._capaBase64 = base64;
+                    renderBotoesCapa('cadastro');
+                    const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
+                }
+            };
+            original.src = e.target.result;
         };
         reader.readAsDataURL(file);
     };
@@ -1166,15 +1177,24 @@
         <button class="lightbox-back" onclick="fecharLightbox()">← VOLTAR</button>
     </div>
     <script>
-        function abrirLightbox(src, titulo) {
-            document.getElementById('capLightboxImg').src = src;
-            document.getElementById('capLightboxTitle').textContent = titulo;
-            document.getElementById('capLightbox').classList.add('open');
-        }
         function fecharLightbox() {
             document.getElementById('capLightbox').classList.remove('open');
         }
         document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLightbox(); });
+
+        // Delegação de evento — evita conflito com toggleAccordion
+        document.addEventListener('click', e => {
+            const wrap = e.target.closest('.book-cover-wrap.has-image');
+            if (!wrap) return;
+            e.stopPropagation();
+            const src = wrap.querySelector('img') ? wrap.querySelector('img').src : null;
+            const titulo = wrap.dataset.lightboxTitulo || '';
+            if (!src) return;
+            const img = document.getElementById('capLightboxImg');
+            img.src = src;
+            document.getElementById('capLightboxTitle').textContent = titulo;
+            document.getElementById('capLightbox').classList.add('open');
+        }, true); // true = captura, antes do toggleAccordion
     </script>
 </body>
 </html>

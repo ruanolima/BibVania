@@ -154,4 +154,3 @@ const supabaseKey = "sua-chave-anon-aqui";
 2. Vá em **Settings → Pages** e defina a source para o branch principal
 3. O site ficará disponível em `https://seu-usuario.github.io/nome-do-repositorio/`
 
-
