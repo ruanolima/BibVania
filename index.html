@@ -186,6 +186,19 @@
 
         document.getElementById('buscaLivros').addEventListener('input', renderAcervo);
 
+        function renderizarEmprestimos(livroId) {
+            const emps = empsAtivosCache[livroId] || [];
+            if (emps.length === 0) return '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>';
+            return emps.map(e => {
+                const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
+                return `<div class="loan-item" style="background: var(--card); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);">
+                    <strong>${e.nome_aluno}</strong> (${rotulo})<br>
+                    DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
+                    ${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
+                </div>`;
+            }).join('');
+        }
+
         function renderizarLivro(l, isAtrasado) {
             const prefix = isAtrasado ? 'atr-' : 'list-';
             const borderStyle = isAtrasado ? 'style="border-color: var(--danger); border-width: 2px;"' : '';
@@ -216,7 +229,7 @@
                         </div>
                     </div>
                     <div class="book-details" id="${prefix}details-${l.id}" data-livro-id="${l.id}">
-                        <div id="${prefix}loans-${l.id}"></div>
+                        <div id="${prefix}loans-${l.id}">${renderizarEmprestimos(l.id)}</div>
                     </div>
                 </div>
             `;
@@ -236,7 +249,6 @@
             content.classList.toggle('active');
             el.classList.toggle('active');
             if (indicator) indicator.classList.toggle('active');
-            if (content.classList.contains('active')) carregarEmprestimos(content.dataset.livroId, prefix);
         };
 
         function obterRotuloGenero(sexo, turmaAluno, anoAluno) {
@@ -249,22 +261,27 @@
             }
         }
 
-        async function carregarEmprestimos(livroId, prefix) {
-            const container = document.getElementById(`${prefix}loans-${livroId}`);
-            // Usa cache carregado pelo carregarLivros() — resposta instantânea
-            const emps = empsAtivosCache[parseInt(livroId)] || [];
-            if (emps.length === 0) { container.innerHTML = '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>'; return; }
-            
-            container.innerHTML = emps.map(e => {
-                const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
-                return `
-                <div class="loan-item" style="background: var(--card); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);">
-                    <strong>${e.nome_aluno}</strong> (${rotulo})<br>
-                    DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
-                    ${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
-                </div>
-            `;
-            }).join('');
+        // Pré-popula o conteúdo de empréstimos de todos os livros de uma vez
+        // chamado após renderAcervo() + cache preenchido — sem delay no clique
+        function prePopularEmprestimos(prefix) {
+            todosLivros.forEach(l => {
+                const container = document.getElementById(`${prefix}loans-${l.id}`);
+                if (!container) return;
+                const emps = empsAtivosCache[l.id] || [];
+                if (emps.length === 0) {
+                    container.innerHTML = '<p style="font-size: 0.7rem; color: var(--text-light);">SEM EMPRÉSTIMOS ATIVOS.</p>';
+                    return;
+                }
+                container.innerHTML = emps.map(e => {
+                    const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
+                    return `
+                    <div class="loan-item" style="background: var(--card); padding: 0.75rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.75rem; border: 1px solid var(--border);">
+                        <strong>${e.nome_aluno}</strong> (${rotulo})<br>
+                        DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
+                        ${e.atrasado ? '<span class="atrasado-label" style="display:inline; margin-left:5px;">⚠️ ATRASADO</span>' : ''}
+                    </div>`;
+                }).join('');
+            });
         }
     </script>
     <!-- VLibras widget placeholder -->
