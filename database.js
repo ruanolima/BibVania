@@ -37,9 +37,17 @@ const toUpper = (val) => (val && typeof val === 'string') ? val.toUpperCase().tr
 const padronizarObjeto = (obj) => {
     const novoObj = { ...obj };
     for (let key in novoObj) {
+        // Não transformar arrays (ex: colaboradores) nem null/undefined
         if (typeof novoObj[key] === 'string') {
             novoObj[key] = toUpper(novoObj[key]);
         }
+    }
+    // Normalizar colaboradores: array de {funcao, nome} em uppercase
+    if (Array.isArray(novoObj.colaboradores)) {
+        novoObj.colaboradores = novoObj.colaboradores.map(co => ({
+            funcao: toUpper(co.funcao) || 'COLABORADOR',
+            nome: toUpper(co.nome)
+        }));
     }
     return novoObj;
 };
@@ -103,7 +111,7 @@ const DB = {
             const { data, error } = await supabase
                 .from("livros")
                 .select("*")
-                .order("id", { ascending: true });
+                .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
                 console.error("Nenhum dado retornado do Supabase");
@@ -123,7 +131,7 @@ const DB = {
     },
 
     async getProximoIdDisponivel() {
-        const { data, error } = await supabase.from("livros").select("id").order("id", { ascending: true });
+        const { data, error } = await supabase.from("livros").select("id").order("titulo", { ascending: true });
         if (error) throw error;
         
         const ids = data.map(l => l.id);
@@ -200,9 +208,12 @@ const DB = {
             
             livro.quantidade_disponivel = livro.quantidade_total - (count || 0);
 
+            // Nunca sobrescrever imagem_url via atualizarLivro (gerenciada por uploadCapa/removerCapa)
+            const { imagem_url, ...livroSemImagem } = livro;
+
             const { data, error } = await supabase
                 .from("livros")
-                .update(livro)
+                .update(livroSemImagem)
                 .eq("id", livro.id)
                 .select()
                 .single();
@@ -275,11 +286,7 @@ const DB = {
 
             if (emprestimoError) throw emprestimoError;
 
-            // Atualizar disponibilidade
-            await supabase
-                .from("livros")
-                .update({ quantidade_disponivel: livro.quantidade_disponivel - 1 })
-                .eq("id", livro.id);
+            // Disponibilidade atualizada automaticamente pelo trigger ao inserir o empréstimo
 
             return emprestimoData.id;
         } catch (error) {
@@ -331,12 +338,7 @@ const DB = {
 
             if (empError) throw empError;
 
-            if (emprestimo.status === "emprestado") {
-                const { data: livro } = await supabase.from("livros").select("*").eq("id", emprestimo.livro_id).single();
-                if (livro) {
-                    await supabase.from("livros").update({ quantidade_disponivel: livro.quantidade_disponivel + 1 }).eq("id", livro.id);
-                }
-            }
+            // Disponibilidade atualizada automaticamente pelo trigger ao excluir o empréstimo
 
             const { error } = await supabase.from("emprestimos").delete().eq("id", emprestimoId);
             if (error) throw error;
@@ -369,13 +371,7 @@ const DB = {
 
             if (error) throw error;
 
-            // Atualizar disponibilidade do livro
-            const { data: livro } = await supabase.from("livros").select("*").eq("id", emprestimo.livro_id).single();
-            if (livro) {
-                await supabase.from("livros").update({
-                    quantidade_disponivel: livro.quantidade_disponivel + 1
-                }).eq("id", livro.id);
-            }
+            // Disponibilidade atualizada automaticamente pelo trigger no banco
 
             return data;
         } catch (error) {
@@ -438,6 +434,30 @@ const DB = {
             .channel('livros-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'livros' }, callback)
             .subscribe();
+    },
+
+
+    async removerCapa(livroId) {
+        try {
+            await supabase.from("livros").update({ imagem_url: null }).eq("id", livroId);
+        } catch (error) {
+            console.error("Erro ao remover capa:", error);
+            throw error;
+        }
+    },
+
+    async uploadCapa(livroId, base64url) {
+        try {
+            const { error } = await supabase
+                .from('livros')
+                .update({ imagem_url: base64url })
+                .eq('id', livroId);
+            if (error) throw error;
+            return base64url;
+        } catch (error) {
+            console.error('Erro ao salvar capa:', error);
+            throw error;
+        }
     },
 
     onEmprestimosChange(callback) {

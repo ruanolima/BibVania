@@ -99,11 +99,46 @@
                 <h2><span>➕</span> NOVO LIVRO</h2>
                 <form id="formLivro">
                     <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="isbn"></div>
+                    <div class="form-group"><label>ACABAMENTO</label><select id="acabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
                     <div class="form-group"><label>TÍTULO DO LIVRO *</label><input type="text" id="titulo" required></div>
                     <div class="form-group"><label>AUTOR (OPCIONAL)</label><input type="text" id="autor"></div>
-                    <div class="form-group"><label>CATEGORIA *</label><select id="categoria" required></select></div>
+                    
+                    <!-- COLABORADORES -->
+                    <div class="form-group full-width" id="colaboradoresContainer">
+                        <div id="listaColaboradores"></div>
+                        <button type="button" onclick="adicionarColaborador()" class="btn-block btn-outline" style="margin-top:0.5rem; font-size:0.8rem; padding:0.6rem;">+ ADICIONAR COLABORADOR</button>
+                    </div>
+
+                    <div class="form-group"><label>EDITORA (OPCIONAL)</label><input type="text" id="editora"></div>
+                    <div class="form-group">
+                        <label class="checkbox-container" id="labelPubIndependente" style="margin-top:0.25rem;">
+                            <input type="checkbox" id="pubIndependente" onchange="togglePubIndependente(this, 'editora')">
+                            PUBLICAÇÃO INDEPENDENTE
+                        </label>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
+                        <div class="form-group" style="margin-bottom:0;"><label>CATEGORIA *</label><select id="categoria" required></select></div>
+                        <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:56px; text-align:center; text-transform:uppercase;" maxlength="2" pattern="[A-Za-z][0-9]" title="Uma letra seguida de um número (ex: C3)" required></div>
+                    </div>
                     <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="quantidade" min="1" required></div>
                     <div class="form-group full-width"><label>SINOPSE (OPCIONAL)</label><textarea id="sinopse" rows="3"></textarea></div>
+                    <!-- CAPA DO LIVRO -->
+                    <div class="form-group full-width">
+                        <label>CAPA DO LIVRO (OPCIONAL)</label>
+                        <div style="display:flex; gap:1rem; align-items:flex-start; margin-top:0.5rem;">
+                            <div class="book-cover-wrap">
+                                <img id="capaPreview" src="logo.png" alt="Capa" class="cover-placeholder">
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center;">
+                                <div id="capaBtns">
+                                    <button type="button" class="btn-block btn-outline" style="font-size:0.8rem; padding:0.5rem 0.75rem;"
+                                        onclick="document.getElementById('capaInput').click()">📷 ESCOLHER IMAGEM</button>
+                                    <input type="file" id="capaInput" accept="image/*" style="display:none;"
+                                        onchange="preVisualizarCapa(this,'capaPreview','capaBtns',false)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <button type="submit" class="btn-block btn-primary">CADASTRAR LIVRO</button>
                 </form>
                 <div id="msgLivro" style="margin-top:1rem; text-align:center; font-weight:bold; font-size:0.8rem;"></div>
@@ -196,11 +231,46 @@
             <form id="formEdit">
                 <input type="hidden" id="editId">
                 <div class="form-group"><label>ISBN</label><input type="text" id="editIsbn"></div>
+                <div class="form-group"><label>ACABAMENTO</label><select id="editAcabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
                 <div class="form-group"><label>TÍTULO *</label><input type="text" id="editTitulo" required></div>
                 <div class="form-group"><label>AUTOR</label><input type="text" id="editAutor"></div>
-                <div class="form-group"><label>CATEGORIA *</label><select id="editCategoria" required></select></div>
+
+                <!-- COLABORADORES EDIÇÃO -->
+                <div class="form-group full-width" id="editColaboradoresContainer">
+                    <div id="editListaColaboradores"></div>
+                    <button type="button" onclick="adicionarColaboradorEdit()" class="btn-block btn-outline" style="margin-top:0.5rem; font-size:0.8rem; padding:0.6rem;">+ ADICIONAR COLABORADOR</button>
+                </div>
+
+                <div class="form-group"><label>EDITORA</label><input type="text" id="editEditora"></div>
+                <div class="form-group">
+                    <label class="checkbox-container" id="labelEditPubIndependente" style="margin-top:0.25rem;">
+                        <input type="checkbox" id="editPubIndependente" onchange="togglePubIndependente(this, 'editEditora')">
+                        PUBLICAÇÃO INDEPENDENTE
+                    </label>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
+                    <div class="form-group" style="margin-bottom:0;"><label>CATEGORIA *</label><select id="editCategoria" required></select></div>
+                    <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:56px; text-align:center; text-transform:uppercase;" maxlength="2" pattern="[A-Za-z][0-9]" title="Uma letra seguida de um número (ex: C3)" required></div>
+                </div>
                 <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="editQtd" required></div>
                 <div class="form-group"><label>SINOPSE</label><textarea id="editSinopse" rows="3"></textarea></div>
+                <!-- CAPA DO LIVRO - EDIÇÃO -->
+                <div class="form-group full-width" style="margin-top:0.5rem;">
+                    <label>CAPA DO LIVRO</label>
+                    <div style="display:flex; gap:1rem; align-items:flex-start; margin-top:0.5rem;">
+                        <div class="book-cover-wrap">
+                            <img id="editCapaPreview" src="logo.png" alt="Capa" class="cover-placeholder">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center;">
+                            <div id="editCapaBtns">
+                                <button type="button" class="btn-block btn-outline" style="font-size:0.8rem; padding:0.5rem 0.75rem;"
+                                    onclick="document.getElementById('editCapaInput').click()">📷 ESCOLHER IMAGEM</button>
+                                <input type="file" id="editCapaInput" accept="image/*" style="display:none;"
+                                    onchange="preVisualizarCapa(this,'editCapaPreview','editCapaBtns',true)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
                     <button type="button" onclick="closeModal()" class="btn-block btn-outline">CANCELAR</button>
                     <button type="submit" class="btn-block btn-primary">SALVAR</button>
@@ -283,8 +353,10 @@
         </div>
     </div>
 
-    <script src="database.js" type="module"></script>
     <script type="module">
+        import DB from './database.js';
+        window.DB = DB;
+
         let currentCat = 'TODOS';
         let todosLivros = [];
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
@@ -308,8 +380,7 @@
         }
 
         async function init() {
-            while(!window.DB) await new Promise(r => setTimeout(r, 100));
-            await window.DB.checkAuth();
+            await DB.checkAuth();
             
             atualizarNomesEscola();
 
@@ -330,6 +401,8 @@
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
+            // Atualização periódica como segurança (caso o realtime falhe)
+            setInterval(load, 30000);
             load();
         }
 
@@ -346,8 +419,16 @@
             load();
         };
 
-        async function load() {
+        let _loadTimer = null;
+        function load() {
+            clearTimeout(_loadTimer);
+            _loadTimer = setTimeout(_doLoad, 150);
+        }
+
+        async function _doLoad() {
+            document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             todosLivros = await window.DB.getLivros();
+            todosLivros = [...todosLivros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro)); // Mais recente primeiro
             const emps = await window.DB.getEmprestimosAtivos();
             const termo = document.getElementById('buscaAdmin').value.toUpperCase();
             const idsAtrasados = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
@@ -359,7 +440,9 @@
                 l.titulo.includes(termo) ||
                 (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
                 (l.autor && l.autor.toUpperCase().includes(termo)) ||
-                (l.sinopse && l.sinopse.toUpperCase().includes(termo))
+                (l.sinopse && l.sinopse.toUpperCase().includes(termo)) ||
+                (l.editora && l.editora.toUpperCase().includes(termo)) ||
+                (l.colaboradores && l.colaboradores.some(co => co.nome && co.nome.toUpperCase().includes(termo)))
             );
 
             // Atrasados apenas da categoria selecionada
@@ -390,22 +473,30 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAcc(this, '${prefix}')">
-                        <div class="accordion-indicator">▼</div>
-                        <div class="book-title">${isAtr ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
-                        <div class="book-meta-box">
-                            <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
-                            <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
-                            <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}</div>
-                            ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
+                        <div class="book-cover-wrap">
+                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png'; this.className='cover-placeholder';">
                         </div>
-                        <div class="book-status-row">
-                            <div style="display:flex; gap:0.5rem;">
-                                <button class="control-btn" onclick="event.stopPropagation(); openEdit(${l.id})" style="background:var(--primary); width:40px; height:40px; border-radius:8px; font-size:1.2rem;">✏️</button>
-                                <button class="control-btn" onclick="event.stopPropagation(); delLivro(${l.id})" style="background:var(--danger); width:40px; height:40px; border-radius:8px; font-size:1.2rem;">🗑️</button>
+                        <div class="book-header-inner">
+                            <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
+                            <div class="book-title">${isAtr ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
+                            <div class="book-meta-box">
+                                <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
+                                ${l.colaboradores && l.colaboradores.length > 0 ? l.colaboradores.map(co => `<div class="book-meta-item"><strong>${co.funcao || 'COLABORADOR'}:</strong> ${co.nome}</div>`).join('') : ''}
+                                ${l.editora ? `<div class="book-meta-item"><strong>EDITORA:</strong> ${l.editora}</div>` : (l.pub_independente ? `<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>` : '')}
+                                <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
+                                ${l.acabamento ? `<div class="book-meta-item"><strong>ACABAMENTO:</strong> ${l.acabamento}</div>` : ''}
+                                <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}${l.prateleira ? ' | ' + l.prateleira : ''}</div>
+                                ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
                             </div>
-                            <span class="badge ${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
-                                ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
-                            </span>
+                            <div class="book-status-row">
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button class="control-btn" onclick="event.stopPropagation(); openEdit(${l.id})" style="background:var(--primary); width:40px; height:40px; border-radius:8px; font-size:1.2rem;">✏️</button>
+                                    <button class="control-btn" onclick="event.stopPropagation(); delLivro(${l.id})" style="background:var(--danger); width:40px; height:40px; border-radius:8px; font-size:1.2rem;">🗑️</button>
+                                </div>
+                                <span class="badge ${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
+                                    ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="book-details" id="${prefix}det-${l.id}" data-id="${l.id}">
@@ -447,11 +538,11 @@
                         DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}
                         ${e.atrasado ? '<br><span class="atrasado-label">⚠️ ATRASADO</span>' : ''}
                     </div>
-                    <div class="loan-actions">
-                        <button onclick="devolver(${e.id})" class="btn-small btn-success">DEVOLVER</button>
-                        <button onclick="openEditEmp(${JSON.stringify(e).replace(/"/g, '&quot;')})" class="btn-small btn-primary">EDITAR</button>
-                        <button onclick="openRenovarEmp(${e.id})" class="btn-small" style="background: var(--warning); color: white;">RENOVAR</button>
-                        <button onclick="delEmp(${e.id})" class="btn-small btn-danger">EXCLUIR</button>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.5rem;">
+                        <button onclick="devolver(${e.id})" class="btn-small btn-success" style="flex:1; min-width:80px;">DEVOLVER</button>
+                        <button onclick="openEditEmp(${JSON.stringify(e).replace(/"/g, '&quot;')})" class="btn-small btn-primary" style="flex:1; min-width:80px;">EDITAR</button>
+                        <button onclick="openRenovarEmp(${e.id})" class="btn-small" style="background:var(--warning);color:white;flex:1;min-width:80px;">RENOVAR</button>
+                        <button onclick="delEmp(${e.id})" class="btn-small btn-danger" style="flex:1; min-width:80px;">EXCLUIR</button>
                     </div>
                 </div>
             `;
@@ -460,37 +551,76 @@
 
         window.obterRotuloGenero = obterRotuloGenero;
         
-        window.devolver = async (id) => { if(confirm('CONFIRMAR DEVOLUÇÃO?')) { await window.DB.registrarDevolucao(id, new Date().toISOString()); load(); } };
-        window.delEmp = async (id) => { if(confirm('EXCLUIR REGISTRO DE EMPRÉSTIMO?')) { await window.DB.excluirEmprestimo(id); load(); } };
+        window.devolver = async (id) => {
+            if (!confirm('CONFIRMAR DEVOLUÇÃO?')) return;
+            try {
+                await window.DB.registrarDevolucao(id, new Date().toISOString());
+                mostrarMsg('msgEmp', '✓ DEVOLUÇÃO REGISTRADA!', 'success');
+                load();
+            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+        };
+        window.delEmp = async (id) => {
+            if (!confirm('EXCLUIR REGISTRO DE EMPRÉSTIMO?')) return;
+            try {
+                await window.DB.excluirEmprestimo(id);
+                mostrarMsg('msgEmp', '✓ EXCLUÍDO!', 'success');
+                load();
+            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+        };
         
         window.delLivro = async (id) => {
             if(confirm('EXCLUIR ESTE LIVRO DO ACERVO?\n\nATENÇÃO: Esta ação é irreversível!')) {
                 try {
                     await window.DB.excluirLivro(id);
-                    document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ LIVRO EXCLUÍDO COM SUCESSO!</span>';
+                    mostrarMsg('msgLivro', '✓ LIVRO EXCLUÍDO COM SUCESSO!', 'success');
                     load();
                 } catch(err) {
-                    document.getElementById('msgLivro').innerHTML = `<span style="color:var(--danger)">❌ ${err.message}</span>`;
+                    mostrarMsg('msgLivro', '❌ ' + err.message, 'danger');
                     console.error('Erro ao excluir livro:', err);
                 }
             }
         };
         
-        const supabase = window.DB.supabase || (() => {
-            const url = "https://vwsrotoabmugcrmthotg.supabase.co";
-            const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3c3JvdG9hYm11Z2NybXRob3RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjQwODEsImV4cCI6MjA4NzYwMDA4MX0.DUatOjbG2TY4xSg_-u6b2jG19JxU5Q4zy9wNQ8PB--8";
-            return { from: (table) => ({ select: () => ({ eq: () => ({ single: async () => ({ data: {}, error: null }) }) }) }) };
-        })();
-
         window.openEdit = async (id) => {
             const l = await window.DB.getLivroPorId(id);
             document.getElementById('editId').value = l.id;
             document.getElementById('editIsbn').value = l.isbn || '';
+            document.getElementById('editAcabamento').value = l.acabamento || '';
             document.getElementById('editTitulo').value = l.titulo;
             document.getElementById('editAutor').value = l.autor || '';
             document.getElementById('editCategoria').value = l.categoria;
             document.getElementById('editQtd').value = l.quantidade_total;
             document.getElementById('editSinopse').value = l.sinopse || '';
+            document.getElementById('editEditora').value = l.editora || '';
+            document.getElementById('editPrateleira').value = l.prateleira || '';
+            const editPubCb = document.getElementById('editPubIndependente');
+            editPubCb.checked = !!l.pub_independente;
+            editPubCb.dispatchEvent(new Event('change'));
+            document.getElementById('labelEditPubIndependente').classList.toggle('checked', !!l.pub_independente);
+            // Carregar colaboradores existentes
+            const editLista = document.getElementById('editListaColaboradores');
+            editLista.innerHTML = '';
+            if (l.colaboradores && l.colaboradores.length > 0) {
+                l.colaboradores.forEach(co => adicionarColaboradorEdit(co.funcao, co.nome));
+            }
+            // Capa no modal de edição
+            window._editCapaBase64 = null;
+            window._editCapaExcluir = false;
+            const editImg = document.getElementById('editCapaPreview');
+            if (l.imagem_url) {
+                editImg.src = l.imagem_url;
+                editImg.className = '';
+                renderBotoesCapa('edit');
+            } else {
+                editImg.src = 'logo.png';
+                editImg.className = 'cover-placeholder';
+                document.getElementById('editCapaBtns').innerHTML = `
+                    <button type="button" class="btn-block btn-outline" style="font-size:0.8rem;padding:0.5rem 0.75rem;"
+                        onclick="document.getElementById('editCapaInput').click()">📷 ESCOLHER IMAGEM</button>
+                    <input type="file" id="editCapaInput" accept="image/*" style="display:none;"
+                        onchange="preVisualizarCapa(this,'editCapaPreview','editCapaBtns',true)">
+                `;
+            }
             document.getElementById('modalEdit').classList.remove('hidden');
         };
 
@@ -498,17 +628,44 @@
 
         document.getElementById('formEdit').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await window.DB.atualizarLivro({
-                id: parseInt(document.getElementById('editId').value),
-                isbn: document.getElementById('editIsbn').value,
-                titulo: document.getElementById('editTitulo').value,
-                autor: document.getElementById('editAutor').value,
-                categoria: document.getElementById('editCategoria').value,
-                quantidade_total: parseInt(document.getElementById('editQtd').value),
-                sinopse: document.getElementById('editSinopse').value
-            });
-            closeModal();
-            load();
+            const btnEdit = e.target.querySelector('button[type="submit"]');
+            const lblEdit = btnEdit.textContent;
+            btnEdit.textContent = 'SALVANDO...'; btnEdit.disabled = true;
+            try {
+                await window.DB.atualizarLivro({
+                    id: parseInt(document.getElementById('editId').value),
+                    isbn: document.getElementById('editIsbn').value,
+                    acabamento: document.getElementById('editAcabamento').value,
+                    titulo: document.getElementById('editTitulo').value,
+                    autor: document.getElementById('editAutor').value,
+                    colaboradores: coletarColaboradoresEdit(),
+                    editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
+                    pub_independente: document.getElementById('editPubIndependente').checked,
+                    prateleira: document.getElementById('editPrateleira').value,
+                    categoria: document.getElementById('editCategoria').value,
+                    quantidade_total: parseInt(document.getElementById('editQtd').value),
+                    sinopse: document.getElementById('editSinopse').value
+                });
+                // Capa: upload novo arquivo ou remover
+                if (window._editCapaBase64) {
+                    try {
+                        const livroId = parseInt(document.getElementById('editId').value);
+                        await window.DB.uploadCapa(livroId, window._editCapaBase64);
+                    } catch(capErr) { console.warn('Capa não salva:', capErr); }
+                } else if (window._editCapaExcluir) {
+                    try {
+                        const livroId = parseInt(document.getElementById('editId').value);
+                        await window.DB.removerCapa(livroId);
+                    } catch(capErr) { console.warn('Erro ao remover capa:', capErr); }
+                }
+                btnEdit.textContent = lblEdit; btnEdit.disabled = false;
+                mostrarMsg('msgLivro', '✓ ALTERAÇÕES SALVAS!', 'success');
+                closeModal();
+                load();
+            } catch(err) {
+                btnEdit.textContent = lblEdit; btnEdit.disabled = false;
+                mostrarMsg('msgLivro', '❌ ERRO AO SALVAR: ' + err.message, 'danger');
+            }
         });
 
         window.openEditEmp = (e) => {
@@ -551,7 +708,6 @@
             const diasAdicionais = parseInt(document.getElementById('renovarEmpDias').value);
             
             try {
-                console.log('Iniciando renovação do empréstimo ID:', empId);
                 
                 // Buscar o empréstimo atual
                 const emprestimos = await window.DB.getEmprestimos();
@@ -561,7 +717,6 @@
                     throw new Error('Empréstimo não encontrado');
                 }
                 
-                console.log('Empréstimo encontrado:', emprestimo);
                 
                 // Calcular nova data
                 let novaData;
@@ -572,7 +727,6 @@
                 }
                 novaData.setDate(novaData.getDate() + diasAdicionais);
                 
-                console.log('Nova data de devolução:', novaData);
                 
                 // Atualizar empréstimo
                 await window.DB.atualizarEmprestimo({
@@ -581,13 +735,12 @@
                     sem_data_definida: false
                 });
                 
-                console.log('Empréstimo renovado com sucesso!');
-                alert('Empréstimo renovado com sucesso!');
                 closeModalRenovar();
+                mostrarMsg('msgEmp', '✓ RENOVADO!', 'success');
                 load();
             } catch(err) {
                 console.error('Erro ao renovar:', err);
-                alert('Erro ao renovar: ' + (err.message || 'Erro desconhecido'));
+                mostrarMsg('msgEmp', '❌ ERRO AO RENOVAR: ' + (err.message || 'Erro desconhecido'), 'danger');
             }
         });
         
@@ -623,14 +776,14 @@
             if (isP) {
                 const nomeProf = document.getElementById('editEmpNomeProfessor').value.trim();
                 if (!nomeProf) {
-                    alert('INFORME O NOME DO PROFESSOR/FUNCIONÁRIO.');
+                    mostrarMsg('msgEmp', '❌ INFORME O NOME DO PROFESSOR/FUNCIONÁRIO.', 'danger');
                     document.getElementById('editEmpNomeProfessor').focus();
                     return;
                 }
             } else {
                 const nomeAluno = document.getElementById('editEmpNome').value.trim();
                 if (!nomeAluno) {
-                    alert('INFORME O NOME DO ALUNO.');
+                    mostrarMsg('msgEmp', '❌ INFORME O NOME DO ALUNO.', 'danger');
                     document.getElementById('editEmpNome').focus();
                     return;
                 }
@@ -654,13 +807,18 @@
                 data.turma_aluno = document.getElementById('editEmpTurma').value.trim() || 'SEM TURMA';
             }
             
+            const btnEE = e.target.querySelector('button[type="submit"]');
+            const lblEE = btnEE ? btnEE.textContent : '';
+            if (btnEE) { btnEE.textContent = 'SALVANDO...'; btnEE.disabled = true; }
             try {
                 await window.DB.atualizarEmprestimo(data);
-                alert('Empréstimo atualizado com sucesso!');
+                if (btnEE) { btnEE.textContent = lblEE; btnEE.disabled = false; }
                 document.getElementById('modalEditEmp').classList.add('hidden');
+                mostrarMsg('msgEmp', '✓ EMPRÉSTIMO ATUALIZADO!', 'success');
                 load();
             } catch(err) {
-                alert('Erro: ' + err.message);
+                if (btnEE) { btnEE.textContent = lblEE; btnEE.disabled = false; }
+                mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger');
             }
         });
 
@@ -684,23 +842,27 @@
                     sinopse: document.getElementById('sinopse').value || window.livroEmDuplicidade.sinopse
                 });
                 
-                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ QUANTIDADE ADICIONADA!</span>';
+                mostrarMsg('msgLivro', '✓ QUANTIDADE ADICIONADA!', 'success');
                 document.getElementById('formLivro').reset();
                 closeModalDuplicidade();
                 load();
             } catch(err) {
-                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ ERRO AO ADICIONAR QUANTIDADE</span>';
+                mostrarMsg('msgLivro', '❌ ERRO AO ADICIONAR QUANTIDADE', 'danger');
             }
         };
         
         document.getElementById('formLivro').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btnLivro = e.target.querySelector('button[type="submit"]');
+            const lblLivro = btnLivro.textContent;
+            btnLivro.textContent = 'SALVANDO...'; btnLivro.disabled = true;
             try {
                 const titulo = document.getElementById('titulo').value.toUpperCase().trim();
                 const livros = await window.DB.getLivros();
                 const livroExistente = livros.find(l => l.titulo.toUpperCase() === titulo);
                 
                 if (livroExistente) {
+                    btnLivro.textContent = lblLivro; btnLivro.disabled = false;
                     window.livroEmDuplicidade = livroExistente;
                     document.getElementById('infoDuplicidade').innerHTML = `
                         <strong>ID:</strong> ${livroExistente.id}<br>
@@ -713,18 +875,41 @@
                     return;
                 }
                 
-                await window.DB.salvarLivro({
+                const resultado = await window.DB.salvarLivro({
                     isbn: document.getElementById('isbn').value,
+                    acabamento: document.getElementById('acabamento').value,
                     titulo: document.getElementById('titulo').value,
                     autor: document.getElementById('autor').value,
+                    colaboradores: coletarColaboradores(),
+                    editora: document.getElementById('pubIndependente').checked ? '' : document.getElementById('editora').value,
+                    pub_independente: document.getElementById('pubIndependente').checked,
+                    prateleira: document.getElementById('prateleira').value,
                     categoria: document.getElementById('categoria').value,
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
                     sinopse: document.getElementById('sinopse').value
                 });
-                document.getElementById('msgLivro').innerHTML = '<span style="color:var(--success)">✓ CADASTRADO!</span>';
+                // Salvar capa (base64) se houver imagem selecionada
+                if (window._capaBase64 && resultado && resultado.data) {
+                    try {
+                        await window.DB.uploadCapa(resultado.data.id, window._capaBase64);
+                    } catch(capErr) { console.warn('Capa não salva:', capErr); }
+                }
+                window._capaBase64 = null;
+                // Reset preview capa
+                const capaImg = document.getElementById('capaPreview');
+                capaImg.src = 'logo.png'; capaImg.className = 'cover-placeholder';
+                removerCapa('cadastro','capaPreview','capaBtns','capaInput');
+                btnLivro.textContent = lblLivro; btnLivro.disabled = false;
+                mostrarMsg('msgLivro', '✓ CADASTRADO!', 'success');
                 e.target.reset();
+                document.getElementById('listaColaboradores').innerHTML = '';
+                document.getElementById('acabamento').value = '';
+                document.getElementById('prateleira').value = '';
+                const piCb = document.getElementById('pubIndependente');
+                if (piCb.checked) { piCb.checked = false; piCb.dispatchEvent(new Event('change')); }
+                document.getElementById('labelPubIndependente').classList.remove('checked');
                 load();
-            } catch(err) { document.getElementById('msgLivro').innerHTML = '<span style="color:var(--danger)">❌ ERRO</span>'; }
+            } catch(err) { btnLivro.textContent = lblLivro; btnLivro.disabled = false; mostrarMsg('msgLivro', '❌ ERRO: ' + (err.message || 'Erro desconhecido ao cadastrar livro'), 'danger'); console.error('Erro ao cadastrar livro:', err); }
         });
 
         window.toggleTipoPessoa = () => {
@@ -770,6 +955,9 @@
 
         document.getElementById('formEmprestimo').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btnEmp = e.target.querySelector('button[type="submit"]');
+            const lblEmp = btnEmp.textContent;
+            btnEmp.textContent = 'SALVANDO...'; btnEmp.disabled = true;
             try {
                 const isP = document.getElementById('ehProfessor').checked;
                 const data = {
@@ -799,17 +987,20 @@
                     );
                     
                     if (alunoTemEmprestimoAtivo) {
-                        document.getElementById('msgEmp').innerHTML = '<span style="color:var(--danger)">❌ EMPRESTIMO CANCELADO. O ALUNO/ALUNA JA TEM UM EMPRESTIMO ATIVO!</span>';
+                        btnEmp.textContent = lblEmp; btnEmp.disabled = false;
+                        mostrarMsg('msgEmp', '❌ EMPRÉSTIMO CANCELADO: ALUNO JÁ TEM UM EMPRÉSTIMO ATIVO!', 'danger');
                         return;
                     }
                 }
                 
                 await window.DB.registrarEmprestimo(data);
-                document.getElementById('msgEmp').innerHTML = '<span style="color:var(--success)">✓ REGISTRADO!</span>';
+                btnEmp.textContent = lblEmp; btnEmp.disabled = false;
+                mostrarMsg('msgEmp', '✓ REGISTRADO!', 'success');
                 e.target.reset();
                 toggleTipoPessoa();
                 toggleData();
-            } catch(err) { document.getElementById('msgEmp').innerHTML = `<span style="color:var(--danger)">❌ ${err.message}</span>`; }
+                load();
+            } catch(err) { btnEmp.textContent = lblEmp; btnEmp.disabled = false; mostrarMsg('msgEmp', '❌ ' + err.message, 'danger'); }
         });
 
         document.getElementById('buscaAdmin').addEventListener('input', load);
@@ -818,5 +1009,158 @@
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+
+    <script>
+    // =====================================================================
+    // COLABORADORES
+    // =====================================================================
+    function criarCampoColaborador(funcao = '', nome = '', prefixId = 'col', lista = 'listaColaboradores') {
+        const id = Date.now() + Math.random().toString(36).slice(2);
+        const div = document.createElement('div');
+        div.className = 'colaborador-item';
+        div.id = `${prefixId}-${id}`;
+        div.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0.75rem; margin-bottom:0.5rem;';
+        div.innerHTML = `
+            <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:0.5rem; align-items:center;">
+                <input class="col-funcao" type="text" placeholder="FUNÇÃO"
+                    style="padding:0.5rem; font-size:0.8rem; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text); width:100%;"
+                    value="${funcao}">
+                <input class="col-nome" type="text" placeholder="NOME"
+                    style="padding:0.5rem; font-size:0.8rem; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text); width:100%;"
+                    value="${nome}">
+                <button type="button" onclick="document.getElementById('${prefixId}-${id}').remove()"
+                    style="background:var(--danger); border:none; color:white; border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:1.1rem; flex-shrink:0; display:flex; align-items:center; justify-content:center;">×</button>
+            </div>
+        `;
+        document.getElementById(lista).appendChild(div);
+    }
+
+    window.adicionarColaborador = () => criarCampoColaborador('', '', 'col', 'listaColaboradores');
+    window.adicionarColaboradorEdit = (funcao = '', nome = '') => criarCampoColaborador(funcao, nome, 'edit-col', 'editListaColaboradores');
+
+    function coletarDeLista(listaId) {
+        const items = document.getElementById(listaId).querySelectorAll('.colaborador-item');
+        const result = [];
+        items.forEach(item => {
+            const funcao = item.querySelector('.col-funcao').value.trim();
+            const nome = item.querySelector('.col-nome').value.trim();
+            if (!nome) return;
+            result.push({ funcao: funcao || 'COLABORADOR', nome });
+        });
+        return result;
+    }
+
+    window.coletarColaboradores = () => coletarDeLista('listaColaboradores');
+    window.coletarColaboradoresEdit = () => coletarDeLista('editListaColaboradores');
+
+    // =====================================================================
+    // PUBLICAÇÃO INDEPENDENTE
+    // =====================================================================
+    window.togglePubIndependente = (cb, editoraId) => {
+        const label = cb.closest('.checkbox-container');
+        label.classList.toggle('checked', cb.checked);
+        const input = document.getElementById(editoraId);
+        input.disabled = cb.checked;
+        input.style.opacity = cb.checked ? '0.4' : '1';
+        if (cb.checked) input.value = '';
+    };
+
+    // =====================================================================
+    // MENSAGENS TEMPORÁRIAS
+    // =====================================================================
+    const _msgTimers = {};
+    window.mostrarMsg = (id, texto, tipo) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const cor = tipo === 'success' ? 'var(--success)' : 'var(--danger)';
+        const icone = tipo === 'success' ? '✓' : '❌';
+        el.innerHTML = `<span style="color:${cor}">${texto}</span>`;
+        clearTimeout(_msgTimers[id]);
+        // Erros ficam 4s, sucessos 1.5s
+        _msgTimers[id] = setTimeout(() => { el.innerHTML = ''; }, tipo === 'success' ? 1500 : 4000);
+    };
+
+    // =====================================================================
+    // CAPA DO LIVRO — PRÉ-VISUALIZAÇÃO E UPLOAD
+    // =====================================================================
+
+    // Base64 da capa selecionada no cadastro
+    window._capaBase64 = null;
+    // Base64 e flags para edição
+    window._editCapaBase64 = null;
+    window._editCapaExcluir = false;
+
+    // Pré-visualiza a imagem escolhida e mostra botões Trocar/Excluir
+    window.preVisualizarCapa = (input, imgId, btnsId, isEdit) => {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Bloquear submit enquanto a imagem não terminou de carregar
+        if (!isEdit) {
+            const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'AGUARDANDO IMAGEM...'; }
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target.result; // data:image/...;base64,...
+            const img = document.getElementById(imgId);
+            img.src = base64;
+            img.className = '';
+
+            // Guardar base64 (não o File) — é o que será salvo no banco
+            if (isEdit) {
+                window._editCapaBase64 = base64;
+                window._editCapaExcluir = false;
+                renderBotoesCapa('edit');
+            } else {
+                window._capaBase64 = base64;
+                renderBotoesCapa('cadastro');
+                // Reabilitar submit: imagem já está visível
+                const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Renderiza botões Trocar/Excluir após imagem carregada
+    window.renderBotoesCapa = (modo) => {
+        const btnsId = modo === 'edit' ? 'editCapaBtns' : 'capaBtns';
+        const inputId = modo === 'edit' ? 'editCapaInput' : 'capaInput';
+        const imgId   = modo === 'edit' ? 'editCapaPreview' : 'capaPreview';
+        document.getElementById(btnsId).innerHTML = `
+            <button type="button" class="btn-block btn-outline" style="font-size:0.8rem;padding:0.5rem 0.75rem;margin-bottom:0.4rem;"
+                onclick="document.getElementById('${inputId}').click()">🔄 TROCAR</button>
+            <button type="button" class="btn-block btn-danger" style="font-size:0.8rem;padding:0.5rem 0.75rem;"
+                onclick="removerCapa('${modo}','${imgId}','${btnsId}','${inputId}')">🗑️ EXCLUIR</button>
+            <input type="file" id="${inputId}" accept="image/*" style="display:none;"
+                onchange="preVisualizarCapa(this,'${imgId}','${btnsId}',${modo === 'edit'})">
+        `;
+    };
+
+    // Remove a capa selecionada (volta à logo)
+    window.removerCapa = (modo, imgId, btnsId, inputId) => {
+        const img = document.getElementById(imgId);
+        img.src = 'logo.png';
+        img.className = 'cover-placeholder';
+        if (modo === 'edit') {
+            window._editCapaBase64 = null;
+            window._editCapaExcluir = true;
+        } else {
+            window._capaBase64 = null;
+            // Garantir que o submit esteja habilitado (sem imagem = pode cadastrar)
+            const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
+        }
+        document.getElementById(btnsId).innerHTML = `
+            <button type="button" class="btn-block btn-outline" style="font-size:0.8rem;padding:0.5rem 0.75rem;"
+                onclick="document.getElementById('${inputId}').click()">📷 ESCOLHER IMAGEM</button>
+            <input type="file" id="${inputId}" accept="image/*" style="display:none;"
+                onchange="preVisualizarCapa(this,'${imgId}','${btnsId}',${modo === 'edit'})">
+        `;
+    };
+
+    </script>
 </body>
 </html>

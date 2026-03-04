@@ -48,8 +48,9 @@
         </div>
     </div>
 
-    <script src="database.js" type="module"></script>
     <script type="module">
+        import DB from './database.js';
+        window.DB = DB;
         let currentCategory = 'TODOS';
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
 
@@ -77,12 +78,8 @@
             if (el) el.innerHTML = '<span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span>';
         }
 
-        async function aguardarDB() {
-            while (!window.DB) await new Promise(r => setTimeout(r, 100));
-        }
-
         (async () => {
-            await aguardarDB();
+            document.getElementById('listaLivros').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO ACERVO...</p>';
             aplicarPreferencias();
             
             const categorias = ['TODOS', ...window.DB.CATEGORIAS];
@@ -90,8 +87,14 @@
                 `<button class="tab-btn ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
             ).join('');
 
-            window.DB.onLivrosChange(() => carregarLivros());
-            window.DB.onEmprestimosChange(() => carregarLivros());
+            let _indexTimer = null;
+            function carregarLivrosDebounced() {
+                clearTimeout(_indexTimer);
+                _indexTimer = setTimeout(carregarLivros, 150);
+            }
+            window.DB.onLivrosChange(carregarLivrosDebounced);
+            window.DB.onEmprestimosChange(carregarLivrosDebounced);
+            setInterval(carregarLivros, 30000);
             carregarLivros();
         })();
 
@@ -112,7 +115,9 @@
                     l.titulo.toUpperCase().includes(termo) ||
                     (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
                     (l.autor && l.autor.toUpperCase().includes(termo)) ||
-                    (l.sinopse && l.sinopse.toUpperCase().includes(termo))
+                    (l.sinopse && l.sinopse.toUpperCase().includes(termo)) ||
+                    (l.editora && l.editora.toUpperCase().includes(termo)) ||
+                    (l.colaboradores && l.colaboradores.some(co => co.nome && co.nome.toUpperCase().includes(termo)))
                 );
             }
 
@@ -148,19 +153,27 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
-                        <div class="accordion-indicator">▼</div>
-                        <div class="book-title">${isAtrasado ? '⚠️ ' : ''}${l.titulo}</div>
-                        <div class="book-meta-box">
-                            <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
-                            <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
-                            <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}</div>
-                            ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
+                        <div class="book-cover-wrap">
+                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png'; this.className='cover-placeholder';">
                         </div>
-                        <div class="book-status-row">
-                            ${isAtrasado ? '<span class="atrasado-label">⚠️ ATRASO</span>' : '<span></span>'}
-                            <span class="badge ${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
-                                ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
-                            </span>
+                        <div class="book-header-inner">
+                            <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
+                            <div class="book-title">${isAtrasado ? '⚠️ ' : ''}${l.titulo}</div>
+                            <div class="book-meta-box">
+                                <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
+                                ${l.colaboradores && l.colaboradores.length > 0 ? l.colaboradores.map(co => `<div class="book-meta-item"><strong>${co.funcao || 'COLABORADOR'}:</strong> ${co.nome}</div>`).join('') : ''}
+                                ${l.editora ? `<div class="book-meta-item"><strong>EDITORA:</strong> ${l.editora}</div>` : (l.pub_independente ? `<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>` : '')}
+                                <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
+                                ${l.acabamento ? `<div class="book-meta-item"><strong>ACABAMENTO:</strong> ${l.acabamento}</div>` : ''}
+                                <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}${l.prateleira ? ' | ' + l.prateleira : ''}</div>
+                                ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
+                            </div>
+                            <div class="book-status-row">
+                                ${isAtrasado ? '<span class="atrasado-label">⚠️ ATRASO</span>' : '<span></span>'}
+                                <span class="badge ${l.quantidade_disponivel > 0 ? 'badge-disponivel' : 'badge-indisponivel'}">
+                                    ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="book-details" id="${prefix}details-${l.id}" data-livro-id="${l.id}">
