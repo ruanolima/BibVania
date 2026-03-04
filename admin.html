@@ -467,6 +467,8 @@
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
             idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
             renderAcervo();
+            // Sempre recarrega capas após renderizar (getLivros não traz imagem_url)
+            carregarCapasLazy();
         }
 
         // renderAcervo(): filtra e exibe sem ir ao Supabase — instantâneo
@@ -684,6 +686,15 @@
                     try {
                         const livroId = parseInt(document.getElementById('editId').value);
                         await window.DB.uploadCapa(livroId, window._editCapaBase64);
+                        // Atualiza cache e DOM imediatamente
+                        const capaUrl = window._editCapaBase64;
+                        const livroCache = todosLivros.find(l => l.id === livroId);
+                        if (livroCache) livroCache.imagem_url = capaUrl;
+                        document.querySelectorAll(`[data-lightbox-id="${livroId}"] img`).forEach(img => {
+                            img.src = capaUrl;
+                            img.classList.remove('cover-placeholder');
+                            img.closest('.book-cover-wrap').classList.add('has-image');
+                        });
                         window._editCapaBase64 = null;
                     } catch(capErr) {
                         console.error('Capa não salva:', capErr);
@@ -693,6 +704,8 @@
                     try {
                         const livroId = parseInt(document.getElementById('editId').value);
                         await window.DB.removerCapa(livroId);
+                        const livroCache = todosLivros.find(l => l.id === livroId);
+                        if (livroCache) livroCache.imagem_url = null;
                     } catch(capErr) {
                         console.error('Erro ao remover capa:', capErr);
                         mostrarMsg('msgLivro', '⚠️ ERRO AO REMOVER CAPA: ' + (capErr.message || capErr), 'danger');
@@ -933,7 +946,11 @@
                 // Salvar capa (base64) se houver imagem selecionada
                 if (window._capaBase64 && resultado && resultado.data) {
                     try {
-                        await window.DB.uploadCapa(resultado.data.id, window._capaBase64);
+                        const capaUrl = window._capaBase64;
+                        await window.DB.uploadCapa(resultado.data.id, capaUrl);
+                        // Salva no cache para aparecer imediatamente após o load()
+                        const novoLivro = todosLivros.find(l => l.id === resultado.data.id);
+                        if (novoLivro) novoLivro.imagem_url = capaUrl;
                     } catch(capErr) {
                         console.error('Capa não salva:', capErr);
                         mostrarMsg('msgLivro', '⚠️ LIVRO SALVO, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
@@ -1292,15 +1309,16 @@
     window._editCapaBase64 = null;
     window._editCapaExcluir = false;
 
-    // Comprime imagem garantindo que o base64 final caiba no Supabase (<800KB)
+    // Comprime imagem para capa de livro com boa qualidade ampliada
+    // 1200px / JPEG 88% — nítido na lista e no lightbox ampliado
+    // Reduz progressivamente só se necessário para caber no Supabase (~700KB base64)
     function comprimirImagem(imageSrc) {
         return new Promise((resolve) => {
             const original = new Image();
             original.onload = () => {
-                // Começa com 800px e vai reduzindo até caber
-                const LIMITE = 800000; // 800KB em caracteres base64 ≈ ~600KB real
-                let maxPx = 800;
-                let qualidade = 0.82;
+                const LIMITE = 700000;
+                let maxPx = 1440;
+                let qualidade = 0.88;
                 let base64;
 
                 do {
@@ -1311,16 +1329,16 @@
                     canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
                     base64 = canvas.toDataURL('image/jpeg', qualidade);
 
-                    // Reduz progressivamente até caber
+                    // Reduz qualidade primeiro (preserva tamanho), depois reduz dimensão
                     if (base64.length > LIMITE) {
-                        if (qualidade > 0.40) {
-                            qualidade = Math.max(0.40, qualidade - 0.12);
+                        if (qualidade > 0.55) {
+                            qualidade = Math.max(0.55, qualidade - 0.08);
                         } else {
-                            maxPx = Math.round(maxPx * 0.75);
-                            qualidade = 0.70;
+                            maxPx = Math.round(maxPx * 0.82);
+                            qualidade = 0.80;
                         }
                     }
-                } while (base64.length > LIMITE && maxPx > 150);
+                } while (base64.length > LIMITE && maxPx > 300);
 
                 resolve(base64);
             };
