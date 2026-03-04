@@ -411,6 +411,7 @@
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             load();
+            carregarCapasLazy();
 
             // Restaurar aba ativa após atualizar a página
             const tabSalva = sessionStorage.getItem('bibvania_tab');
@@ -420,8 +421,24 @@
                 document.getElementById(tabSalva).classList.add('active');
                 const btn = document.querySelector(`nav .tab-btn[onclick*="${tabSalva}"]`);
                 if (btn) btn.classList.add('active');
-                if (tabSalva === 'tab-devolucoes') carregarDevolucoes();
+                if (tabSalva === 'tab-devolucoes') setTimeout(() => window.carregarDevolucoes?.(), 0);
             }
+        }
+
+        async function carregarCapasLazy() {
+            try {
+                const ids = todosLivros.map(l => l.id);
+                if (ids.length === 0) return;
+                const capas = await window.DB.getCapas(ids);
+                todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
+                Object.entries(capas).forEach(([id, url]) => {
+                    document.querySelectorAll(`[data-lightbox-id="${id}"] img`).forEach(img => {
+                        img.src = url;
+                        img.classList.remove('cover-placeholder');
+                        img.closest('.book-cover-wrap').classList.add('has-image');
+                    });
+                });
+            } catch(e) { console.warn('Erro ao carregar capas:', e); }
         }
 
         window.switchTab = (e, id) => {
@@ -450,24 +467,6 @@
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
             idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
             renderAcervo();
-            // Carrega capas em segundo plano sem bloquear a interface
-            carregarCapasLazy();
-        }
-
-        async function carregarCapasLazy() {
-            const ids = todosLivros.map(l => l.id);
-            if (ids.length === 0) return;
-            const capas = await window.DB.getCapas(ids);
-            // Atualiza cache local
-            todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
-            // Atualiza apenas as imagens já renderizadas no DOM
-            Object.entries(capas).forEach(([id, url]) => {
-                document.querySelectorAll(`[data-lightbox-id="${id}"] img`).forEach(img => {
-                    img.src = url;
-                    img.classList.remove('cover-placeholder');
-                    img.closest('.book-cover-wrap').classList.add('has-image');
-                });
-            });
         }
 
         // renderAcervo(): filtra e exibe sem ir ao Supabase — instantâneo
@@ -638,7 +637,7 @@
                 l.colaboradores.forEach(co => adicionarColaboradorEdit(co.funcao, co.nome));
             }
             // Capa no modal de edição
-            window._editCapaFile = null;
+            window._editCapaBase64 = null;
             window._editCapaExcluir = false;
             const editImg = document.getElementById('editCapaPreview');
             if (l.imagem_url) {
@@ -681,10 +680,10 @@
                     sinopse: document.getElementById('editSinopse').value
                 });
                 // Capa: upload novo arquivo ou remover
-                if (window._editCapaFile) {
+                if (window._editCapaBase64) {
                     try {
                         const livroId = parseInt(document.getElementById('editId').value);
-                        await window.DB.uploadCapa(livroId, window._editCapaFile);
+                        await window.DB.uploadCapa(livroId, window._editCapaBase64);
                     } catch(capErr) { console.warn('Capa não salva:', capErr); }
                 } else if (window._editCapaExcluir) {
                     try {
@@ -925,12 +924,12 @@
                     sinopse: document.getElementById('sinopse').value
                 });
                 // Salvar capa (base64) se houver imagem selecionada
-                if (window._capaFile && resultado && resultado.data) {
+                if (window._capaBase64 && resultado && resultado.data) {
                     try {
-                        await window.DB.uploadCapa(resultado.data.id, window._capaFile);
+                        await window.DB.uploadCapa(resultado.data.id, window._capaBase64);
                     } catch(capErr) { console.warn('Capa não salva:', capErr); }
                 }
-                window._capaFile = null;
+                window._capaBase64 = null;
                 // Reset preview capa
                 const capaImg = document.getElementById('capaPreview');
                 capaImg.src = 'logo.png'; capaImg.className = 'cover-placeholder';
@@ -1278,9 +1277,9 @@
     // =====================================================================
 
     // Base64 da capa selecionada no cadastro
-    window._capaFile = null;
+    window._capaBase64 = null;
     // Base64 e flags para edição
-    window._editCapaFile = null;
+    window._editCapaBase64 = null;
     window._editCapaExcluir = false;
 
     // Pré-visualiza a imagem escolhida e mostra botões Trocar/Excluir
@@ -1288,22 +1287,40 @@
         const file = input.files[0];
         if (!file) return;
 
+        if (!isEdit) {
+            const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'AGUARDANDO IMAGEM...'; }
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
-            const img = document.getElementById(imgId);
-            img.src = e.target.result;
-            img.className = '';
+            // Comprimir via canvas antes de salvar (máx 300px, JPEG 70%)
+            const original = new Image();
+            original.onload = () => {
+                const MAX = 300;
+                const scale = Math.min(1, MAX / Math.max(original.width, original.height));
+                const canvas = document.createElement('canvas');
+                canvas.width  = Math.round(original.width  * scale);
+                canvas.height = Math.round(original.height * scale);
+                canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
+                const base64 = canvas.toDataURL('image/jpeg', 0.7);
 
-            if (isEdit) {
-                window._editCapaFile = file;
-                window._editCapaExcluir = false;
-                renderBotoesCapa('edit');
-            } else {
-                window._capaFile = file;
-                renderBotoesCapa('cadastro');
-                const submitBtn = document.querySelector('#formLivro button[type="submit"]');
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
-            }
+                const img = document.getElementById(imgId);
+                img.src = base64;
+                img.className = '';
+
+                if (isEdit) {
+                    window._editCapaBase64 = base64;
+                    window._editCapaExcluir = false;
+                    renderBotoesCapa('edit');
+                } else {
+                    window._capaBase64 = base64;
+                    renderBotoesCapa('cadastro');
+                    const submitBtn = document.querySelector('#formLivro button[type="submit"]');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
+                }
+            };
+            original.src = e.target.result;
         };
         reader.readAsDataURL(file);
     };
@@ -1329,10 +1346,10 @@
         img.src = 'logo.png';
         img.className = 'cover-placeholder';
         if (modo === 'edit') {
-            window._editCapaFile = null;
+            window._editCapaBase64 = null;
             window._editCapaExcluir = true;
         } else {
-            window._capaFile = null;
+            window._capaBase64 = null;
             // Garantir que o submit esteja habilitado (sem imagem = pode cadastrar)
             const submitBtn = document.querySelector('#formLivro button[type="submit"]');
             if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }

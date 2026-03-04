@@ -118,19 +118,21 @@
         }
 
         async function carregarCapasLazy() {
-            const ids = todosLivros.map(l => l.id);
-            if (ids.length === 0) return;
-            const capas = await window.DB.getCapas(ids);
-            // Atualiza cache local
-            todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
-            // Atualiza apenas as imagens já renderizadas no DOM
-            Object.entries(capas).forEach(([id, url]) => {
-                document.querySelectorAll(`[data-lightbox-id="${id}"] img`).forEach(img => {
-                    img.src = url;
-                    img.classList.remove('cover-placeholder');
-                    img.closest('.book-cover-wrap').classList.add('has-image');
+            try {
+                const ids = todosLivros.map(l => l.id);
+                if (ids.length === 0) return;
+                const capas = await window.DB.getCapas(ids);
+                // Atualiza cache local
+                todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
+                // Atualiza apenas as imagens já renderizadas no DOM
+                Object.entries(capas).forEach(([id, url]) => {
+                    document.querySelectorAll(`[data-lightbox-id="${id}"] img`).forEach(img => {
+                        img.src = url;
+                        img.classList.remove('cover-placeholder');
+                        img.closest('.book-cover-wrap').classList.add('has-image');
+                    });
                 });
-            });
+            } catch(e) { console.warn('Erro ao carregar capas:', e); }
         }
 
         // renderAcervo(): filtra e exibe sem ir ao Supabase — instantâneo
