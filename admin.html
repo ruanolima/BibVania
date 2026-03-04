@@ -457,17 +457,32 @@
 
         // Cache local — evita chamadas desnecessárias ao Supabase na busca/filtro
         let idsAtrasadosCache = [];
+        let empsAtivosCache = {}; // livro_id → [empréstimos] — para accordion instantâneo
 
         // load(): busca livros e empréstimos em paralelo (mais rápido)
         async function load() {
+            // Salvar capas já carregadas antes de atualizar a lista
+            const capasCache = {};
+            todosLivros.forEach(l => { if (l.imagem_url) capasCache[l.id] = l.imagem_url; });
+
             const [livros, emps] = await Promise.all([
                 window.DB.getLivros(),
                 window.DB.getEmprestimosAtivos()
             ]);
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
             idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
+
+            // Restaurar capas do cache — evita piscada ao re-renderizar
+            todosLivros.forEach(l => { if (capasCache[l.id]) l.imagem_url = capasCache[l.id]; });
+
+            // Também guardar empréstimos ativos no cache para o accordion usar sem ir ao Supabase
+            empsAtivosCache = {};
+            emps.forEach(e => {
+                if (!empsAtivosCache[e.livro_id]) empsAtivosCache[e.livro_id] = [];
+                empsAtivosCache[e.livro_id].push(e);
+            });
+
             renderAcervo();
-            // Sempre recarrega capas após renderizar (getLivros não traz imagem_url)
             carregarCapasLazy();
         }
 
@@ -560,7 +575,8 @@
         
         async function loadEmps(id, prefix) {
             const container = document.getElementById(`${prefix}emps-${id}`);
-            const emps = await window.DB.getEmprestimosAtivos(parseInt(id));
+            // Usa cache carregado pelo load() — resposta instantânea
+            const emps = empsAtivosCache[parseInt(id)] || [];
             if (emps.length === 0) { container.innerHTML = '<p style="font-size:0.7rem;">SEM EMPRÉSTIMOS.</p>'; return; }
             container.innerHTML = emps.map(e => {
                 const rotulo = obterRotuloGenero(e.sexo, e.turma_aluno, e.ano_aluno);
