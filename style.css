@@ -330,13 +330,11 @@ input:disabled {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
+    display: none;
 }
 
-.book-cover-wrap img.cover-placeholder {
-    object-fit: contain;
-    padding: 8px;
-    opacity: 0.45;
+.book-cover-wrap.capa-carregada img {
+    display: block;
 }
 
 .book-cover-loading {
@@ -346,13 +344,13 @@ input:disabled {
     align-items: center;
     justify-content: center;
     background: var(--bg);
-    font-size: 0.5rem;
+    font-size: 0.48rem;
     font-weight: 800;
     color: var(--text-light);
     text-align: center;
-    line-height: 1.3;
+    line-height: 1.4;
     letter-spacing: 0.03em;
-    padding: 4px;
+    padding: 6px;
 }
 
 .book-cover-wrap.capa-carregada .book-cover-loading {

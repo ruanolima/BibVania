@@ -221,9 +221,9 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
-                        <div class="book-cover-wrap ${temCapa ? 'has-image capa-carregada' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            ${temCapa ? '' : '<div class="book-cover-loading">CARREGANDO CAPA</div>'}
-                            <img src="${temCapa ? l.imagem_url : ''}" alt="Capa" class="${temCapa ? '' : 'cover-placeholder'}" style="${temCapa ? '' : 'opacity:0;'}" onerror="this.src='';this.style.opacity='0';this.closest('.book-cover-wrap').classList.remove('capa-carregada');">
+                        <div class="book-cover-wrap ${temCapa ? 'capa-carregada has-image' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            ${temCapa ? '' : '<div class="book-cover-loading">CARREGANDO<br>CAPA</div>'}
+                            <img src="${temCapa ? l.imagem_url : ''}" alt="Capa" onerror="this.src='';this.closest('.book-cover-wrap').classList.remove('capa-carregada','has-image');">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
