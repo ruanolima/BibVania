@@ -431,10 +431,13 @@
                 const capas = await window.DB.getCapas(ids);
                 todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
                 Object.entries(capas).forEach(([id, url]) => {
-                    document.querySelectorAll(`[data-lightbox-id="${id}"] img`).forEach(img => {
+                    document.querySelectorAll(`[data-lightbox-id="${id}"]`).forEach(wrap => {
+                        const img = wrap.querySelector('img');
+                        if (!img) return;
                         img.src = url;
+                        img.style.opacity = '';
                         img.classList.remove('cover-placeholder');
-                        img.closest('.book-cover-wrap').classList.add('has-image');
+                        wrap.classList.add('has-image', 'capa-carregada');
                     });
                 });
             } catch(e) { console.warn('Erro ao carregar capas:', e); }
@@ -517,11 +520,13 @@
         function renderLivro(l, isAtr) {
             const prefix = isAtr ? 'adm-atr-' : 'adm-';
             const borderStyle = isAtr ? 'style="border-color:var(--danger); border-width: 2px;"' : '';
+            const temCapa = !!l.imagem_url;
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAcc(this, '${prefix}')">
-                        <div class="book-cover-wrap ${l.imagem_url ? 'has-image' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            <img src="${l.imagem_url || 'logo.png'}" alt="Capa" class="${l.imagem_url ? '' : 'cover-placeholder'}" onerror="this.src='logo.png';this.className='cover-placeholder';">
+                        <div class="book-cover-wrap ${temCapa ? 'has-image capa-carregada' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            ${temCapa ? '' : '<div class="book-cover-loading">CARREGANDO CAPA</div>'}
+                            <img src="${temCapa ? l.imagem_url : ''}" alt="Capa" class="${temCapa ? '' : 'cover-placeholder'}" style="${temCapa ? '' : 'opacity:0;'}" onerror="this.src='';this.style.opacity='0';this.closest('.book-cover-wrap').classList.remove('capa-carregada');">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>

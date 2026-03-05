@@ -175,14 +175,29 @@
                 empSala.forEach(e => contL[e.livro_id] = (contL[e.livro_id] || 0) + 1);
                 const topLivrosSala = Object.entries(contL).sort((a,b) => b[1]-a[1]).slice(0,2);
                 
-                // Top Alunos da Sala
-                const contM = {}, contF = {};
+                // Top Alunos da Sala — mapear livros lidos por cada um
+                const livrosM = {}, livrosF = {};
                 empSala.forEach(e => {
-                    if (e.sexo === 'M') contM[e.nome_aluno] = (contM[e.nome_aluno] || 0) + 1;
-                    if (e.sexo === 'F') contF[e.nome_aluno] = (contF[e.nome_aluno] || 0) + 1;
+                    if (e.sexo === 'M') {
+                        if (!livrosM[e.nome_aluno]) livrosM[e.nome_aluno] = [];
+                        livrosM[e.nome_aluno].push(e.livro_id);
+                    }
+                    if (e.sexo === 'F') {
+                        if (!livrosF[e.nome_aluno]) livrosF[e.nome_aluno] = [];
+                        livrosF[e.nome_aluno].push(e.livro_id);
+                    }
                 });
-                const topM = Object.entries(contM).sort((a,b) => b[1]-a[1])[0]?.[0] || 'N/A';
-                const topF = Object.entries(contF).sort((a,b) => b[1]-a[1])[0]?.[0] || 'N/A';
+                const topMEntry = Object.entries(livrosM).sort((a,b) => b[1].length - a[1].length)[0];
+                const topFEntry = Object.entries(livrosF).sort((a,b) => b[1].length - a[1].length)[0];
+
+                function formatarDestaque(entry, rotulo) {
+                    if (!entry) return `  ${rotulo}: N/A\n`;
+                    const [nome, ids] = entry;
+                    const titulos = ids.map(id => livros.find(liv => liv.id == id)?.titulo || 'N/A');
+                    let txt = `  ${rotulo}: ${nome} (${ids.length} livro${ids.length > 1 ? 's' : ''})\n`;
+                    titulos.forEach((t, i) => { txt += `    ${i+1}. ${t}\n`; });
+                    return txt;
+                }
 
                 secaoRankingsSala += `SALA: ${sala}\n`;
                 secaoRankingsSala += `- 2 LIVROS MAIS LIDOS:\n`;
@@ -190,8 +205,9 @@
                     const t = livros.find(liv => liv.id == id)?.titulo || 'N/A';
                     secaoRankingsSala += `  ${i+1}º ${t} (${qtd} VEZES)\n`;
                 });
-                secaoRankingsSala += `- ALUNO DESTAQUE: ${topM}\n`;
-                secaoRankingsSala += `- ALUNA DESTAQUE: ${topF}\n`;
+                secaoRankingsSala += `- DESTAQUES DE LEITURA:\n`;
+                secaoRankingsSala += formatarDestaque(topMEntry, 'ALUNO DESTAQUE');
+                secaoRankingsSala += formatarDestaque(topFEntry, 'ALUNA DESTAQUE');
                 secaoRankingsSala += `${'-'.repeat(40)}\n`;
             });
 
