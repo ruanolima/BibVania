@@ -330,16 +330,39 @@ input:disabled {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: none;
+}
+
+.book-cover-wrap.capa-carregada img {
     display: block;
 }
 
-.book-cover-wrap:not(.has-image) img {
+/* livros sem capa: logo com display:block inline, estilo contido */
+.book-cover-wrap img[src="logo.png"] {
+    display: block;
     object-fit: contain;
     padding: 8px;
     opacity: 0.45;
 }
 
 .book-cover-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-light);
+    text-align: center;
+    line-height: 1.3;
+    padding: 4px;
+    word-break: break-word;
+    overflow: hidden;
+}
+
+.book-cover-wrap.capa-carregada .book-cover-loading {
     display: none;
 }
 

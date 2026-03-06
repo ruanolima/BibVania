@@ -191,12 +191,18 @@
                 if (ids.length === 0) return;
                 const capas = await window.DB.getCapas(ids);
                 todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
-                Object.entries(capas).forEach(([id, url]) => {
-                    document.querySelectorAll(`[data-lightbox-id="${id}"]`).forEach(wrap => {
+                todosLivros.forEach(l => {
+                    document.querySelectorAll(`[data-lightbox-id="${l.id}"]`).forEach(wrap => {
                         const img = wrap.querySelector('img');
-                        if (!img) return;
-                        img.src = url;
-                        wrap.classList.add('has-image', 'capa-carregada');
+                        const loading = wrap.querySelector('.book-cover-loading');
+                        if (capas[l.id]) {
+                            img.src = capas[l.id];
+                            wrap.classList.add('has-image', 'capa-carregada');
+                        } else {
+                            img.src = 'logo.png';
+                            wrap.classList.add('capa-carregada');
+                            if (loading) loading.remove();
+                        }
                     });
                 });
             } catch(e) { console.warn('Erro ao carregar capas:', e); }
@@ -267,8 +273,9 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
-                        <div class="book-cover-wrap ${temCapa ? 'capa-carregada has-image' : 'capa-carregada'}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            <img src="${temCapa ? l.imagem_url : 'logo.png'}" alt="Capa" onerror="this.src='logo.png';this.closest('.book-cover-wrap').classList.remove('has-image');">
+                        <div class="book-cover-wrap" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            ${l.tem_capa ? '<div class="book-cover-loading">CARREGANDO<br>CAPA</div>' : ''}
+                            <img src="${l.tem_capa ? '' : 'logo.png'}" alt="Capa" ${l.tem_capa ? '' : 'style="display:block;"'} onerror="this.src='logo.png';this.closest('.book-cover-wrap').classList.remove('has-image');">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>

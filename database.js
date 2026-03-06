@@ -110,14 +110,15 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro")
+                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro, tem_capa:imagem_url")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
                 console.error("Nenhum dado retornado do Supabase");
                 return [];
             }
-            return data;
+            // tem_capa: converte o valor (url ou null) para booleano
+            return data.map(l => ({ ...l, tem_capa: !!l.tem_capa }));
         } catch (error) {
             console.error("Erro ao listar livros:", error.message);
             throw error;
