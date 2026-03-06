@@ -139,14 +139,58 @@
             ).join('');
 
             let _realtimeTimer = null;
-            function realtimeDebounced() { clearTimeout(_realtimeTimer); _realtimeTimer = setTimeout(carregarLivros, 300); }
+            function realtimeDebounced(payload) {
+                // Ignorar mudanças que são só de imagem_url (upload/remoção de capa)
+                const cols = payload?.new && payload?.old
+                    ? Object.keys(payload.new).filter(k => payload.new[k] !== payload.old[k])
+                    : null;
+                if (cols && cols.length === 1 && cols[0] === 'imagem_url') return;
+                clearTimeout(_realtimeTimer);
+                _realtimeTimer = setTimeout(carregarSemCapas, 300);
+            }
             window.DB.onLivrosChange(realtimeDebounced);
-            window.DB.onEmprestimosChange(realtimeDebounced);
-            setInterval(carregarLivros, 30000);
+            window.DB.onEmprestimosChange(() => {
+                clearTimeout(_realtimeTimer);
+                _realtimeTimer = setTimeout(carregarSemCapas, 300);
+            });
+            // Refresh periódico leve — só textos e empréstimos, sem recarregar capas
+            setInterval(carregarSemCapas, 30000);
             await carregarLivros();
         }
 
-        // Cache local
+        // carregarSemCapas(): atualiza textos e empréstimos sem recarregar capas (Realtime/interval)
+        async function carregarSemCapas() {
+            try {
+                const capasCache = {};
+                todosLivros.forEach(l => { if (l.imagem_url) capasCache[l.id] = l.imagem_url; });
+                const [livros, emps] = await Promise.all([
+                    window.DB.getLivros(),
+                    window.DB.getEmprestimosAtivos()
+                ]);
+                todosLivros = livros;
+                todosLivros.forEach(l => { if (capasCache[l.id]) l.imagem_url = capasCache[l.id]; });
+                idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
+                empsAtivosCache = {};
+                emps.forEach(e => {
+                    if (!empsAtivosCache[e.livro_id]) empsAtivosCache[e.livro_id] = [];
+                    empsAtivosCache[e.livro_id].push(e);
+                });
+                renderAcervo();
+                // Reaplicar capas já carregadas no DOM sem nova query
+                todosLivros.forEach(l => {
+                    if (!l.imagem_url) return;
+                    document.querySelectorAll(`[data-lightbox-id="${l.id}"]`).forEach(wrap => {
+                        const img = wrap.querySelector('img.cover-img');
+                        if (img && img.src !== l.imagem_url) {
+                            img.src = l.imagem_url;
+                            wrap.classList.add('has-image', 'capa-carregada');
+                        }
+                    });
+                });
+            } catch(err) { console.warn('Erro ao atualizar acervo:', err); }
+        }
+
+        // carregarLivros(): carga inicial completa com capas
         let todosLivros = [];
         let idsAtrasadosCache = [];
         let empsAtivosCache = {}; // livro_id → [empréstimos] — accordion instantâneo
@@ -204,7 +248,9 @@
                             img.src = capas[l.id];
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
-                            // Sem capa: troca label, overlay e label somem via capa-carregada
+                            // Sem capa: remove img quebrada, troca label
+                            const imgEl = wrap.querySelector('img.cover-img');
+                            if (imgEl) imgEl.remove();
                             if (label) label.innerHTML = 'SEM<br>CAPA';
                             wrap.classList.add('capa-carregada');
                         }
