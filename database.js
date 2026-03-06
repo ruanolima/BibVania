@@ -110,15 +110,22 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro, tem_capa:imagem_url")
+                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
                 console.error("Nenhum dado retornado do Supabase");
                 return [];
             }
-            // tem_capa: converte o valor (url ou null) para booleano
-            return data.map(l => ({ ...l, tem_capa: !!l.tem_capa }));
+            // Buscar quais IDs têm capa (só IDs, sem trazer a imagem)
+            const ids = data.map(l => l.id);
+            const { data: comCapa } = await supabase
+                .from("livros")
+                .select("id")
+                .in("id", ids)
+                .not("imagem_url", "is", null);
+            const idsComCapa = new Set((comCapa || []).map(l => l.id));
+            return data.map(l => ({ ...l, tem_capa: idsComCapa.has(l.id) }));
         } catch (error) {
             console.error("Erro ao listar livros:", error.message);
             throw error;
