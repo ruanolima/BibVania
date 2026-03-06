@@ -144,7 +144,7 @@
                     </div>
                     <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
                         <div class="form-group" style="margin-bottom:0;"><label>CATEGORIA *</label><select id="categoria" required></select></div>
-                        <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:56px; text-align:center; text-transform:uppercase;" maxlength="2" pattern="[A-Za-z][0-9]" title="Uma letra seguida de um número (ex: C3)" required></div>
+                        <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
                     </div>
                     <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="quantidade" min="1" required></div>
                     <div class="form-group full-width"><label>SINOPSE (OPCIONAL)</label><textarea id="sinopse" rows="3"></textarea></div>
@@ -276,7 +276,7 @@
                 </div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
                     <div class="form-group" style="margin-bottom:0;"><label>CATEGORIA *</label><select id="editCategoria" required></select></div>
-                    <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:56px; text-align:center; text-transform:uppercase;" maxlength="2" pattern="[A-Za-z][0-9]" title="Uma letra seguida de um número (ex: C3)" required></div>
+                    <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
                 </div>
                 <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="editQtd" required></div>
                 <div class="form-group"><label>SINOPSE</label><textarea id="editSinopse" rows="3"></textarea></div>
@@ -455,21 +455,12 @@
                 if (ids.length === 0) return;
                 const capas = await window.DB.getCapas(ids);
                 todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
-                todosLivros.forEach(l => {
-                    document.querySelectorAll(`[data-lightbox-id="${l.id}"]`).forEach(wrap => {
+                Object.entries(capas).forEach(([id, url]) => {
+                    document.querySelectorAll(`[data-lightbox-id="${id}"]`).forEach(wrap => {
                         const img = wrap.querySelector('img');
-                        const loading = wrap.querySelector('.book-cover-loading');
-                        if (capas[l.id]) {
-                            img.src = capas[l.id];
-                            wrap.classList.add('capa-carregada', 'has-image');
-                        } else {
-                            if (loading) loading.remove();
-                            img.src = 'logo.png';
-                            img.style.objectFit = 'contain';
-                            img.style.padding = '8px';
-                            img.style.opacity = '0.45';
-                            wrap.classList.add('capa-carregada');
-                        }
+                        if (!img) return;
+                        img.src = url;
+                        wrap.classList.add('has-image', 'capa-carregada');
                     });
                 });
             } catch(e) { console.warn('Erro ao carregar capas:', e); }
@@ -556,9 +547,8 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAcc(this, '${prefix}')">
-                        <div class="book-cover-wrap" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            <div class="book-cover-loading">CARREGANDO<br>CAPA</div>
-                            <img src="" alt="Capa" onerror="this.src='';this.closest('.book-cover-wrap').classList.remove('capa-carregada','has-image');">
+                        <div class="book-cover-wrap ${temCapa ? 'capa-carregada has-image' : 'capa-carregada'}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            <img src="${temCapa ? l.imagem_url : 'logo.png'}" alt="Capa" onerror="this.src='logo.png';this.closest('.book-cover-wrap').classList.remove('has-image');">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
@@ -1322,6 +1312,35 @@
 
     window.coletarColaboradores = () => coletarDeLista('listaColaboradores');
     window.coletarColaboradoresEdit = () => coletarDeLista('editListaColaboradores');
+
+    // =====================================================================
+    // PRATELEIRA — validação de formato (ex: C3, C3/C4, F3/F4/F6)
+    // =====================================================================
+    window.validarPrateleira = (input) => {
+        // Maiúsculas automáticas já garantidas por text-transform:uppercase no CSS
+        // mas o value precisa ser em maiúsculas para validar corretamente
+        let v = input.value.toUpperCase();
+
+        // Permitir apenas letras, números e /
+        v = v.replace(/[^A-Z0-9/]/g, '');
+
+        // Evitar // duplos
+        v = v.replace(/\/+/g, '/');
+
+        // Não pode começar com /
+        if (v.startsWith('/')) v = v.slice(1);
+
+        input.value = v;
+
+        // Validar: cada segmento separado por / deve ser letra + dígito
+        const segmentos = v.split('/').filter(s => s.length > 0);
+        const valido = segmentos.length > 0 &&
+            segmentos.every(s => /^[A-Z][0-9]$/.test(s)) &&
+            !v.endsWith('/');
+
+        input.setCustomValidity(valido ? '' : 'Use o formato: C3 ou C3/C4 ou F3/F4/F6');
+        input.style.borderColor = (v.length === 0 || valido) ? '' : 'var(--danger)';
+    };
 
     // =====================================================================
     // PUBLICAÇÃO INDEPENDENTE

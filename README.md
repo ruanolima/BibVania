@@ -2,11 +2,11 @@
 
 **BibVania** é um sistema de gerenciamento de biblioteca escolar **gratuito, open source, rápido e fácil de usar** — funciona direto no navegador, sem instalar nada, sem servidor próprio e sem custo.
 
-🌐 **[Acessar Site dos Leitores](https://ruanolima.github.io/BibVania/)**
+🌐 **[Acessar demonstração ao vivo](https://ruanolima.github.io/BibVania/)**
 &nbsp;·&nbsp; 📥 [Baixar projeto](https://github.com/ruanolima/BibVania/archive/refs/heads/main.zip)
 &nbsp;·&nbsp; ⭐ Gostou? Deixe uma estrela!
 
-> Desenvolvido para a **EMTI Professora Maria Vânia Farias Linhares** · Versão 1.1 · © 2026 Ruan Oliveira Lima · [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+> Desenvolvido para a **EMTI Professora Maria Vânia Farias Linhares** · Versão 1.3 · © 2026 Ruan Oliveira Lima · [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ---
 
