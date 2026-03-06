@@ -205,7 +205,7 @@
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
                             // Sem capa: troca label para "SEM CAPA"
-                            if (label) label.textContent = 'SEM CAPA';
+                            if (label) { label.textContent = 'SEM CAPA'; }
                             wrap.classList.add('capa-carregada');
                         }
                     });

@@ -331,14 +331,25 @@ input:disabled {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: none;
-}
-
-.book-cover-wrap.capa-carregada img {
     display: block;
 }
 
-/* logo de fundo sempre visível */
+/* só a capa real fica escondida até carregar */
+.book-cover-wrap img.cover-img {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+}
+
+.book-cover-wrap.capa-carregada img.cover-img {
+    display: block;
+}
+
+/* logo de fundo */
 .book-cover-bg-logo {
     position: absolute;
     inset: 0;
@@ -346,32 +357,33 @@ input:disabled {
     align-items: center;
     justify-content: center;
     background: var(--bg);
+    z-index: 0;
 }
 
 .book-cover-bg-logo img {
-    display: block !important;
-    width: 60% !important;
-    height: 60% !important;
+    width: 55% !important;
+    height: 55% !important;
     object-fit: contain !important;
     opacity: 0.25;
+    display: block !important;
+    position: static !important;
 }
 
-/* texto sobreposto (SEM CAPA ou CARREGANDO CAPA) */
+/* texto centralizado (SEM CAPA ou CARREGANDO CAPA) */
 .book-cover-label {
     position: absolute;
     inset: 0;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
-    padding-bottom: 5px;
     text-align: center;
     font-size: 8px !important;
     font-weight: 700;
     color: var(--text-light);
-    line-height: 1.2;
+    line-height: 1.3;
+    padding: 4px;
     pointer-events: none;
-    overflow: hidden;
-    word-break: break-word;
+    z-index: 1;
 }
 
 .book-cover-wrap.capa-carregada .book-cover-bg-logo,

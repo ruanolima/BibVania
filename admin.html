@@ -466,7 +466,7 @@
                             img.src = capas[l.id];
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
-                            if (label) label.textContent = 'SEM CAPA';
+                            if (label) { label.textContent = 'SEM CAPA'; }
                             wrap.classList.add('capa-carregada');
                         }
                     });
