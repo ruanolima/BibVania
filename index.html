@@ -204,8 +204,8 @@
                             img.src = capas[l.id];
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
-                            // Sem capa: troca label para "SEM CAPA"
-                            if (label) { label.textContent = 'SEM CAPA'; }
+                            // Sem capa: troca label, overlay e label somem via capa-carregada
+                            if (label) label.innerHTML = 'SEM<br>CAPA';
                             wrap.classList.add('capa-carregada');
                         }
                     });
@@ -279,9 +279,8 @@
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
                         <div class="book-cover-wrap" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            <div class="book-cover-bg-logo"></div>
                             <span class="book-cover-label" style="font-size:8px!important">CARREGANDO<br>CAPA</span>
-                            <img class="cover-img" src="" alt="Capa" onerror="this.src='';this.closest('.book-cover-wrap').classList.remove('has-image');">
+                            <img class="cover-img" alt="Capa">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>

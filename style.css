@@ -327,21 +327,28 @@ input:disabled {
     font-size: 16px; /* isola do A+/A- do usuário */
 }
 
-.book-cover-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+/* ── MINIATURA DE CAPA ─────────────────────────────────────── */
+.book-cover-wrap {
+    width: 72px;
+    min-width: 72px;
+    height: 96px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    /* logo de fundo sempre presente */
+    background: var(--bg) url('logo.png') center/45% no-repeat;
 }
 
-/* capa real: escondida até carregar */
+/* capa real — ocupa tudo quando visível */
 .book-cover-wrap img.cover-img {
-    display: none;
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: none;
     z-index: 2;
 }
 
@@ -349,16 +356,16 @@ input:disabled {
     display: block;
 }
 
-/* logo de fundo via CSS — sem conflito com regras de img */
-.book-cover-bg-logo {
+/* overlay semitransparente sobre a logo (escurece levemente) */
+.book-cover-wrap::before {
+    content: '';
     position: absolute;
     inset: 0;
-    background: var(--bg) url('logo.png') center/45% no-repeat;
-    opacity: 0.3;
+    background: rgba(0,0,0,0.45);
     z-index: 0;
 }
 
-/* texto centralizado (SEM CAPA ou CARREGANDO CAPA) */
+/* texto centralizado (CARREGANDO CAPA / SEM CAPA) */
 .book-cover-label {
     position: absolute;
     inset: 0;
@@ -368,14 +375,15 @@ input:disabled {
     text-align: center;
     font-size: 8px !important;
     font-weight: 700;
-    color: var(--text-light);
-    line-height: 1.3;
-    padding: 4px;
-    pointer-events: none;
+    color: #e2e8f0;
+    line-height: 1.4;
+    padding: 6px;
     z-index: 1;
+    pointer-events: none;
 }
 
-.book-cover-wrap.capa-carregada .book-cover-bg-logo,
+/* quando capa carregou: esconde overlay e label */
+.book-cover-wrap.capa-carregada::before,
 .book-cover-wrap.capa-carregada .book-cover-label {
     display: none;
 }
