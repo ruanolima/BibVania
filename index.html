@@ -142,15 +142,19 @@
                 const capas = await window.DB.getCapas(ids);
                 // Atualiza cache local
                 todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
-                // Atualiza apenas as imagens já renderizadas no DOM
-                Object.entries(capas).forEach(([id, url]) => {
-                    document.querySelectorAll(`[data-lightbox-id="${id}"]`).forEach(wrap => {
+                // Para cada livro renderizado: mostra capa se tiver, remove loading se não tiver
+                todosLivros.forEach(l => {
+                    document.querySelectorAll(`[data-lightbox-id="${l.id}"]`).forEach(wrap => {
                         const img = wrap.querySelector('img');
-                        if (!img) return;
-                        img.src = url;
-                        img.style.opacity = '';
-                        img.classList.remove('cover-placeholder');
-                        wrap.classList.add('has-image', 'capa-carregada');
+                        const loading = wrap.querySelector('.book-cover-loading');
+                        if (capas[l.id]) {
+                            // Tem capa: carrega imagem, esconde loading
+                            img.src = capas[l.id];
+                            wrap.classList.add('capa-carregada', 'has-image');
+                        } else {
+                            // Não tem capa: remove loading, fica vazio limpo
+                            if (loading) loading.remove();
+                        }
                     });
                 });
             } catch(e) { console.warn('Erro ao carregar capas:', e); }
@@ -221,9 +225,9 @@
             return `
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
-                        <div class="book-cover-wrap ${temCapa ? 'capa-carregada has-image' : ''}" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            ${temCapa ? '' : '<div class="book-cover-loading">CARREGANDO<br>CAPA</div>'}
-                            <img src="${temCapa ? l.imagem_url : ''}" alt="Capa" onerror="this.src='';this.closest('.book-cover-wrap').classList.remove('capa-carregada','has-image');">
+                        <div class="book-cover-wrap" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
+                            <div class="book-cover-loading">CARREGANDO<br>CAPA</div>
+                            <img src="" alt="Capa" onerror="this.src='';this.closest('.book-cover-wrap').classList.remove('capa-carregada','has-image');">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>

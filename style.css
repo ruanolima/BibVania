@@ -331,6 +331,8 @@ input:disabled {
     height: 100%;
     object-fit: cover;
     display: none;
+    position: relative;
+    z-index: 1;
 }
 
 .book-cover-wrap.capa-carregada img {
@@ -344,13 +346,15 @@ input:disabled {
     align-items: center;
     justify-content: center;
     background: var(--bg);
-    font-size: 0.48rem;
-    font-weight: 800;
+    font-size: 9px;
+    font-weight: 700;
     color: var(--text-light);
     text-align: center;
-    line-height: 1.4;
-    letter-spacing: 0.03em;
-    padding: 6px;
+    line-height: 1.3;
+    padding: 4px;
+    word-break: break-word;
+    overflow: hidden;
+    z-index: 0;
 }
 
 .book-cover-wrap.capa-carregada .book-cover-loading {
