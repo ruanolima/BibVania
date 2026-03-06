@@ -334,7 +334,7 @@ input:disabled {
     display: block;
 }
 
-/* só a capa real fica escondida até carregar */
+/* capa real: escondida até carregar */
 .book-cover-wrap img.cover-img {
     display: none;
     position: absolute;
@@ -349,24 +349,13 @@ input:disabled {
     display: block;
 }
 
-/* logo de fundo */
+/* logo de fundo via CSS — sem conflito com regras de img */
 .book-cover-bg-logo {
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
+    background: var(--bg) url('logo.png') center/45% no-repeat;
+    opacity: 0.3;
     z-index: 0;
-}
-
-.book-cover-bg-logo img {
-    width: 55% !important;
-    height: 55% !important;
-    object-fit: contain !important;
-    opacity: 0.25;
-    display: block !important;
-    position: static !important;
 }
 
 /* texto centralizado (SEM CAPA ou CARREGANDO CAPA) */
