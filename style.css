@@ -337,32 +337,40 @@ input:disabled {
     display: block;
 }
 
-/* livros sem capa: logo com display:block inline, estilo contido */
-.book-cover-wrap img[src="logo.png"] {
-    display: block;
-    object-fit: contain;
-    padding: 8px;
-    opacity: 0.45;
-}
-
-.book-cover-loading {
+/* logo de fundo sempre visível */
+.book-cover-bg-logo {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--bg);
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--text-light);
-    text-align: center;
-    line-height: 1.3;
-    padding: 4px;
-    word-break: break-word;
-    overflow: hidden;
 }
 
-.book-cover-wrap.capa-carregada .book-cover-loading {
+.book-cover-bg-logo img {
+    display: block !important;
+    width: 60% !important;
+    height: 60% !important;
+    object-fit: contain !important;
+    opacity: 0.25;
+}
+
+/* texto sobreposto (SEM CAPA ou CARREGANDO CAPA) */
+.book-cover-label {
+    position: absolute;
+    bottom: 5px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--text-light);
+    line-height: 1.3;
+    padding: 0 4px;
+    pointer-events: none;
+}
+
+.book-cover-wrap.capa-carregada .book-cover-bg-logo,
+.book-cover-wrap.capa-carregada .book-cover-label {
     display: none;
 }
 

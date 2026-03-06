@@ -117,15 +117,7 @@ const DB = {
                 console.error("Nenhum dado retornado do Supabase");
                 return [];
             }
-            // Buscar quais IDs têm capa (só IDs, sem trazer a imagem)
-            const ids = data.map(l => l.id);
-            const { data: comCapa } = await supabase
-                .from("livros")
-                .select("id")
-                .in("id", ids)
-                .not("imagem_url", "is", null);
-            const idsComCapa = new Set((comCapa || []).map(l => l.id));
-            return data.map(l => ({ ...l, tem_capa: idsComCapa.has(l.id) }));
+            return data;
         } catch (error) {
             console.error("Erro ao listar livros:", error.message);
             throw error;
@@ -143,6 +135,15 @@ const DB = {
             .from("livros").select("imagem_url").eq("id", id).single();
         if (error || !data) return null;
         return data.imagem_url || null;
+    },
+
+    // Retorna Set de IDs que têm capa — sem trazer a imagem
+    async getIdsComCapa() {
+        const { data } = await supabase
+            .from("livros")
+            .select("id")
+            .not("imagem_url", "is", null);
+        return new Set((data || []).map(l => l.id));
     },
 
     // Busca capas de vários livros de uma vez (1 request só)

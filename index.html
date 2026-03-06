@@ -189,19 +189,24 @@
             try {
                 const ids = todosLivros.map(l => l.id);
                 if (ids.length === 0) return;
-                const capas = await window.DB.getCapas(ids);
+                // Busca IDs com capa e as imagens em paralelo
+                const [idsComCapa, capas] = await Promise.all([
+                    window.DB.getIdsComCapa(),
+                    window.DB.getCapas(ids)
+                ]);
                 todosLivros.forEach(l => { if (capas[l.id]) l.imagem_url = capas[l.id]; });
+                // Atualiza miniaturas: marca quem tem/não tem capa para o label correto
                 todosLivros.forEach(l => {
                     document.querySelectorAll(`[data-lightbox-id="${l.id}"]`).forEach(wrap => {
-                        const img = wrap.querySelector('img');
-                        const loading = wrap.querySelector('.book-cover-loading');
+                        const img = wrap.querySelector('img.cover-img');
+                        const label = wrap.querySelector('.book-cover-label');
                         if (capas[l.id]) {
                             img.src = capas[l.id];
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
-                            img.src = 'logo.png';
+                            // Sem capa: troca label para "SEM CAPA"
+                            if (label) label.textContent = 'SEM CAPA';
                             wrap.classList.add('capa-carregada');
-                            if (loading) loading.remove();
                         }
                     });
                 });
@@ -274,8 +279,9 @@
                 <div class="book-item" ${borderStyle}>
                     <div class="book-header" onclick="toggleAccordion(this, '${prefix}')">
                         <div class="book-cover-wrap" data-lightbox-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
-                            ${l.tem_capa ? '<div class="book-cover-loading">CARREGANDO<br>CAPA</div>' : ''}
-                            <img src="${l.tem_capa ? '' : 'logo.png'}" alt="Capa" ${l.tem_capa ? '' : 'style="display:block;"'} onerror="this.src='logo.png';this.closest('.book-cover-wrap').classList.remove('has-image');">
+                            <div class="book-cover-bg-logo"><img src="logo.png" alt=""></div>
+                            <span class="book-cover-label">CARREGANDO<br>CAPA</span>
+                            <img class="cover-img" src="" alt="Capa" onerror="this.src='';this.closest('.book-cover-wrap').classList.remove('has-image');">
                         </div>
                         <div class="book-header-inner">
                             <div class="accordion-indicator" style="position:absolute; top:1rem; right:1rem;">▼</div>
