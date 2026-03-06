@@ -3,7 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIBVANIA ONLINE - ÁREA DO BIBLIOTECÁRIO</title>
+    <title>Painel do Bibliotecário — BibVania</title>
+    <meta name="description" content="Área restrita do bibliotecário. Cadastro, empréstimos, acervo e devoluções. Sistema BibVania.">
+    <meta name="author" content="Ruan Oliveira Lima">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
+    <meta name="source" content="https://github.com/ruanolima/BibVania">
+    <meta name="version" content="1.1">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <meta property="og:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
+    <meta property="og:url" content="https://ruanolima.github.io/BibVania/">
+    <meta property="og:image" content="https://ruanolima.github.io/BibVania/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="BibVania">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <meta name="twitter:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
+    <meta name="twitter:image" content="https://ruanolima.github.io/BibVania/og-image.png">
+    <meta name="twitter:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
     <style>
@@ -439,6 +464,11 @@
                             wrap.classList.add('capa-carregada', 'has-image');
                         } else {
                             if (loading) loading.remove();
+                            img.src = 'logo.png';
+                            img.style.objectFit = 'contain';
+                            img.style.padding = '8px';
+                            img.style.opacity = '0.45';
+                            wrap.classList.add('capa-carregada');
                         }
                     });
                 });

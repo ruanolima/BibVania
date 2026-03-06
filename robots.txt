@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+
+Disallow: /admin.html
+Disallow: /login.html
+Disallow: /relatorios.html
+
+Sitemap: https://ruanolima.github.io/BibVania/sitemap.xml

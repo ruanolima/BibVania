@@ -1,171 +1,117 @@
-# BibVania Online
+# 📚 BibVania — Sistema de Biblioteca Escolar Gratuito
 
-Sistema de gerenciamento de biblioteca escolar da **EMTI Professora Maria Vânia Farias Linhares**, desenvolvido com HTML, CSS e JavaScript puro, usando **Supabase** como banco de dados em nuvem e hospedado via **GitHub Pages**.
+**BibVania** é um sistema de gerenciamento de biblioteca escolar **gratuito, open source, rápido e fácil de usar** — funciona direto no navegador, sem instalar nada, sem servidor próprio e sem custo.
 
-🌐 [Acessar o site](https://ruanolima.github.io/BibVania/) · **Versão 1.1** · © 2026 Ruan Oliveira Lima · [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+🌐 **[Acessar demonstração ao vivo](https://ruanolima.github.io/BibVania/)**
+&nbsp;·&nbsp; 📥 [Baixar projeto](https://github.com/ruanolima/BibVania/archive/refs/heads/main.zip)
+&nbsp;·&nbsp; ⭐ Gostou? Deixe uma estrela!
 
----
-
-## Funcionalidades
-
-### Site dos Leitores (`index.html`)
-- Consulta ao acervo completo com busca por título, autor, ISBN, sinopse, editora e nome de colaborador
-- Filtro por categoria com abas deslizantes
-- Capa do livro exibida à esquerda de cada card (logo da biblioteca como placeholder quando não há capa); clique na capa para ampliar
-- Cada livro exibe: autor, colaboradores, editora (ou "Publicação Independente"), ISBN, acabamento, categoria, prateleira e disponibilidade
-- Empréstimos ativos visíveis com nome do leitor e prazo de devolução
-- Destaque visual para livros com devolução atrasada (⚠️)
-- Atualização automática via Supabase Realtime + refresh periódico a cada 30 segundos como segurança
-- Modo escuro, ajuste de tamanho de fonte e acessibilidade via VLibras (Libras)
-
-### Área do Bibliotecário (`admin.html`)
-Acesso restrito por login. Organizada em três abas:
-
-**CADASTRO**
-- Campos: ISBN, acabamento (Grampeado / Espiral / Brochura / Capa Dura), título, autor, colaboradores ilimitados (função + nome), editora ou checkbox de Publicação Independente, prateleira (obrigatório), categoria, quantidade total e sinopse
-- Detecção automática de título duplicado — permite somar quantidade ao exemplar existente
-- IDs atribuídos automaticamente pelo menor número disponível
-
-**EMPRÉSTIMO**
-- Busca de livro por título ou ID
-- Suporte a alunos (máximo 1 empréstimo ativo por vez) e professores/funcionários (ilimitado)
-- Campos: nome, sexo, ano e turma (aluno) ou nome e sexo (professor/funcionário)
-- Prazo em dias ou opção "Sem data definida"
-- Ações nos empréstimos ativos: Devolver, Editar, Renovar, Excluir
-
-**ACERVO**
-- Busca e filtro por categoria
-- Livros ordenados do mais recente para o mais antigo (por data de cadastro)
-- Capa do livro: no cadastro e na edição há um retângulo de pré-visualização com opções de escolher, trocar ou excluir a imagem antes de salvar; se não houver capa, exibe a logo da biblioteca; clique na capa para ampliar em lightbox
-- Ações por livro: editar todos os campos ou excluir (bloqueado se houver empréstimos ativos)
-- Lista de empréstimos ativos por livro, com identificação de atrasos
-- Atualização imediata do acervo após cada ação (empréstimo, devolução, edição, exclusão)
-- Feedback visual "SALVANDO..." em todos os botões de confirmação
-
-**DEVOLUÇÕES**
-- Empréstimos ativos agrupados por turma (ex: 7º ANO — TURMA D) em ordem crescente de ano e turma
-- Professores e funcionários agrupados numa seção separada
-- Cada pessoa aparece uma única vez, com todos os livros que possui listados dentro do menu retrátil
-- Badge "DEVOLVER HOJE!" em destaque laranja quando a data de devolução é o dia atual
-- Ações por livro dentro do acordeão: Devolver, Editar, Renovar, Excluir
-
-### Relatórios (`relatorios.html`)
-- Acesso direto do painel do bibliotecário
-- Geração de relatório geral (anual) ou mensal exportado em arquivo `.txt`
-- Inclui: acervo completo, histórico de empréstimos, rankings por sala e livros mais lidos, livros atrasados, livros sem prazo e pendências
+> Desenvolvido para a **EMTI Professora Maria Vânia Farias Linhares** · Versão 1.3 · © 2026 Ruan Oliveira Lima · [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ---
 
-## Arquivos do Projeto
+## ✨ Por que usar o BibVania?
 
-| Arquivo | Publicar no GitHub | Descrição |
+| | BibVania | Sistemas pagos |
 |---|---|---|
-| `index.html` | ✅ | Site público dos leitores |
-| `login.html` | ✅ | Página de autenticação da bibliotecária |
-| `admin.html` | ✅ | Área do bibliotecário |
-| `relatorios.html` | ✅ | Gerador de relatórios |
-| `database.js` | ✅ | Todas as funções de comunicação com o Supabase |
-| `style.css` | ✅ | Estilos globais (tema claro/escuro, responsividade) |
-| `logo.png` | ✅ | Logotipo exibido no cabeçalho |
-| `favicon.png` | ✅ | Ícone da aba do navegador |
-| `supabase_setup.sql` | ⬜ opcional | Script de configuração completa do banco |
-| `README.md` | ⬜ opcional | Documentação do projeto |
-| `LICENCE.md` | ⬜ opcional | Licença do projeto |
+| **Custo** | 🟢 Gratuito | 🔴 Mensalidade |
+| **Instalação** | 🟢 Nenhuma | 🔴 Servidor ou download |
+| **Hospedagem** | 🟢 GitHub Pages (grátis) | 🔴 Paga |
+| **Banco de dados** | 🟢 Supabase (grátis) | 🔴 Pago |
+| **Acesso** | 🟢 Qualquer dispositivo | 🟡 Depende do sistema |
+| **Código** | 🟢 Aberto e modificável | 🔴 Fechado |
 
 ---
 
-## Banco de Dados (Supabase)
+## 🖥️ O que o sistema faz
 
-### Tabela `livros`
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | BIGINT | Identificador único (menor disponível) |
-| `isbn` | TEXT | Código ISBN (opcional) |
-| `acabamento` | TEXT | Grampeado / Espiral / Brochura / Capa Dura (opcional) |
-| `titulo` | TEXT | Título do livro (obrigatório) |
-| `autor` | TEXT | Autor principal (opcional) |
-| `colaboradores` | JSONB | Array de `{ funcao, nome }` |
-| `editora` | TEXT | Nome da editora (opcional) |
-| `pub_independente` | BOOLEAN | Publicação sem editora comercial |
-| `prateleira` | TEXT | Localização física — 1 letra + 1 número, ex: C3 (obrigatório) |
-| `categoria` | TEXT | Uma das 13 categorias fixas |
-| `sinopse` | TEXT | Resumo do livro (opcional) |
-| `quantidade_total` | INTEGER | Total de exemplares |
-| `quantidade_disponivel` | INTEGER | Exemplares disponíveis (calculado automaticamente por trigger) |
-| `imagem_url` | TEXT | Capa do livro em Base64 (opcional, salvo diretamente no banco) |
-| `data_cadastro` | TIMESTAMP | Data/hora do cadastro (automático) |
+### Para os leitores — `index.html` (público)
+- 🔍 **Busca o acervo** por título, autor, ISBN, sinopse, editora ou colaborador
+- 🗂️ **Filtra por categoria** com abas deslizantes
+- 📖 Exibe disponibilidade em tempo real de cada livro
+- 🖼️ Mostra capa do livro com carregamento otimizado (textos primeiro, imagens depois)
+- ⚠️ Destaque automático para livros com devolução atrasada
+- 🌙 Modo escuro, ajuste de fonte e acessibilidade em Libras (VLibras)
+- ⚡ Atualização em tempo real via Supabase Realtime
 
-### Tabela `emprestimos`
-| Coluna | Tipo | Descrição |
-|---|---|---|
-| `id` | BIGSERIAL | Identificador único |
-| `livro_id` | BIGINT | Referência ao livro |
-| `nome_aluno` | TEXT | Nome do leitor |
-| `sexo` | CHAR(1) | M ou F |
-| `ano_aluno` | INTEGER | Ano escolar (0 = professor/funcionário) |
-| `turma_aluno` | TEXT | Turma ou `PROF/FUNC` |
-| `status` | TEXT | `emprestado` ou `devolvido` |
-| `dias_emprestimo` | INTEGER | Dias concedidos |
-| `sem_data_definida` | BOOLEAN | Empréstimo sem prazo |
-| `data_emprestimo` | TIMESTAMP | Data/hora do empréstimo (automático) |
-| `data_prevista_devolucao` | TIMESTAMP | Prazo de devolução |
-| `data_devolucao` | TIMESTAMP | Data efetiva da devolução |
+### Para o bibliotecário — `admin.html` (acesso com senha)
 
-### Trigger automático
-O `supabase_setup.sql` instala um trigger que recalcula `quantidade_disponivel` automaticamente após qualquer inserção, atualização ou exclusão de empréstimo — garantindo que a disponibilidade nunca fique incorreta.
+**Aba CADASTRO** — Cadastra livros com ISBN, acabamento, título, autor, colaboradores, editora, prateleira, categoria, quantidade, sinopse e capa com pré-visualização
+
+**Aba EMPRÉSTIMO** — Registra saída para alunos (limite 1 ativo) e professores/funcionários; prazo em dias ou sem data
+
+**Aba ACERVO** — Edita e exclui livros; lista empréstimos ativos por livro; detecta atrasos
+
+**Aba DEVOLUÇÕES** — Empréstimos agrupados por turma; badge "DEVOLVER HOJE!"; ações de devolver, editar, renovar e excluir
+
+### Relatórios — `relatorios.html`
+Exporta `.txt` anual ou mensal com acervo, histórico, ranking de leitores, livros mais lidos, atrasados e pendências
 
 ---
 
-## Categorias de Livros
+## 🚀 Instalação em 15 minutos
 
-| Categoria |
-|---|
-| EDUCAÇÃO INCLUSIVA |
-| INFANTIL (1º AO 4º) |
-| INFANTOJUVENIL (5º E 6º) |
-| JUVENIL (7º AO 9º) |
-| DIDÁTICO (1º AO 4º) |
-| DIDÁTICO (5º) |
-| DIDÁTICO (6º) |
-| DIDÁTICO (7º) |
-| DIDÁTICO (8º) |
-| DIDÁTICO (9º) |
-| DE REFERÊNCIA |
-| CLÁSSICOS & REGIONAIS |
-| POESIA |
+### 1. Banco de dados (Supabase — gratuito)
+1. Crie conta em [supabase.com](https://supabase.com/) e inicie um projeto
+2. Copie a **URL** e a **Chave Anon** em *Project Settings → API*
+3. Execute `supabase_setup.sql` no *SQL Editor*
+4. Habilite Realtime em *Database → Replication* para `livros` e `emprestimos`
+5. Cadastre a bibliotecária em *Authentication → Users → Add User*
 
----
-
-## Instalação do Zero
-
-### 1. Baixar o projeto
-Clone ou baixe os arquivos do repositório.
-
-### 2. Configurar o Supabase
-1. Crie uma conta em [supabase.com](https://supabase.com/) e inicie um novo projeto
-2. Em **Project Settings → API**, copie a **URL do Projeto** e a **Chave Anon**
-3. Vá em **SQL Editor**, cole o conteúdo de `supabase_setup.sql` e execute — cria tabelas, segurança e triggers em uma única execução
-4. Vá em **Database → Replication** e habilite o Realtime para `livros` e `emprestimos`
-5. Vá em **Authentication → Users → Add User → Create new user** e cadastre e-mail e senha da bibliotecária
-   > A senha é **case-sensitive**
-
-### 3. Conectar ao Supabase
-Abra `database.js` e substitua as linhas 4–5:
+### 2. Conectar ao banco
+Em `database.js`, linhas 4–5:
 ```javascript
 const supabaseUrl = "https://seu-projeto.supabase.co";
 const supabaseKey = "sua-chave-anon-aqui";
 ```
 
-### 4. Publicar no GitHub Pages
-1. Suba os arquivos marcados com ✅ na tabela acima para um repositório no GitHub
-2. Vá em **Settings → Pages** e defina a source para o branch principal
-3. O site ficará disponível em `https://seu-usuario.github.io/nome-do-repositorio/`
+### 3. Publicar no GitHub Pages (gratuito)
+1. Suba os arquivos para um repositório no GitHub
+2. *Settings → Pages* → source: branch principal
+3. Site disponível em `https://seu-usuario.github.io/nome-do-repo/`
 
 ---
 
-## Atualização de Banco Existente
-Se o banco já foi criado antes das últimas versões, execute no **SQL Editor** do Supabase:
+## 📁 Arquivos
+
+| Arquivo | Publicar | Descrição |
+|---|---|---|
+| `index.html` | ✅ | Site público dos leitores |
+| `login.html` | ✅ | Autenticação |
+| `admin.html` | ✅ | Painel do bibliotecário |
+| `relatorios.html` | ✅ | Relatórios |
+| `database.js` | ✅ | Funções Supabase |
+| `style.css` | ✅ | Estilos globais |
+| `logo.png` | ✅ | Logo |
+| `favicon.png` | ✅ | Ícone |
+| `supabase_setup.sql` | ⬜ | Script do banco |
+| `README.md` | ⬜ | Esta documentação |
+
+---
+
+## 🛠️ Tecnologias
+
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
+![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-222222?style=flat&logo=github&logoColor=white)
+
+HTML5 · CSS3 · JavaScript puro (sem frameworks) · Supabase (PostgreSQL) · GitHub Pages
+
+---
+
+## 🔧 Resolução de problemas
+
+| Problema | Solução |
+|---|---|
+| Acervo não carrega | Verifique credenciais em `database.js` e recarregue |
+| Login não funciona | Confirme e-mail em Authentication → Users (senha case-sensitive) |
+| Disponibilidade incorreta | Execute `supabase_setup.sql` para reinstalar o trigger |
+| Dados não atualizam | Habilite Realtime no Supabase (Database → Replication) |
+
 ```sql
+-- Atualização de banco existente
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS colaboradores JSONB DEFAULT '[]';
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS editora TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS pub_independente BOOLEAN DEFAULT FALSE;
@@ -173,18 +119,15 @@ ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS acabamento TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
 ```
-> O `supabase_setup.sql` já inclui esses comandos — basta executá-lo por completo.
 
 ---
 
-## Resolução de Problemas
+## 📄 Licença
 
-| Problema | Solução |
-|---|---|
-| Acervo não carrega | Aguarde alguns segundos e recarregue. Verifique as credenciais em `database.js` |
-| Login não funciona | Confirme o e-mail em Authentication → Users. A senha é case-sensitive |
-| Disponibilidade incorreta | Execute `supabase_setup.sql` para reinstalar o trigger |
-| Colunas não encontradas | Execute os `ALTER TABLE` da seção "Atualização de Banco Existente" |
-| VLibras não aparece | Requer conexão com a internet |
-| Botão fica em "SALVANDO..." | Recarregue a página — problema corrigido na v1.3 |
-| Dados não atualizam sem recarregar | Habilite Realtime no Supabase (Database → Replication) |
+[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) · **Ruan Oliveira Lima** · [github.com/ruanolima](https://github.com/ruanolima)
+
+Use, copie, modifique e distribua — desde que dê crédito ao autor.
+
+---
+
+*sistema de biblioteca escolar gratuito · open source · sem instalação · gerenciamento de acervo · controle de empréstimos · escola pública · HTML CSS JavaScript Supabase GitHub Pages*

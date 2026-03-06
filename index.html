@@ -3,7 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIBVANIA ONLINE</title>
+    <title>BibVania — Acervo da Biblioteca Escolar</title>
+    <meta name="description" content="Consulte o acervo da biblioteca escolar, veja disponibilidade de livros em tempo real e acompanhe empréstimos. Sistema BibVania — gratuito, rápido e fácil de usar.">
+    <meta name="keywords" content="biblioteca escolar, acervo de livros, sistema de biblioteca, empréstimo de livros, consulta de acervo, biblioteca online, gerenciamento de biblioteca escolar gratuito">
+    <meta name="author" content="Ruan Oliveira Lima">
+    <meta name="robots" content="index, follow">
+    <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
+    <meta name="source" content="https://github.com/ruanolima/BibVania">
+    <meta name="version" content="1.1">
+    <link rel="canonical" href="https://ruanolima.github.io/BibVania/">
+
+    <!-- Open Graph (WhatsApp, Facebook, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="BibVania — Acervo da Biblioteca Escolar">
+    <meta property="og:description" content="Consulte o acervo, veja disponibilidade de livros e acompanhe empréstimos em tempo real. Sistema gratuito de biblioteca escolar.">
+    <meta property="og:url" content="https://ruanolima.github.io/BibVania/">
+    <meta property="og:image" content="https://ruanolima.github.io/BibVania/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="BibVania">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <meta name="twitter:description" content="Gratuito, open source, sem instalação. Consulta de acervo, empréstimos e relatórios em tempo real.">
+    <meta name="twitter:image" content="https://ruanolima.github.io/BibVania/og-image.png">
+    <meta name="twitter:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+
+    <!-- JSON-LD: dados estruturados para Google e IAs -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "BibVania",
+      "description": "Sistema gratuito de gerenciamento de biblioteca escolar. Consulta de acervo, controle de empréstimos e devoluções em tempo real.",
+      "url": "https://ruanolima.github.io/BibVania/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+      "author": { "@type": "Person", "name": "Ruan Oliveira Lima", "url": "https://github.com/ruanolima" },
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "keywords": "biblioteca escolar, sistema de biblioteca, gerenciamento de acervo, empréstimo de livros, gratuito, open source",
+      "inLanguage": "pt-BR",
+      "isAccessibleForFree": true,
+      "sourceOrganization": {
+        "@type": "EducationalOrganization",
+        "name": "EMTI Professora Maria Vânia Farias Linhares"
+      }
+    }
+    </script>
+
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -152,8 +202,13 @@
                             img.src = capas[l.id];
                             wrap.classList.add('capa-carregada', 'has-image');
                         } else {
-                            // Não tem capa: remove loading, fica vazio limpo
+                            // Não tem capa: remove loading, mostra logo
                             if (loading) loading.remove();
+                            img.src = 'logo.png';
+                            img.style.objectFit = 'contain';
+                            img.style.padding = '8px';
+                            img.style.opacity = '0.45';
+                            wrap.classList.add('capa-carregada');
                         }
                     });
                 });
