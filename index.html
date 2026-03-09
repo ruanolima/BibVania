@@ -153,8 +153,11 @@
                 clearTimeout(_realtimeTimer);
                 _realtimeTimer = setTimeout(carregarSemCapas, 300);
             });
-            // Refresh periódico leve — só textos e empréstimos, sem recarregar capas
-            setInterval(carregarSemCapas, 30000);
+            // Refresh periódico leve — só dados de empréstimos (não recarrega capas)
+            setInterval(() => {
+                clearTimeout(_realtimeTimer);
+                _realtimeTimer = setTimeout(carregarSemCapas, 300);
+            }, 60000);
             await carregarLivros();
         }
 
@@ -180,6 +183,7 @@
                 todosLivros.forEach(l => {
                     if (!l.imagem_url) return;
                     document.querySelectorAll(`[data-lightbox-id="${l.id}"]`).forEach(wrap => {
+                        if (wrap.classList.contains('sem-capa')) return; // já marcado sem capa
                         const img = wrap.querySelector('img.cover-img');
                         if (img && img.src !== l.imagem_url) {
                             img.src = l.imagem_url;
@@ -248,11 +252,11 @@
                             img.src = capas[l.id];
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
-                            // Sem capa: remove img quebrada, troca label
+                            // Sem capa: esconde img, exibe label "SEM CAPA"
                             const imgEl = wrap.querySelector('img.cover-img');
-                            if (imgEl) imgEl.remove();
-                            if (label) label.innerHTML = 'SEM<br>CAPA';
-                            wrap.classList.add('capa-carregada');
+                            if (imgEl) { imgEl.style.display = 'none'; }
+                            if (label) { label.innerHTML = 'SEM<br>CAPA'; label.style.display = ''; }
+                            wrap.classList.add('capa-carregada', 'sem-capa');
                         }
                     });
                 });

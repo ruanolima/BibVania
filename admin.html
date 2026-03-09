@@ -220,6 +220,11 @@
                         <input type="number" id="dias" min="1" value="7">
                     </div>
                     <div class="form-group">
+                        <label>DATA DO EMPRÉSTIMO</label>
+                        <input type="date" id="dataEmprestimo" title="Se não selecionada, será usada a data de hoje">
+                        <small style="color:var(--text-light);font-size:0.7rem;">Deixe em branco para usar a data de hoje</small>
+                    </div>
+                    <div class="form-group">
                         <label class="checkbox-container" id="labelSemData" style="margin-top:1.5rem;">
                             <input type="checkbox" id="semData" onchange="toggleData()">
                             SEM DATA DEFINIDA
@@ -432,7 +437,7 @@
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
-            setInterval(load, 30000);
+            setInterval(load, 60000);
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             load();
@@ -466,8 +471,9 @@
                             img.src = capas[l.id];
                             wrap.classList.add('has-image', 'capa-carregada');
                         } else {
-                            if (label) { label.textContent = 'SEM CAPA'; }
-                            wrap.classList.add('capa-carregada');
+                            if (img) { img.style.display = 'none'; }
+                            if (label) { label.innerHTML = 'SEM<br>CAPA'; label.style.display = ''; }
+                            wrap.classList.add('capa-carregada', 'sem-capa');
                         }
                     });
                 });
@@ -1073,10 +1079,12 @@
             btnEmp.textContent = 'SALVANDO...'; btnEmp.disabled = true;
             try {
                 const isP = document.getElementById('ehProfessor').checked;
+                const dataEmpInput = document.getElementById('dataEmprestimo').value;
                 const data = {
                     livro_id: parseInt(document.getElementById('livroId').value),
                     sem_data_definida: document.getElementById('semData').checked,
-                    dias_emprestimo: document.getElementById('dias').value
+                    dias_emprestimo: document.getElementById('dias').value,
+                    data_emprestimo: dataEmpInput ? new Date(dataEmpInput + 'T12:00:00').toISOString() : new Date().toISOString()
                 };
                 if(isP) { 
                     data.nome_aluno = document.getElementById('nomeProfessor').value; 
@@ -1110,6 +1118,7 @@
                 btnEmp.textContent = lblEmp; btnEmp.disabled = false;
                 mostrarMsg('msgEmp', '✓ REGISTRADO!', 'success');
                 e.target.reset();
+                document.getElementById('dataEmprestimo').value = '';
                 toggleTipoPessoa();
                 toggleData();
                 load();
