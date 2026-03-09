@@ -53,6 +53,10 @@ CREATE TABLE IF NOT EXISTS livros_excluidos (
 ALTER TABLE livros ENABLE ROW LEVEL SECURITY;
 ALTER TABLE emprestimos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE livros_excluidos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Leitura autenticada de livros_excluidos" ON livros_excluidos;
+DROP POLICY IF EXISTS "Escrita autenticada de livros_excluidos" ON livros_excluidos;
+CREATE POLICY "Leitura autenticada de livros_excluidos" ON livros_excluidos FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Escrita autenticada de livros_excluidos" ON livros_excluidos FOR ALL USING (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Leitura pública de livros" ON livros;
 DROP POLICY IF EXISTS "Escrita autenticada de livros" ON livros;
@@ -98,7 +102,29 @@ ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS editora TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS pub_independente BOOLEAN DEFAULT FALSE;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
+ALTER TABLE livros ADD COLUMN IF NOT EXISTS alt_text TEXT;
 
--- 7. REALTIME
+-- 7. TABELA DE PESSOAS (alunos e funcionários)
+CREATE TABLE IF NOT EXISTS pessoas (
+    id BIGSERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    sexo CHAR(1) NOT NULL,
+    tipo TEXT NOT NULL CHECK (tipo IN ('aluno', 'funcionario')),
+    ano_aluno INTEGER,
+    turma_aluno TEXT,
+    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE pessoas ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Leitura pública de pessoas" ON pessoas;
+DROP POLICY IF EXISTS "Escrita autenticada de pessoas" ON pessoas;
+CREATE POLICY "Leitura pública de pessoas" ON pessoas FOR SELECT USING (true);
+CREATE POLICY "Escrita autenticada de pessoas" ON pessoas FOR ALL USING (auth.role() = 'authenticated');
+
+-- 8. REALTIME
 -- Após executar este script, acesse Database → Replication no painel do Supabase
--- e habilite o Realtime para as tabelas 'livros' e 'emprestimos'.
+-- e habilite o Realtime para as tabelas: 'livros', 'emprestimos' e 'pessoas'.
+-- Alternativamente, execute os comandos abaixo:
+ALTER PUBLICATION supabase_realtime ADD TABLE livros;
+ALTER PUBLICATION supabase_realtime ADD TABLE emprestimos;
+ALTER PUBLICATION supabase_realtime ADD TABLE pessoas;

@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+    // Aplicar tema antes do CSS carregar — elimina flash claro→escuro
+    (function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+    // Aplicar font-size salvo imediatamente
+    (function(){var f=parseInt(localStorage.getItem('fontSize'));if(f)document.documentElement.style.setProperty('--font-size',f+'px');})();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — BibVania Biblioteca Escolar</title>
-    <meta name="description" content="Área restrita do bibliotecário. Sistema BibVania de gerenciamento de biblioteca escolar.">
+    <meta name="description" content="Acesso restrito ao bibliotecário. Sistema BibVania — gerenciamento gratuito de biblioteca escolar com acervo, empréstimos e devoluções.">
+    <meta name="keywords" content="biblioteca escolar, sistema de biblioteca gratuito, login bibliotecário, gerenciamento de acervo escolar">
     <meta name="author" content="Ruan Oliveira Lima">
     <meta name="robots" content="noindex, nofollow">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
     <meta name="version" content="1.1">
+    <meta name="year" content="2026">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
@@ -29,44 +37,73 @@
     <meta name="twitter:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
     <meta name="twitter:image" content="https://ruanolima.github.io/BibVania/og-image.png">
     <meta name="twitter:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <link rel="canonical" href="https://ruanolima.github.io/BibVania/login.html">
     <link rel="icon" type="image/png" href="favicon.png">
+<style>
+    /* CSS crítico — previne piscada de botões antes de style.css carregar */
+    :root{--primary:#2563eb;--success:#10b981;--danger:#ef4444;--bg:#f1f5f9;--card:#ffffff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--radius:12px;--font-size:16px}
+    [data-theme=dark]{--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--text-light:#94a3b8;--border:#334155}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background-color:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:1rem;text-transform:uppercase}
+    .btn-block{width:100%;padding:1rem;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-outline{background:var(--card);border:1px solid var(--border);color:var(--text)}
+    .accessibility-bar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--primary);display:flex;padding:0.4rem;gap:0.5rem;height:48px}
+    .control-btn{background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.9rem}
+</style>
     <link rel="stylesheet" href="style.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Login — BibVania",
+      "description": "Página de autenticação do sistema BibVania de gerenciamento de biblioteca escolar.",
+      "url": "https://ruanolima.github.io/BibVania/login.html",
+      "isPartOf": { "@type": "WebApplication", "name": "BibVania", "url": "https://ruanolima.github.io/BibVania/" },
+      "author": { "@type": "Person", "name": "Ruan Oliveira Lima", "url": "https://github.com/ruanolima" },
+      "inLanguage": "pt-BR"
+    }
+    </script>
 </head>
 <body style="display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
-    <div class="accessibility-bar">
-        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="flex-grow:1; text-align:left;">📁 Repositório</button>
-        <button class="control-btn" onclick="changeFontSize(1)">A+</button>
-        <button class="control-btn" onclick="changeFontSize(-1)">A-</button>
-        <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn">🌙</button>
+    <!-- Skip navigation -->
+    <a href="#loginForm" class="skip-link">Ir para o formulário de login</a>
+
+    <div class="accessibility-bar" role="toolbar" aria-label="Barra de acessibilidade">
+        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="flex-grow:1; text-align:left;" aria-label="Abrir repositório no GitHub">📁 Repositório</button>
+        <button class="control-btn" onclick="changeFontSize(1)" aria-label="Aumentar tamanho da fonte">A+</button>
+        <button class="control-btn" onclick="changeFontSize(-1)" aria-label="Diminuir tamanho da fonte">A-</button>
+        <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn" aria-label="Alternar modo escuro" aria-pressed="false">🌙</button>
     </div>
 
-    <div class="login-box">
+    <main class="login-box" aria-label="Página de login do bibliotecário">
         <div style="margin-bottom: 2rem; display:flex; flex-direction:column; align-items:center; gap:0.4rem; text-align:center;">
-            <img src="logo.png" alt="Logo BibVania" style="height:72px; width:auto;">
+            <img src="logo.png" alt="Logo BibVania — Sistema de Biblioteca Escolar" style="height:72px; width:auto;">
             <h1 style="color: var(--primary); font-size: 1.25rem; line-height:1.2;">BIBVANIA ONLINE</h1>
-            <div id="nomeEscolaLogin" class="school-name"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
+            <div id="nomeEscolaLogin" class="school-name" aria-label="Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
             <p style="margin-top:0.75rem; font-size:0.8rem; color:var(--text-light); letter-spacing:0.08em; border-top:1px solid var(--border); padding-top:0.75rem; width:100%; text-align:center;">ÁREA DO BIBLIOTECÁRIO</p>
         </div>
 
-        <form id="loginForm" style="text-align: left;">
+        <form id="loginForm" style="text-align: left;" novalidate aria-label="Formulário de autenticação">
             <div class="form-group">
-                <label>E-MAIL</label>
-                <input type="email" id="email" placeholder="seu@email.com" required autocapitalize="none" autocorrect="off" autocomplete="username">
+                <label for="email">E-MAIL</label>
+                <input type="email" id="email" name="email" placeholder="seu@email.com" required autocapitalize="none" autocorrect="off" autocomplete="username" aria-required="true" aria-describedby="emailHelp">
             </div>
             <div class="form-group">
-                <label>SENHA</label>
-                <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                <label for="password">SENHA</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" aria-required="true">
             </div>
             <button type="submit" class="btn-block btn-primary" style="margin-top: 1rem;">ENTRAR NO PAINEL</button>
-            <div id="loginError" style="color: var(--danger); font-size: 0.75rem; font-weight: bold; margin-top: 1rem; text-align: center;"></div>
+            <div id="loginError" aria-live="assertive" aria-atomic="true" role="alert" aria-live="assertive" style="color: var(--danger); font-size: 0.75rem; font-weight: bold; margin-top: 1rem; text-align: center;"></div>
         </form>
 
-        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-            <button onclick="window.location.href='index.html'" class="btn-block btn-outline" style="background: none; border: 1px solid var(--border); color: var(--text-light);">
+        <nav style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);" aria-label="Navegação de retorno">
+            <button onclick="window.location.href='index.html'" class="btn-block btn-outline" style="background: none; border: 1px solid var(--border); color: var(--text-light);" aria-label="Voltar para a página de consulta do acervo">
                 ← VOLTAR PARA CONSULTA
             </button>
-        </div>
-    </div>
+        </nav>
+    </main>
 
     <script type="module">
         import DB from './database.js';

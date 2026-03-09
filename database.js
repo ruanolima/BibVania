@@ -1,3 +1,14 @@
+/**
+ * BibVania — database.js
+ * Sistema de Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares
+ *
+ * @author  Ruan Oliveira Lima <https://github.com/ruanolima>
+ * @version 1.1
+ * @year    2026
+ * @license CC-BY-4.0 <https://creativecommons.org/licenses/by/4.0/>
+ * @source  https://github.com/ruanolima/BibVania
+ */
+
 // ============================================================================
 // CONFIGURAÇÃO DO SUPABASE
 // ============================================================================
@@ -158,6 +169,16 @@ const DB = {
         const map = {};
         data.forEach(l => { if (l.imagem_url) map[l.id] = l.imagem_url; });
         return map;
+    },
+
+    async getCapaUnica(id) {
+        const { data, error } = await supabase
+            .from("livros")
+            .select("imagem_url")
+            .eq("id", id)
+            .single();
+        if (error || !data) return null;
+        return data.imagem_url || null;
     },
 
     async getProximoIdDisponivel() {
@@ -520,6 +541,43 @@ const DB = {
             .channel('emprestimos-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'emprestimos' }, callback)
             .subscribe();
+    },
+
+    // ── PESSOAS (alunos e funcionários) ──────────────────────────────────────
+    async getPessoas() {
+        const { data, error } = await supabase
+            .from('pessoas')
+            .select('*')
+            .order('nome', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    },
+
+    async salvarPessoa(pessoa) {
+        const { data, error } = await supabase
+            .from('pessoas')
+            .insert([pessoa])
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    async excluirPessoa(id) {
+        const { error } = await supabase.from('pessoas').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    async atualizarPessoa(pessoa) {
+        const { id, ...campos } = pessoa;
+        const { data, error } = await supabase
+            .from('pessoas')
+            .update(campos)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
     }
 };
 

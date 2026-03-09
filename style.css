@@ -1,3 +1,13 @@
+/**
+ * BibVania — style.css
+ * Sistema de Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares
+ *
+ * @author  Ruan Oliveira Lima <https://github.com/ruanolima>
+ * @version 1.1
+ * @year    2026
+ * @license CC-BY-4.0 <https://creativecommons.org/licenses/by/4.0/>
+ * @source  https://github.com/ruanolima/BibVania
+ */
 :root {
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
@@ -32,6 +42,13 @@
     text-transform: uppercase;
 }
 
+/* Suprimir todas as transitions durante troca de tema — evita repaint global */
+.no-theme-transition *,
+.no-theme-transition *::before,
+.no-theme-transition *::after {
+    transition: none !important;
+}
+
 html {
     font-size: var(--font-size);
 }
@@ -41,7 +58,6 @@ body {
     color: var(--text);
     font-size: 1rem;
     line-height: 1.5;
-    transition: background-color 0.15s ease, color 0.15s ease;
     min-height: 100vh;
 }
 
@@ -62,6 +78,7 @@ body {
 }
 
 .control-btn {
+    position: relative;
     background: rgba(255,255,255,0.2);
     border: none;
     color: white;
@@ -337,28 +354,30 @@ input:disabled {
     height: 96px;
     border-radius: 6px;
     overflow: hidden;
-    background: var(--bg);
     border: 1px solid var(--border);
+    flex-shrink: 0;
+    position: relative;
+    background: var(--bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    position: relative;
     font-size: 16px; /* isola do A+/A- do usuário */
 }
 
-/* ── MINIATURA DE CAPA ─────────────────────────────────────── */
-.book-cover-wrap {
-    width: 72px;
-    min-width: 72px;
-    height: 96px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    flex-shrink: 0;
-    position: relative;
-    /* logo de fundo sempre presente */
-    background: var(--bg) url('logo.png') center/45% no-repeat;
+/* Fundo cinza com logo — mesmo nos dois estados (carregando e sem capa) */
+.book-cover-wrap:not(.capa-carregada):not(.sem-capa) {
+    background: #8b9aaa url('logo.png') center 35%/60% no-repeat;
+}
+
+/* Sem capa: cinza médio + logo suave + sem overlay escuro */
+.book-cover-wrap.sem-capa {
+    background: #8b9aaa url('logo.png') center 35%/60% no-repeat !important;
+}
+[data-theme="dark"] .book-cover-wrap.sem-capa {
+    background: #3a4a5a url('logo.png') center 35%/60% no-repeat !important;
+}
+[data-theme="dark"] .book-cover-wrap:not(.capa-carregada):not(.sem-capa) {
+    background: #3a4a5a url('logo.png') center 35%/60% no-repeat;
 }
 
 /* capa real — ocupa tudo quando visível */
@@ -376,38 +395,53 @@ input:disabled {
     display: block;
 }
 
-/* overlay semitransparente sobre a logo (escurece levemente) */
-.book-cover-wrap::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 0;
-}
+/* overlay removido — fundo cinza já é suficiente nos dois estados */
 
-/* texto centralizado (CARREGANDO CAPA / SEM CAPA) */
+/* texto centralizado */
 .book-cover-label {
     position: absolute;
     inset: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
+    padding-bottom: 8px;
     text-align: center;
     font-size: 8px !important;
-    font-weight: 700;
+    font-weight: 800;
     color: #e2e8f0;
-    line-height: 1.4;
-    padding: 6px;
+    letter-spacing: 0.05em;
+    line-height: 1.5;
     z-index: 1;
     pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
-/* quando capa carregou: esconde overlay e label */
-.book-cover-wrap.capa-carregada::before,
-.book-cover-wrap.capa-carregada .book-cover-label {
-    display: none;
+/* sem capa: texto escuro sobre o fundo cinza (sem text-shadow) */
+.book-cover-wrap.sem-capa .book-cover-label {
+    color: #fff !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 10px;
 }
 
+/* quando capa carregou: esconde overlay */
+.book-cover-wrap.capa-carregada::before { display: none; }
+/* esconde label SOMENTE quando tem imagem real — sem-capa mantém o label visível */
+.book-cover-wrap.has-image .book-cover-label { display: none; }
+
+/* ── Preview de capa no formulário de cadastro/edição ── */
+.cover-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px;
+    opacity: 0.35;
+}
 
 
 .book-header-inner {
@@ -426,6 +460,16 @@ input:disabled {
     margin-bottom: 0.75rem;
     overflow: hidden;
     transition: border-color 0.1s ease;
+}
+
+
+/* Fade-in suave ao adicionar livro no render incremental */
+@keyframes bookFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.book-item.fadein {
+    animation: bookFadeIn 0.15s ease forwards;
 }
 
 .book-header {
@@ -470,6 +514,19 @@ input:disabled {
     margin-top: 0.5rem;
     padding-top: 0.5rem;
     border-top: 1px dashed var(--border);
+}
+
+
+/* ── Barra de ações do card (admin) — FORA do accordion para evitar conflito de clique ── */
+.book-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.book-actions .btn-small {
+    flex: 1;
 }
 
 .book-status-row .badge {
@@ -670,6 +727,12 @@ footer {
 
 /* btn-small — botões de ação dentro dos empréstimos */
 .btn-small {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -679,19 +742,237 @@ footer {
     opacity: 0.75;
 }
 
-/* sem-capa — label visível para livros sem capa */
-.book-cover-wrap.sem-capa .book-cover-label {
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px !important;
-    color: var(--text-light);
-    text-align: center;
-    pointer-events: none;
+/* Esconde img de capa antes de ter src válido — especificidade alta para vencer qualquer display:block */
+.book-cover-wrap img.cover-img:not([src]),
+.book-cover-wrap img.cover-img[src=""] {
+    display: none !important;
 }
 
-/* Evitar flash de img quebrada antes de setar src */
-img.cover-img:not([src]), img.cover-img[src=""] {
-    display: none;
+/* ══════════════════════════════════════════════════════════════
+   ACESSIBILIDADE W3C / WCAG 2.1 AA
+   ══════════════════════════════════════════════════════════════ */
+
+/* Skip link — pula direto para conteúdo principal */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    background: var(--primary);
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 9999;
+    border-radius: 0 0 8px 0;
+    text-decoration: none;
+    transition: top 0.15s ease;
+}
+.skip-link:focus {
+    top: 0;
+}
+
+/* Visually hidden — acessível por leitores de tela, invisível visualmente */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0,0,0,0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Foco visível em todos os elementos interativos — WCAG 2.4.7 */
+:focus-visible {
+    outline: 3px solid var(--primary) !important;
+    outline-offset: 2px !important;
+    border-radius: 4px;
+}
+
+/* Botões e inputs não devem suprimir outline */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid var(--primary) !important;
+    outline-offset: 2px !important;
+}
+
+/* Remover outline apenas quando não é foco via teclado */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Alto contraste — respeitar preferência do sistema */
+@media (forced-colors: active) {
+    .btn-primary, .btn-success, .btn-danger {
+        border: 2px solid ButtonText;
+    }
+    .badge-disponivel, .badge-indisponivel {
+        border: 1px solid ButtonText;
+    }
+}
+
+/* Reduzir animações para usuários sensíveis */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Tamanho mínimo de área de toque — WCAG 2.5.5
+   Usando pseudo-elemento para ampliar área clicável SEM alterar tamanho visual */
+.btn-small {
+    position: relative;
+}
+.btn-small::after,
+.control-btn::after,
+.voice-btn::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUSCA POR VOZ
+   ══════════════════════════════════════════════════════════════ */
+.search-voice-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.search-voice-wrap input[type="text"] {
+    padding-right: 3rem;
+    width: 100%;
+}
+.voice-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    transition: color 0.15s, background 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+}
+.voice-btn:hover { background: var(--bg); color: var(--primary); }
+.voice-btn.ouvindo {
+    color: var(--danger);
+    animation: pulse-mic 1s infinite;
+}
+.voice-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+@keyframes pulse-mic {
+    0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
+    50% { opacity: 0.6; transform: translateY(-50%) scale(1.15); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CAMPO ALT TEXT MANUAL NO UPLOAD DE CAPA
+   ══════════════════════════════════════════════════════════════ */
+.alt-text-group {
+    margin-top: 0.5rem;
+    animation: fadeInAlt 0.2s ease;
+}
+@keyframes fadeInAlt {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Respeitar preferência de cor do sistema quando não há preferência salva */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --text: #f1f5f9;
+        --text-light: #94a3b8;
+        --border: #334155;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL — acessibilidade e foco (WCAG 2.1)
+   ══════════════════════════════════════════════════════════════ */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+}
+.modal.hidden { display: none !important; }
+.modal-content {
+    background: var(--card);
+    width: 100%;
+    max-width: 500px;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+.loan-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ADMIN — abas, cabeçalho editável
+   ══════════════════════════════════════════════════════════════ */
+.tab-content { display: none !important; }
+.tab-content.active { display: block !important; }
+.school-header-edit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.edit-school-btn {
+    background: var(--primary);
+    border: none;
+    color: #fff;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+
+/* Relatórios — pré-visualização */
+#previewRelatorio {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    margin-top: 1rem;
+    color: var(--text);
+    line-height: 1.5;
 }

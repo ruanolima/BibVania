@@ -1,362 +1,358 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+    (function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+    (function(){var f=parseInt(localStorage.getItem('fontSize'));if(f)document.documentElement.style.setProperty('--font-size',f+'px');})();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Relatórios — BibVania Biblioteca Escolar</title>
-    <meta name="description" content="Gerador de relatórios da biblioteca escolar. Exporta dados de acervo, empréstimos e rankings em .txt. Sistema BibVania.">
+    <meta name="description" content="Gerador de relatórios da biblioteca escolar — acervo, livros mais lidos, destaque de leitura por sala. Sistema BibVania gratuito.">
+    <meta name="keywords" content="relatório biblioteca escolar, livros mais lidos, acervo escolar, sistema de biblioteca gratuito, relatório anual mensal biblioteca">
+    <link rel="canonical" href="https://ruanolima.github.io/BibVania/relatorios.html">
     <meta name="author" content="Ruan Oliveira Lima">
-    <meta name="robots" content="noindex, nofollow">
+    <meta name="version" content="1.1">
+    <meta name="year" content="2026">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
-    <meta name="version" content="1.1">
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <meta property="og:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
-    <meta property="og:url" content="https://ruanolima.github.io/BibVania/">
-    <meta property="og:image" content="https://ruanolima.github.io/BibVania/og-image.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <meta property="og:locale" content="pt_BR">
-    <meta property="og:site_name" content="BibVania">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <meta name="twitter:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
-    <meta name="twitter:image" content="https://ruanolima.github.io/BibVania/og-image.png">
-    <meta name="twitter:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
+    <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/png" href="favicon.png">
+<style>
+    /* CSS crítico — previne piscada de botões antes de style.css carregar */
+    :root{--primary:#2563eb;--success:#10b981;--danger:#ef4444;--bg:#f1f5f9;--card:#ffffff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--radius:12px;--font-size:16px}
+    [data-theme=dark]{--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--text-light:#94a3b8;--border:#334155}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background-color:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:1rem;text-transform:uppercase}
+    .btn-block{width:100%;padding:1rem;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-outline{background:var(--card);border:1px solid var(--border);color:var(--text)}
+    .accessibility-bar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--primary);display:flex;padding:0.4rem;gap:0.5rem;height:48px}
+    .control-btn{background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.9rem}
+    .hidden{display:none!important}
+</style>
     <link rel="stylesheet" href="style.css">
-    <style>
-        #previewRelatorio {
-            background: var(--card);
-            padding: 1.5rem;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            white-space: pre-wrap;
-            overflow-x: auto;
-            border: 1px solid var(--border);
-            margin-top: 1rem;
-            color: var(--text);
-            line-height: 1.4;
-        }
-    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Relatórios — BibVania",
+      "description": "Gerador de relatórios da biblioteca escolar. Exporta dados de acervo, livros mais lidos e destaque de leitura por sala.",
+      "url": "https://ruanolima.github.io/BibVania/relatorios.html",
+      "isPartOf": { "@type": "WebApplication", "name": "BibVania", "url": "https://ruanolima.github.io/BibVania/" },
+      "author": { "@type": "Person", "name": "Ruan Oliveira Lima", "url": "https://github.com/ruanolima" },
+      "inLanguage": "pt-BR"
+    }
+    </script>
 </head>
 <body>
-    <div class="accessibility-bar">
-        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="flex-grow:1; text-align:left;">📁 Repositório</button>
+    <a href="#conteudo-principal" class="skip-link">Ir para o conteúdo principal</a>
+    <div class="accessibility-bar" role="toolbar">
+        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania','_blank')" style="flex-grow:1;text-align:left;">📁 REPOSITÓRIO</button>
         <button class="control-btn" onclick="changeFontSize(1)">A+</button>
         <button class="control-btn" onclick="changeFontSize(-1)">A-</button>
         <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn">🌙</button>
     </div>
 
-    <header>
+    <header role="banner">
         <img src="logo.png" alt="Logo BibVania" class="header-logo">
-        <h1>RELATÓRIOS DETALHADOS</h1>
-        <div class="school-name" id="nomeEscolaRelatorio"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
+        <h1>RELATÓRIOS</h1>
+        <div class="school-name"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
     </header>
 
-    <div class="container">
-        <nav style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-            <button onclick="window.location.href='admin.html'" class="btn-outline" style="min-width: auto;"><span>←</span> VOLTAR AO PAINEL</button>
-            <button onclick="window.DB.signOut()" class="btn-danger" style="min-width: auto;">SAIR</button>
+    <main id="conteudo-principal">
+    <main class="container">
+        <nav style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1rem;">
+            <button onclick="window.location.href='admin.html'" class="btn-block btn-outline">← VOLTAR AO PAINEL</button>
+            <button onclick="window.DB.signOut()" class="btn-block btn-danger">SAIR</button>
         </nav>
 
         <div class="card">
             <h2>CONFIGURAR RELATÓRIO</h2>
             <div class="form-group">
-                <label>TIPO DE RELATÓRIO</label>
-                <select id="tipoRelatorio" onchange="gerar()">
-                    <option value="GERAL">GERAL (ANUAL)</option>
-                    <option value="MENSAL">MENSAL</option>
+                <label>TIPO</label>
+                <select id="tipoRelatorio" onchange="alternarTipo()">
+                    <option value="anual">ANUAL</option>
+                    <option value="mensal">MENSAL</option>
                 </select>
             </div>
+            <div id="containerAno" class="form-group">
+                <label>ANO</label>
+                <input type="number" id="filtroAno" min="2020" max="2099" style="width:130px;" onchange="gerar()">
+            </div>
             <div id="containerMes" class="form-group hidden">
-                <label>SELECIONE O MÊS/ANO</label>
+                <label>MÊS / ANO</label>
                 <input type="month" id="filtroMes" onchange="gerar()">
             </div>
-            <button onclick="baixar()" class="btn-block btn-primary" style="margin-top: 1rem;">📥 BAIXAR ARQUIVO .TXT</button>
+            <button onclick="baixar()" class="btn-block btn-primary" style="margin-top:1rem;" id="btnBaixar" disabled>📥 BAIXAR .TXT</button>
         </div>
 
         <div class="card">
             <h2>PRÉ-VISUALIZAÇÃO</h2>
-            <div id="previewRelatorio">CARREGANDO DADOS...</div>
+            <div id="previewRelatorio" aria-live="polite" aria-atomic="true" aria-label="Pré-visualização do relatório">CONFIGURE E CLIQUE EM "GERAR RELATÓRIO".</div>
         </div>
     </div>
 
     <script type="module">
         import DB from './database.js';
         window.DB = DB;
+
         let relatorioTexto = '';
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+        const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
-        window.changeFontSize = (delta) => {
-            fontSize = Math.min(Math.max(fontSize + delta, 12), 24);
+        // Preencher padrões
+        document.getElementById('filtroAno').value = new Date().getFullYear();
+        const _now = new Date();
+        document.getElementById('filtroMes').value = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+
+        window.changeFontSize = d => {
+            fontSize = Math.min(Math.max(fontSize + d, 12), 24);
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             localStorage.setItem('fontSize', fontSize);
         };
-
         window.toggleDarkMode = () => {
-            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-            document.getElementById('darkModeBtn').innerText = theme === 'dark' ? '☀️' : '🌙';
-            localStorage.setItem('theme', theme);
+            const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            document.getElementById('darkModeBtn').innerText = t === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', t);
+        };
+        window.alternarTipo = () => {
+            const anual = document.getElementById('tipoRelatorio').value === 'anual';
+            document.getElementById('containerAno').classList.toggle('hidden', !anual);
+            document.getElementById('containerMes').classList.toggle('hidden', anual);
+            gerar();
         };
 
-        function aplicarPreferencias() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            const btn = document.getElementById('darkModeBtn');
-            if (btn) btn.innerText = savedTheme === 'dark' ? '☀️' : '🌙';
-            document.documentElement.style.setProperty('--font-size', fontSize + 'px');
-            
-            const el = document.getElementById('nomeEscolaRelatorio');
-            if (el) el.innerHTML = '<span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span>';
+        const E60 = () => '═'.repeat(60);
+        const D60 = () => '─'.repeat(60);
+
+        function ehFunc(e) {
+            return e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
         }
 
-        async function init() {
-            await window.DB.checkAuth();
-            aplicarPreferencias();
-            gerar();
-        }
+        window.gerar = async (silencioso = false) => {
+            if (!silencioso) document.getElementById('previewRelatorio').textContent = 'CARREGANDO DADOS DO BANCO...';
 
-        window.gerar = async () => {
-            const tipo = document.getElementById('tipoRelatorio').value;
-            const containerMes = document.getElementById('containerMes');
-            if (tipo === 'MENSAL') containerMes.classList.remove('hidden');
-            else containerMes.classList.add('hidden');
+            try {
+                const [livros, emprestimos] = await Promise.all([
+                    window.DB.getLivros(),
+                    window.DB.getEmprestimos()
+                ]);
 
-            const livros = await window.DB.getLivros();
-            const emprestimos = await window.DB.getEmprestimos();
-            const filtro = document.getElementById('filtroMes').value;
-            const nomeEscola = 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI PROFESSORA MARIA VÂNIA FARIAS LINHARES';
-            const agora = new Date();
-            
-            let empFiltrados = emprestimos;
-            let cabecalhoPeriodo = `RELATÓRIO DE ${agora.getFullYear()} DA BIBLIOTECA ESCOLAR`;
-            
-            if (tipo === 'MENSAL' && filtro) {
-                const [ano, mes] = filtro.split('-');
-                const meses = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
-                cabecalhoPeriodo = `RELATÓRIO DE ${meses[parseInt(mes)-1]} DE ${ano} DA BIBLIOTECA ESCOLAR`;
-                empFiltrados = emprestimos.filter(e => {
-                    const d = new Date(e.data_emprestimo);
-                    return d.getFullYear() === parseInt(ano) && (d.getMonth() + 1) === parseInt(mes);
-                });
-            }
+                const tipo = document.getElementById('tipoRelatorio').value;
+                const hoje = new Date();
+                let labelPeriodo, empFiltrados;
 
-            // 1. Livros Cadastrados
-            let secaoLivros = "1. LIVROS CADASTRADOS (DETALHADO)\n" + "=".repeat(40) + "\n";
-            livros.forEach(l => {
-                secaoLivros += `ID: ${l.id} | TÍTULO: ${l.titulo}\nAUTOR: ${l.autor || 'N/A'} | ISBN: ${l.isbn || 'N/A'}\nCATEGORIA: ${l.categoria}\nQTD: ${l.quantidade_disponivel}/${l.quantidade_total} | SINOPSE: ${l.sinopse || 'N/A'}\n${"-".repeat(40)}\n`;
-            });
-
-            // 2. Empréstimos - Usar apenas o registro mais recente de cada empréstimo para evitar duplicidade
-            let secaoEmprestimos = "2. REGISTRO DE EMPRÉSTIMOS (ALUNOS E FUNCIONÁRIOS)\n" + "=".repeat(40) + "\n";
-            // Agrupar por ID de empréstimo e pegar apenas o mais recente
-            const emprestimosUnicos = {};
-            empFiltrados.forEach(e => {
-                if (!emprestimosUnicos[e.id] || new Date(e.data_emprestimo) > new Date(emprestimosUnicos[e.id].data_emprestimo)) {
-                    emprestimosUnicos[e.id] = e;
-                }
-            });
-            
-            Object.values(emprestimosUnicos).forEach(e => {
-                const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'DESCONHECIDO' };
-                const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
-                let responsavel;
-                if (isFuncionario) {
-                    const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
-                    responsavel = `${e.nome_aluno} (${rotulo})`;
+                if (tipo === 'anual') {
+                    const ano = parseInt(document.getElementById('filtroAno').value) || hoje.getFullYear();
+                    labelPeriodo = `RELATÓRIO ANUAL DE ${ano}`;
+                    empFiltrados = emprestimos.filter(e => new Date(e.data_emprestimo).getFullYear() === ano);
                 } else {
-                    const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
-                    responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno} | ANO: ${e.ano_aluno || 'N/A'}`;
-                }
-                
-                secaoEmprestimos += `DATA: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')} | STATUS: ${e.status.toUpperCase()}\n`;
-                secaoEmprestimos += `LIVRO: ${l.titulo} (ID: ${e.livro_id})\n`;
-                secaoEmprestimos += `RESPONSÁVEL: ${responsavel}\n`;
-                secaoEmprestimos += `PREVISÃO DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}\n`;
-                if(e.data_devolucao) secaoEmprestimos += `DEVOLVIDO EM: ${new Date(e.data_devolucao).toLocaleDateString('pt-BR')}\n`;
-                secaoEmprestimos += `${'-'.repeat(40)}\n`;
-            });
-
-            // 3 & 4. Rankings por Sala - Usar dados únicos
-            let secaoRankingsSala = "3 & 4. RANKINGS POR SALA (ANO E TURMA)\n" + "=".repeat(40) + "\n";
-            const empAlunos = Object.values(emprestimosUnicos).filter(e => e.sexo !== 'P' && (e.turma_aluno !== 'PROF/FUNC' && e.turma_aluno !== 'PROFESSOR' && e.turma_aluno !== 'FUNCIONARIO'));
-            const salas = [...new Set(empAlunos.map(e => `${e.ano_aluno}º ${e.turma_aluno}`))].sort();
-
-            salas.forEach(sala => {
-                const [ano, turma] = sala.split('º ');
-                const empSala = empAlunos.filter(e => e.ano_aluno == ano && e.turma_aluno == turma);
-                
-                // Top Livros da Sala
-                const contL = {};
-                empSala.forEach(e => contL[e.livro_id] = (contL[e.livro_id] || 0) + 1);
-                const topLivrosSala = Object.entries(contL).sort((a,b) => b[1]-a[1]).slice(0,2);
-                
-                // Top Alunos da Sala — mapear livros lidos por cada um
-                const livrosM = {}, livrosF = {};
-                empSala.forEach(e => {
-                    if (e.sexo === 'M') {
-                        if (!livrosM[e.nome_aluno]) livrosM[e.nome_aluno] = [];
-                        livrosM[e.nome_aluno].push(e.livro_id);
-                    }
-                    if (e.sexo === 'F') {
-                        if (!livrosF[e.nome_aluno]) livrosF[e.nome_aluno] = [];
-                        livrosF[e.nome_aluno].push(e.livro_id);
-                    }
-                });
-                const topMEntry = Object.entries(livrosM).sort((a,b) => b[1].length - a[1].length)[0];
-                const topFEntry = Object.entries(livrosF).sort((a,b) => b[1].length - a[1].length)[0];
-
-                function formatarDestaque(entry, rotulo) {
-                    if (!entry) return `  ${rotulo}: N/A\n`;
-                    const [nome, ids] = entry;
-                    const titulos = ids.map(id => livros.find(liv => liv.id == id)?.titulo || 'N/A');
-                    let txt = `  ${rotulo}: ${nome} (${ids.length} livro${ids.length > 1 ? 's' : ''})\n`;
-                    titulos.forEach((t, i) => { txt += `    ${i+1}. ${t}\n`; });
-                    return txt;
+                    const [ano, mes] = document.getElementById('filtroMes').value.split('-');
+                    labelPeriodo = `RELATÓRIO MENSAL DE ${MESES[parseInt(mes)-1]} DE ${ano}`;
+                    empFiltrados = emprestimos.filter(e => {
+                        const d = new Date(e.data_emprestimo);
+                        return d.getFullYear() === parseInt(ano) && (d.getMonth()+1) === parseInt(mes);
+                    });
                 }
 
-                secaoRankingsSala += `SALA: ${sala}\n`;
-                secaoRankingsSala += `- 2 LIVROS MAIS LIDOS:\n`;
-                topLivrosSala.forEach(([id, qtd], i) => {
-                    const t = livros.find(liv => liv.id == id)?.titulo || 'N/A';
-                    secaoRankingsSala += `  ${i+1}º ${t} (${qtd} VEZES)\n`;
+                const livroMap = {};
+                livros.forEach(l => { livroMap[l.id] = l; });
+
+                // Apenas empréstimos de alunos (sem prof/func)
+                const empAlunos = empFiltrados.filter(e => !ehFunc(e));
+
+                const dataStr = hoje.toLocaleDateString('pt-BR');
+                let txt = '';
+
+                // ── CABEÇALHO ─────────────────────────────────────────────────
+                txt += E60() + '\n';
+                txt += 'BIBVANIA ONLINE\n';
+                txt += 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI\n';
+                txt += 'PROFESSORA MARIA VÂNIA FARIAS LINHARES\n';
+                txt += E60() + '\n';
+                txt += labelPeriodo + '\n';
+                txt += `DATA DO RELATÓRIO: ${dataStr}\n`;
+                txt += E60() + '\n\n';
+
+                // ── 1. LIVROS CADASTRADOS ─────────────────────────────────────
+                txt += E60() + '\n';
+                txt += '1. LIVROS CADASTRADOS\n';
+                txt += E60() + '\n';
+
+                const totalTitulos = livros.length;
+                const totalExemplares = livros.reduce((s, l) => s + (l.quantidade_total || 0), 0);
+                txt += `TODOS: ${totalTitulos} TÍTULO${totalTitulos !== 1 ? 'S' : ''} — ${totalExemplares} EXEMPLAR${totalExemplares !== 1 ? 'ES' : ''}\n`;
+                txt += D60() + '\n';
+
+                const catMap = {};
+                livros.forEach(l => {
+                    if (!catMap[l.categoria]) catMap[l.categoria] = { t: 0, e: 0 };
+                    catMap[l.categoria].t++;
+                    catMap[l.categoria].e += (l.quantidade_total || 0);
                 });
-                secaoRankingsSala += `- DESTAQUES DE LEITURA:\n`;
-                secaoRankingsSala += formatarDestaque(topMEntry, 'ALUNO DESTAQUE');
-                secaoRankingsSala += formatarDestaque(topFEntry, 'ALUNA DESTAQUE');
-                secaoRankingsSala += `${'-'.repeat(40)}\n`;
-            });
-
-            // 5. Top 13 Geral - Usar dados únicos
-            let secaoTop13 = "5. OS 13 LIVROS MAIS LIDOS (GERAL - ALUNOS)\n" + "=".repeat(40) + "\n";
-            const contGeral = {};
-            empAlunos.forEach(e => contGeral[e.livro_id] = (contGeral[e.livro_id] || 0) + 1);
-            const top13 = Object.entries(contGeral).sort((a,b) => b[1]-a[1]).slice(0,13);
-            top13.forEach(([id, qtd], i) => {
-                const t = livros.find(liv => liv.id == id)?.titulo || 'N/A';
-                secaoTop13 += `${(i+1).toString().padStart(2, '0')}º ${t.padEnd(30)} | ${qtd} LEITURAS\n`;
-            });
-
-            // 5.5. Livros com Devolução Atrasada
-            let secaoAtrasados = "5.5. LIVROS COM DEVOLUÇÃO ATRASADA\n" + "=".repeat(40) + "\n";
-            const hoje = new Date();
-            const atrasados = emprestimos.filter(e => {
-                if (e.status !== 'emprestado' || e.sem_data_definida) return false;
-                const dataPrevista = new Date(e.data_prevista_devolucao);
-                return dataPrevista < hoje;
-            });
-            
-            if (atrasados.length > 0) {
-                atrasados.forEach(e => {
-                    const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'N/A', categoria: 'N/A' };
-                    const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
-                    let responsavel;
-                    if (isFuncionario) {
-                        const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
-                        responsavel = `${e.nome_aluno} (${rotulo})`;
-                    } else {
-                        const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
-                        responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno}`;
-                    }
-                    
-                    const dataPrevista = new Date(e.data_prevista_devolucao);
-                    const diasAtraso = Math.floor((hoje - dataPrevista) / (1000 * 60 * 60 * 24));
-                    
-                    secaoAtrasados += `LIVRO: ${l.titulo} (ID: ${e.livro_id}) | CAT: ${l.categoria}\n`;
-                    secaoAtrasados += `RESPONSÁVEL: ${responsavel}\n`;
-                    secaoAtrasados += `DATA EMPRÉSTIMO: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}\n`;
-                    secaoAtrasados += `DATA PREVISTA: ${dataPrevista.toLocaleDateString('pt-BR')}\n`;
-                    secaoAtrasados += `DIAS EM ATRASO: ${diasAtraso}\n`;
-                    secaoAtrasados += `${'-'.repeat(40)}\n`;
+                Object.keys(catMap).sort().forEach(cat => {
+                    const c = catMap[cat];
+                    txt += `${cat.padEnd(36)} ${String(c.t).padStart(3)} TÍTULO${c.t !== 1 ? 'S' : ' '}  /  ${String(c.e).padStart(3)} EXEMPLAR${c.e !== 1 ? 'ES' : ' '}\n`;
                 });
-            } else {
-                secaoAtrasados += "NENHUM LIVRO COM ATRASO.\n";
-            }
+                txt += '\n';
 
-            // 5.6. Livros sem Prazo de Entrega
-            let secaoSemPrazo = "5.6. LIVROS SEM PRAZO DE ENTREGA\n" + "=".repeat(40) + "\n";
-            const semPrazo = emprestimos.filter(e => e.status === 'emprestado' && e.sem_data_definida);
-            
-            if (semPrazo.length > 0) {
-                semPrazo.forEach(e => {
-                    const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'N/A', categoria: 'N/A', autor: 'N/A', isbn: 'N/A', sinopse: 'N/A' };
-                    const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
-                    let responsavel;
-                    if (isFuncionario) {
-                        const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
-                        responsavel = `${e.nome_aluno} (${rotulo})`;
-                    } else {
-                        const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
-                        responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno}`;
-                    }
-                    
-                    secaoSemPrazo += `LIVRO: ${l.titulo} (ID: ${e.livro_id})\n`;
-                    secaoSemPrazo += `AUTOR: ${l.autor} | ISBN: ${l.isbn}\n`;
-                    secaoSemPrazo += `CATEGORIA: ${l.categoria}\n`;
-                    secaoSemPrazo += `SINOPSE: ${l.sinopse}\n`;
-                    secaoSemPrazo += `RESPONSÁVEL: ${responsavel}\n`;
-                    secaoSemPrazo += `DATA EMPRÉSTIMO: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}\n`;
-                    secaoSemPrazo += `${'-'.repeat(40)}\n`;
+                // ── 2. TOP 15 LIVROS MAIS LIDOS ───────────────────────────────
+                txt += E60() + '\n';
+                txt += '2. OS 15 LIVROS MAIS LIDOS NO PERÍODO\n';
+                txt += '   (EMPRÉSTIMOS POR ALUNOS — PROFESSORES NÃO CONTAM)\n';
+                txt += E60() + '\n';
+
+                const contLivro = {};
+                const leitoresPorLivro = {};
+                empAlunos.forEach(e => {
+                    const id = e.livro_id;
+                    contLivro[id] = (contLivro[id] || 0) + 1;
+                    if (!leitoresPorLivro[id]) leitoresPorLivro[id] = [];
+                    leitoresPorLivro[id].push({ nome: e.nome_aluno, sexo: e.sexo });
                 });
-            } else {
-                secaoSemPrazo += "NENHUM LIVRO SEM PRAZO DE ENTREGA.\n";
-            }
 
-            // 6. Pendências
-            let secaoPendencias = "6. LIVROS QUE FALTAM SER DEVOLVIDOS (PENDÊNCIAS)\n" + "=".repeat(40) + "\n";
-            const pendentes = emprestimos.filter(e => e.status === 'emprestado');
-            pendentes.forEach(e => {
-                const l = livros.find(liv => liv.id === e.livro_id) || { titulo: 'N/A', categoria: 'N/A' };
-                const isFuncionario = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
-                let responsavel;
-                if (isFuncionario) {
-                    const rotulo = e.sexo === 'M' ? 'Funcionário' : 'Funcionária';
-                    responsavel = `${e.nome_aluno} (${rotulo})`;
+                const top15 = Object.entries(contLivro).sort((a,b) => b[1]-a[1]).slice(0, 15);
+
+                if (!top15.length) {
+                    txt += 'NENHUM EMPRÉSTIMO DE ALUNOS REGISTRADO NO PERÍODO.\n';
                 } else {
-                    const rotulo = e.sexo === 'M' ? 'Aluno' : 'Aluna';
-                    responsavel = `${e.nome_aluno} (${rotulo}) | TURMA: ${e.turma_aluno}`;
+                    top15.forEach(([id, qtd], i) => {
+                        const titulo = livroMap[id]?.titulo || 'TÍTULO DESCONHECIDO';
+                        txt += `${String(i+1).padStart(2,'0')}º ${titulo} (${qtd} VEZ${qtd !== 1 ? 'ES' : ''})\n`;
+                        const leitores = leitoresPorLivro[id] || [];
+                        leitores.forEach(a => {
+                            const r = a.sexo === 'F' ? 'ALUNA' : 'ALUNO';
+                            txt += `    • ${a.nome} (${r})\n`;
+                        });
+                        if (i < top15.length - 1) txt += D60() + '\n';
+                    });
                 }
-                
-                secaoPendencias += `LIVRO: ${l.titulo} (ID: ${e.livro_id}) | CAT: ${l.categoria}\n`;
-                secaoPendencias += `RESPONSÁVEL: ${responsavel}\n`;
-                secaoPendencias += `DATA EMPRÉSTIMO: ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}\n`;
-                secaoPendencias += `PREVISÃO DEVOLUÇÃO: ${e.sem_data_definida ? 'SEM DATA' : new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')}\n`;
-                secaoPendencias += `${'-'.repeat(40)}\n`;
-            });
+                txt += '\n';
 
-            relatorioTexto = `${nomeEscola}\n${cabecalhoPeriodo}\nREGISTRO EM: ${agora.toLocaleDateString('pt-BR')} ÀS ${agora.toLocaleTimeString('pt-BR')}\n\n` +
-                secaoLivros + "\n" +
-                secaoEmprestimos + "\n" +
-                secaoRankingsSala + "\n" +
-                secaoTop13 + "\n" +
-                secaoAtrasados + "\n" +
-                secaoSemPrazo + "\n" +
-                secaoPendencias + "\n" +
-                "\n=== FIM DO RELATÓRIO ===";
+                // ── 3. DESTAQUE POR SALA ──────────────────────────────────────
+                txt += E60() + '\n';
+                txt += '3. DESTAQUE DE LEITURA POR SALA\n';
+                txt += '   (ALUNO E ALUNA QUE MAIS LEVOU LIVROS POR TURMA)\n';
+                txt += E60() + '\n';
 
-            document.getElementById('previewRelatorio').innerText = relatorioTexto;
+                const turmaMap = {};
+                empAlunos.forEach(e => {
+                    if (!e.ano_aluno || !e.turma_aluno) return;
+                    const key = `${e.ano_aluno}|${e.turma_aluno}`;
+                    if (!turmaMap[key]) turmaMap[key] = [];
+                    turmaMap[key].push(e);
+                });
+
+                const turmasOrd = Object.keys(turmaMap).sort((a,b) => {
+                    const [anoA, turA] = a.split('|');
+                    const [anoB, turB] = b.split('|');
+                    return anoA - anoB || turA.localeCompare(turB);
+                });
+
+                if (!turmasOrd.length) {
+                    txt += 'NENHUM EMPRÉSTIMO DE ALUNOS REGISTRADO NO PERÍODO.\n';
+                } else {
+                    turmasOrd.forEach((key, ti) => {
+                        const [ano, turma] = key.split('|');
+                        const emps = turmaMap[key];
+
+                        txt += `${ano}º ANO — TURMA ${turma}\n`;
+                        txt += D60() + '\n';
+
+                        const contM = {}, livrosLidosM = {};
+                        const contF = {}, livrosLidosF = {};
+
+                        emps.forEach(e => {
+                            const titulo = livroMap[e.livro_id]?.titulo || 'TÍTULO DESCONHECIDO';
+                            if (e.sexo === 'M') {
+                                contM[e.nome_aluno] = (contM[e.nome_aluno] || 0) + 1;
+                                if (!livrosLidosM[e.nome_aluno]) livrosLidosM[e.nome_aluno] = [];
+                                livrosLidosM[e.nome_aluno].push(titulo);
+                            } else if (e.sexo === 'F') {
+                                contF[e.nome_aluno] = (contF[e.nome_aluno] || 0) + 1;
+                                if (!livrosLidosF[e.nome_aluno]) livrosLidosF[e.nome_aluno] = [];
+                                livrosLidosF[e.nome_aluno].push(titulo);
+                            }
+                        });
+
+                        function imprimirDestaque(cont, livrosLidos, rotulo) {
+                            const entradas = Object.entries(cont).sort((a,b) => b[1]-a[1]);
+                            if (!entradas.length) {
+                                txt += `  ${rotulo}: NENHUM REGISTRO\n`;
+                                return;
+                            }
+                            const [nome, qtd] = entradas[0];
+                            txt += `  ${rotulo}: ${nome} (${qtd} LIVRO${qtd !== 1 ? 'S' : ''})\n`;
+                            livrosLidos[nome].forEach((t, i) => {
+                                txt += `    ${i+1}. ${t}\n`;
+                            });
+                        }
+
+                        imprimirDestaque(contM, livrosLidosM, 'ALUNO DESTAQUE');
+                        imprimirDestaque(contF, livrosLidosF, 'ALUNA DESTAQUE');
+                        if (ti < turmasOrd.length - 1) txt += '\n';
+                    });
+                }
+
+                txt += '\n' + E60() + '\n';
+                txt += 'FIM DO RELATÓRIO\n';
+                txt += E60() + '\n';
+
+                relatorioTexto = txt;
+                if (!silencioso) {
+                    document.getElementById('previewRelatorio').textContent = txt;
+                    document.getElementById('btnBaixar').disabled = false;
+                } else {
+                    document.getElementById('btnBaixar').disabled = false;
+                }
+
+            } catch(err) {
+                document.getElementById('previewRelatorio').textContent = '❌ ERRO: ' + err.message;
+            }
+
+
         };
 
         window.baixar = () => {
-            const blob = new Blob([relatorioTexto], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
+            if (!relatorioTexto) return;
+            const tipo = document.getElementById('tipoRelatorio').value;
+            const nomeArq = tipo === 'anual'
+                ? `RELATORIO_ANUAL_${document.getElementById('filtroAno').value}.txt`
+                : `RELATORIO_${document.getElementById('filtroMes').value.replace('-','_')}.txt`;
+            const blob = new Blob([relatorioTexto], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `RELATORIO_BIBLIOTECA_${new Date().getTime()}.txt`;
-            a.click();
+            a.href = url; a.download = nomeArq; a.click();
+            URL.revokeObjectURL(url);
         };
 
-        init();
+        async function init() {
+            await window.DB.checkAuth();
+            const t = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+            document.getElementById('darkModeBtn').innerText = t === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Regenera silenciosamente — só troca o texto do preview se o conteúdo mudou (sem piscar)
+        async function gerarSilencioso() {
+            const textoAntes = relatorioTexto;
+            await gerar(true);
+            if (relatorioTexto !== textoAntes) {
+                document.getElementById('previewRelatorio').textContent = relatorioTexto;
+            }
+        }
+
+        init().then(() => {
+            gerar();
+            // Realtime: atualiza ao detectar mudanças no banco
+            window.DB.onLivrosChange(() => gerarSilencioso());
+            window.DB.onEmprestimosChange(() => gerarSilencioso());
+        });
     </script>
+    </main>
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
