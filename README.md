@@ -32,7 +32,7 @@
 | **Pessoas** | Sem cadastro de pessoas | ✅ Aba "Cadastrar Pessoas" e "Lista de Pessoas" com editar e excluir |
 | **Empréstimos** | Registro livre por nome digitado | Só para **pessoas cadastradas**; autocomplete com sugestão de nome, ano, turma e sexo |
 | **Validação de empréstimo** | Verifica duplicidade de aluno | + Verifica se a pessoa está cadastrada; + verifica se o livro existe |
-| **Relatórios** | Anual com 6 seções detalhadas | Anual e **mensal**; 3 seções objetivas: acervo por categoria, top 15 livros mais lidos com leitores, destaque de leitura por sala |
+| **Relatórios** | Anual com 6 seções detalhadas | Anual e **mensal**; 3 seções: acervo por categoria com livros numerados no formato `Nº. ID-Nome (X Exemplares)`, top 15 mais lidos e destaque por sala; horário em tempo real no cabeçalho; botões compactos; pré-visualização sem scroll horizontal |
 | **Tempo real** | Realtime na página de leitores | Realtime em **todas as páginas**, incluindo relatórios |
 | **Acervo — carregamento** | Cards e capas em lote | Cards e capas **1 por 1**, capa junto com o card, sem piscar |
 | **Navegação** | Sem restauração de aba | Restaura a aba aberta ao recarregar; recarrega ao voltar de outra página (bfcache) |
@@ -70,10 +70,13 @@
 ### Relatórios — `relatorios.html`
 - Geração automática ao abrir a página e ao mudar os filtros
 - Atualização em tempo real — reflete sempre o estado atual do banco
+- Data e horário exibidos lado a lado no cabeçalho; horário atualiza automaticamente a cada segundo na pré-visualização
+- Botões de navegação compactos e arredondados, sem quebrar o layout em telas pequenas
+- Pré-visualização com quebra de linha automática — sem scroll horizontal
 - Exporta `.txt` **anual** ou **mensal** com:
-  1. Livros cadastrados por categoria
-  2. Os 15 livros mais lidos (por alunos), com lista de quem pegou cada um
-  3. Destaque de leitura por sala — aluno e aluna que mais levaram livros, com títulos
+  1. Livros cadastrados agrupados por categoria, numerados sequencialmente no formato `Nº. ID-Nome do Livro (X Exemplares)`
+  2. Os 15 livros mais lidos — *em breve*
+  3. Destaque de leitura por sala — *em breve*
 
 ---
 
@@ -118,6 +121,7 @@ const supabaseKey = "sua-chave-anon-aqui";
 | `sitemap.xml` | ✅ | Mapa do site |
 | `robots.txt` | ✅ | Diretivas de indexação |
 | `README.md` | ⬜ | Esta documentação |
+| `LICENCE.md` | ⬜ | Licença CC-BY-4.0 |
 
 ---
 
