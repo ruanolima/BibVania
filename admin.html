@@ -1570,6 +1570,7 @@
                 alert('❌ JÁ EXISTE UM ALUNO REGISTRADO COM ESTE NOME NESTA TURMA.');
                 btn.textContent = lbl; btn.disabled = false; return;
             }
+            try {
                 const atualizado = await window.DB.atualizarPessoa({ id, nome, sexo, tipo: func ? 'funcionario' : 'aluno', ano_aluno: ano, turma_aluno: turma });
                 const idx = todasPessoas.findIndex(p => p.id === id);
                 if (idx !== -1) todasPessoas[idx] = atualizado;
