@@ -335,7 +335,7 @@
                                 <option value="F">ALUNA</option>
                             </select>
                         </div>
-                        <div class="form-group" id="grpAnoPessoa"><label>ANO *</label><input type="number" id="anoPessoa" min="1" max="9" style="width:80px;" oninput="if(this.value<1)this.value=1;if(this.value>9)this.value=9;"></div>
+                        <div class="form-group" id="grpAnoPessoa"><label>ANO *</label><input type="number" id="anoPessoa" min="1" max="9" style="width:80px;" onkeydown="if(['0','e','+','-','.'].includes(event.key)||(this.value.length>=1&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)))event.preventDefault();" oninput="if(this.value<1||this.value>9)this.value='';"></div>
                         <div class="form-group" id="grpTurmaPessoa"><label>TURMA *</label><input type="text" id="turmaPessoa" maxlength="1" pattern="[A-Za-z]" style="text-transform:uppercase;width:80px;" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()"></div>
                     </div>
                     <button type="submit" class="btn-block btn-primary" style="margin-top:1rem;">CADASTRAR</button>
@@ -384,7 +384,7 @@
                         <option value="F">ALUNA</option>
                     </select>
                 </div>
-                <div class="form-group" id="editGrpAno"><label>ANO *</label><input type="number" id="editAnoPessoa" min="1" max="9" style="width:80px;" oninput="if(this.value<1)this.value=1;if(this.value>9)this.value=9;"></div>
+                <div class="form-group" id="editGrpAno"><label>ANO *</label><input type="number" id="editAnoPessoa" min="1" max="9" style="width:80px;" onkeydown="if(['0','e','+','-','.'].includes(event.key)||(this.value.length>=1&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)))event.preventDefault();" oninput="if(this.value<1||this.value>9)this.value='';"></div>
                 <div class="form-group" id="editGrpTurma"><label>TURMA *</label><input type="text" id="editTurmaPessoa" maxlength="1" pattern="[A-Za-z]" style="text-transform:uppercase;width:80px;" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()"></div>
                 <div style="display:flex;gap:0.5rem;margin-top:1rem;">
                     <button type="button" onclick="closeModalEditPessoa()" class="btn-block btn-outline">CANCELAR</button>
@@ -519,11 +519,8 @@
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
-            setInterval(load, 60000);
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);" role="status">CARREGANDO...</p>';
-            load();
-
             // Busca por voz no acervo
             const inputAdmin = document.getElementById('buscaAdmin');
             if (inputAdmin) iniciarBuscaVoz(inputAdmin, () => renderAcervo());
@@ -539,8 +536,12 @@
                 if (tabSalva === 'tab-devolucoes') setTimeout(() => window.carregarDevolucoes?.(), 0);
                 if (tabSalva === 'tab-listapessoas') setTimeout(() => window.carregarListaPessoas?.(), 0);
             }
-            // Carregar pessoas em background e iniciar autocomplete
-            carregarPessoas().then(() => iniciarAutocompletePessoas());
+
+            // Carregar livros e pessoas em paralelo
+            Promise.all([
+                load(),
+                carregarPessoas()
+            ]).then(() => iniciarAutocompletePessoas());
         }
 
         async function carregarCapasLazy() {
@@ -635,13 +636,12 @@
                 if (l.imagem_url) capasCache[l.id] = { url: l.imagem_url, res: l._capaResolvida };
             });
 
-            const [livros, emps, empsComLivro] = await Promise.all([
+            const [livros, empsComLivro] = await Promise.all([
                 window.DB.getLivros(),
-                window.DB.getEmprestimosAtivos(),
                 window.DB.getEmprestimosAtivosComLivro()
             ]);
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
-            idsAtrasadosCache = [...new Set(emps.filter(e => e.atrasado).map(e => e.livro_id))];
+            idsAtrasadosCache = [...new Set(empsComLivro.filter(e => e.atrasado).map(e => e.livro_id))];
 
             // Restaurar capas já carregadas do cache — evita piscada ao re-renderizar
             todosLivros.forEach(l => {
@@ -651,9 +651,9 @@
                 }
             });
 
-            // Guardar empréstimos no cache para uso instantâneo sem ir ao Supabase
+            // Derivar empsAtivosCache de empsComLivro — evita query duplicada
             empsAtivosCache = {};
-            emps.forEach(e => {
+            empsComLivro.forEach(e => {
                 if (!empsAtivosCache[e.livro_id]) empsAtivosCache[e.livro_id] = [];
                 empsAtivosCache[e.livro_id].push(e);
             });
@@ -1405,6 +1405,7 @@
             await carregarPessoas();
             renderListaPessoas();
         };
+        window.renderListaPessoas = renderListaPessoas;
 
         function renderListaPessoas() {
             const container = document.getElementById('listaPessoas');
@@ -1417,13 +1418,29 @@
 
             let pessoas = todasPessoas;
             if (termo) {
-                pessoas = pessoas.filter(p => {
-                    const ehFunc = p.tipo === 'funcionario';
-                    return normalizar(p.nome).includes(termo) ||
-                        (!ehFunc && String(p.ano_aluno).includes(termo)) ||
-                        (!ehFunc && normalizar(p.turma_aluno || '').includes(termo)) ||
-                        (ehFunc && normalizar('prof func professor funcionario').includes(termo));
-                });
+                const matchAnoTurma = termo.match(/^([0-9])([A-Z])$/);  // ex: 6B ou 0F
+                const matchAno = termo.match(/^([0-9])$/);              // ex: 8 ou 0
+
+                if (matchAnoTurma) {
+                    const [, ano, turma] = matchAnoTurma;
+                    if (ano === '0') {
+                        // 0F → especificamente professores/funcionários
+                        pessoas = pessoas.filter(p => p.tipo === 'funcionario');
+                    } else {
+                        pessoas = pessoas.filter(p => p.tipo === 'aluno' && String(p.ano_aluno) === ano && normalizar(p.turma_aluno) === turma);
+                    }
+                } else if (matchAno) {
+                    const [, ano] = matchAno;
+                    if (ano === '0') {
+                        // 0 → todos os não-alunos
+                        pessoas = pessoas.filter(p => p.tipo === 'funcionario');
+                    } else {
+                        // Dígito 1-9 → todos do ano, qualquer turma
+                        pessoas = pessoas.filter(p => p.tipo === 'aluno' && String(p.ano_aluno) === ano);
+                    }
+                } else {
+                    pessoas = pessoas.filter(p => normalizar(p.nome).includes(termo));
+                }
             }
 
             if (!pessoas.length) {
@@ -1821,8 +1838,8 @@
     </script>
 </main>
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js" defer></script>
-    <script defer>window.addEventListener('load', function(){ new window.VLibras.Widget('https://vlibras.gov.br/app'); });</script>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
 
     <script>
     // =====================================================================
