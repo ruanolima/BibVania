@@ -29,14 +29,14 @@
 |---|---|---|
 | **Cadastro de livros** | Campos básicos (título, autor, ISBN, categoria, quantidade, sinopse) | + Editora, prateleira, acabamento, colaboradores, capa com pré-visualização, publicação independente |
 | **Busca no acervo** | ID, título, autor, ISBN, sinopse | + Editora e colaboradores |
-| **Pessoas** | Sem cadastro de pessoas | ✅ Aba "Cadastrar Pessoas" e "Lista de Pessoas" com editar e excluir |
+| **Pessoas** | Sem cadastro de pessoas | ✅ Aba "Cadastrar Pessoas" e "Lista de Pessoas" com editar e excluir; campo ANO aceita apenas 1–9; campo TURMA aceita apenas uma letra; validação de duplicata no cadastro e na edição; busca por nome, ano, turma e categoria |
 | **Empréstimos** | Registro livre por nome digitado | Só para **pessoas cadastradas**; autocomplete com sugestão de nome, ano, turma e sexo |
 | **Validação de empréstimo** | Verifica duplicidade de aluno | + Verifica se a pessoa está cadastrada; + verifica se o livro existe |
 | **Relatórios** | Anual com 6 seções detalhadas | Anual e **mensal**; 3 seções: acervo por categoria com livros numerados no formato `Nº. ID-Nome (X Exemplares)`, top 15 mais lidos e destaque por sala; horário em tempo real no cabeçalho; botões compactos; pré-visualização sem scroll horizontal |
 | **Tempo real** | Realtime na página de leitores | Realtime em **todas as páginas**, incluindo relatórios |
 | **Acervo — carregamento** | Cards e capas em lote | Cards e capas **1 por 1**, capa junto com o card, sem piscar |
 | **Navegação** | Sem restauração de aba | Restaura a aba aberta ao recarregar; recarrega ao voltar de outra página (bfcache) |
-| **Acessibilidade** | Controle de fonte, modo escuro, VLibras | + Skip links, ARIA tabpanel, aria-live, focus trap em modais, lightbox com foco gerenciado |
+| **Acessibilidade** | Controle de fonte, modo escuro, VLibras | + Skip links, ARIA tabpanel, aria-live, focus trap em modais, lightbox com foco gerenciado; VLibras carregado sob demanda (evita erro de memória WebGL) |
 | **SEO** | Metas básicas em index.html | JSON-LD Schema.org em todas as páginas, keywords, canonical, Open Graph e Twitter Card completos |
 | **Arquivo SQL** | `supabase_schema.sql` | Renomeado para `supabase_setup.sql`; inclui tabela `pessoas` e coluna `alt_text` |
 

@@ -335,8 +335,8 @@
                                 <option value="F">ALUNA</option>
                             </select>
                         </div>
-                        <div class="form-group" id="grpAnoPessoa"><label>ANO *</label><input type="number" id="anoPessoa" min="1" max="9"></div>
-                        <div class="form-group" id="grpTurmaPessoa"><label>TURMA *</label><input type="text" id="turmaPessoa" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+                        <div class="form-group" id="grpAnoPessoa"><label>ANO *</label><input type="number" id="anoPessoa" min="1" max="9" style="width:80px;" oninput="if(this.value<1)this.value=1;if(this.value>9)this.value=9;"></div>
+                        <div class="form-group" id="grpTurmaPessoa"><label>TURMA *</label><input type="text" id="turmaPessoa" maxlength="1" pattern="[A-Za-z]" style="text-transform:uppercase;width:80px;" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()"></div>
                     </div>
                     <button type="submit" class="btn-block btn-primary" style="margin-top:1rem;">CADASTRAR</button>
                 </form>
@@ -348,6 +348,33 @@
         <div id="tab-listapessoas" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-listapessoas" class="tab-content">
             <div class="card">
                 <h2><span>📋</span> LISTA DE ALUNOS E FUNCIONÁRIOS</h2>
+                <div style="display:grid;grid-template-columns:1fr auto auto;gap:0.5rem;margin-bottom:1rem;align-items:end;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="buscaPessoas">NOME</label>
+                        <input type="search" id="buscaPessoas" placeholder="BUSCAR PESSOA..." autocomplete="off" oninput="renderListaPessoas()">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="filtroPessoaAno">ANO</label>
+                        <select id="filtroPessoaAno" onchange="renderListaPessoas()">
+                            <option value="">TODOS</option>
+                            <option>1</option><option>2</option><option>3</option>
+                            <option>4</option><option>5</option><option>6</option>
+                            <option>7</option><option>8</option><option>9</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="filtroPessoaTipo">CATEGORIA</label>
+                        <select id="filtroPessoaTipo" onchange="renderListaPessoas()">
+                            <option value="">TODOS</option>
+                            <option value="aluno">ALUNOS</option>
+                            <option value="funcionario">PROF/FUNC</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label for="filtroPessoaTurma">TURMA</label>
+                    <input type="text" id="filtroPessoaTurma" placeholder="EX: A, B, C..." maxlength="4" style="width:120px;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase();renderListaPessoas()">
+                </div>
                 <div id="listaPessoas"><p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p></div>
             </div>
         </div>
@@ -381,8 +408,8 @@
                         <option value="F">ALUNA</option>
                     </select>
                 </div>
-                <div class="form-group" id="editGrpAno"><label>ANO *</label><input type="number" id="editAnoPessoa" min="1" max="9"></div>
-                <div class="form-group" id="editGrpTurma"><label>TURMA *</label><input type="text" id="editTurmaPessoa" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></div>
+                <div class="form-group" id="editGrpAno"><label>ANO *</label><input type="number" id="editAnoPessoa" min="1" max="9" style="width:80px;" oninput="if(this.value<1)this.value=1;if(this.value>9)this.value=9;"></div>
+                <div class="form-group" id="editGrpTurma"><label>TURMA *</label><input type="text" id="editTurmaPessoa" maxlength="1" pattern="[A-Za-z]" style="text-transform:uppercase;width:80px;" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()"></div>
                 <div style="display:flex;gap:0.5rem;margin-top:1rem;">
                     <button type="button" onclick="closeModalEditPessoa()" class="btn-block btn-outline">CANCELAR</button>
                     <button type="submit" class="btn-block btn-primary">SALVAR</button>
@@ -1409,9 +1436,25 @@
                 container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUMA PESSOA CADASTRADA.</p>';
                 return;
             }
-            const funcionarios = todasPessoas.filter(p => p.tipo === 'funcionario').sort((a,b) => a.nome.localeCompare(b.nome));
-            const alunos = todasPessoas.filter(p => p.tipo === 'aluno');
-            // Agrupar alunos por ano+turma
+
+            const termoBusca = normalizar(document.getElementById('buscaPessoas')?.value || '');
+            const filtroAno = document.getElementById('filtroPessoaAno')?.value || '';
+            const filtroTurma = (document.getElementById('filtroPessoaTurma')?.value || '').toUpperCase().trim();
+            const filtroTipo = document.getElementById('filtroPessoaTipo')?.value || '';
+
+            let pessoas = todasPessoas;
+            if (termoBusca) pessoas = pessoas.filter(p => normalizar(p.nome).includes(termoBusca));
+            if (filtroTipo) pessoas = pessoas.filter(p => p.tipo === filtroTipo);
+            if (filtroAno) pessoas = pessoas.filter(p => p.tipo === 'aluno' && p.ano_aluno == filtroAno);
+            if (filtroTurma) pessoas = pessoas.filter(p => p.tipo === 'aluno' && p.turma_aluno === filtroTurma);
+
+            if (!pessoas.length) {
+                container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM RESULTADO ENCONTRADO.</p>';
+                return;
+            }
+
+            const funcionarios = pessoas.filter(p => p.tipo === 'funcionario').sort((a,b) => a.nome.localeCompare(b.nome));
+            const alunos = pessoas.filter(p => p.tipo === 'aluno');
             const turmaMap = {};
             alunos.forEach(p => {
                 const key = `${p.ano_aluno}|${p.turma_aluno}`;
@@ -1516,7 +1559,17 @@
             if (!nome || !sexo || (!func && (!ano || !turma))) {
                 btn.textContent = lbl; btn.disabled = false; return;
             }
-            try {
+            // Verificar duplicidade (excluindo o próprio cadastro sendo editado)
+            const duplicado = todasPessoas.find(p =>
+                p.id !== id &&
+                normalizar(p.nome) === normalizar(nome) &&
+                p.tipo === (func ? 'funcionario' : 'aluno') &&
+                (func || (p.ano_aluno == ano && p.turma_aluno === turma))
+            );
+            if (duplicado) {
+                alert('❌ JÁ EXISTE UM ALUNO REGISTRADO COM ESTE NOME NESTA TURMA.');
+                btn.textContent = lbl; btn.disabled = false; return;
+            }
                 const atualizado = await window.DB.atualizarPessoa({ id, nome, sexo, tipo: func ? 'funcionario' : 'aluno', ano_aluno: ano, turma_aluno: turma });
                 const idx = todasPessoas.findIndex(p => p.id === id);
                 if (idx !== -1) todasPessoas[idx] = atualizado;
@@ -1788,9 +1841,29 @@
         // ── FIM ABA DEVOLUÇÕES ────────────────────────────────────────────────
     </script>
 </main>
-    <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <div vw class="enabled" id="vlibras-container" style="display:none"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
+    <button onclick="loadVLibras()" id="vlibras-btn" aria-label="Ativar acessibilidade em Libras" style="position:fixed;bottom:20px;right:20px;z-index:9999;background:none;border:none;cursor:pointer;width:56px;height:56px;padding:0;">
+        <img src="https://vlibras.gov.br/app/assets/images/vlibras-icon.png" alt="VLibras" style="width:56px;height:56px;border-radius:50%;" onerror="this.style.display='none';this.parentElement.innerHTML='🤟';">
+    </button>
+    <script>
+    var _vlibrasLoaded = false;
+    function loadVLibras() {
+        if (_vlibrasLoaded) {
+            document.getElementById('vlibras-container').style.display = 'block';
+            document.getElementById('vlibras-btn').style.display = 'none';
+            return;
+        }
+        _vlibrasLoaded = true;
+        var s = document.createElement('script');
+        s.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
+        s.onload = function() {
+            new window.VLibras.Widget('https://vlibras.gov.br/app');
+            document.getElementById('vlibras-container').style.display = 'block';
+            document.getElementById('vlibras-btn').style.display = 'none';
+        };
+        document.body.appendChild(s);
+    }
+    </script>
 
     <script>
     // =====================================================================

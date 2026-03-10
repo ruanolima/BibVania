@@ -491,13 +491,32 @@
             if (e.persisted) carregarLivros();
         });
     </script>
-    <!-- VLibras — Libras accessibility widget -->
-    <div vw class="enabled" aria-label="Widget de acessibilidade em Libras" role="complementary">
+    <div vw class="enabled" id="vlibras-container" style="display:none" aria-label="Widget de acessibilidade em Libras" role="complementary">
         <div vw-access-button class="active" aria-label="Abrir interpretação em Libras"></div>
         <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
     </div>
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+    <button onclick="loadVLibras()" id="vlibras-btn" aria-label="Ativar acessibilidade em Libras" style="position:fixed;bottom:20px;right:20px;z-index:9999;background:none;border:none;cursor:pointer;width:56px;height:56px;padding:0;">
+        <img src="https://vlibras.gov.br/app/assets/images/vlibras-icon.png" alt="VLibras" style="width:56px;height:56px;border-radius:50%;" onerror="this.style.display='none';this.parentElement.innerHTML='🤟';">
+    </button>
+    <script>
+    var _vlibrasLoaded = false;
+    function loadVLibras() {
+        if (_vlibrasLoaded) {
+            document.getElementById('vlibras-container').style.display = 'block';
+            document.getElementById('vlibras-btn').style.display = 'none';
+            return;
+        }
+        _vlibrasLoaded = true;
+        var s = document.createElement('script');
+        s.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
+        s.onload = function() {
+            new window.VLibras.Widget('https://vlibras.gov.br/app');
+            document.getElementById('vlibras-container').style.display = 'block';
+            document.getElementById('vlibras-btn').style.display = 'none';
+        };
+        document.body.appendChild(s);
+    }
+    </script>
 
     <!-- Lightbox de capa -->
     <div class="lightbox-overlay" id="capLightbox" role="dialog" aria-modal="true" aria-label="Visualizar capa ampliada">
