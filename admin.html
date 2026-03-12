@@ -720,10 +720,27 @@
 
             (async () => {
                 let primeiroInserido = false;
+
+                // Busca quais IDs têm capa de uma vez (query leve, sem base64)
+                // Só para livros ainda não resolvidos
+                const naoResolvidos = naoAtrasados.filter(l => !l._capaResolvida);
+                if (naoResolvidos.length > 0) {
+                    try {
+                        const idsComCapa = await window.DB.getIdsComCapa();
+                        naoResolvidos.forEach(l => {
+                            if (!idsComCapa.has(l.id)) {
+                                l.imagem_url = null;
+                                l._capaResolvida = 'sem';
+                            }
+                            // Se tem capa, deixa _capaResolvida vazio — vai buscar base64 no loop
+                        });
+                    } catch(e) { /* segue sem pré-filtro */ }
+                }
+
                 for (let i = 0; i < naoAtrasados.length; i++) {
                     const l = naoAtrasados[i];
 
-                    // Busca capa se ainda não resolvida
+                    // Busca base64 só se tem capa e ainda não foi resolvido
                     if (!l._capaResolvida) {
                         try {
                             const url = await window.DB.getCapaUnica(l.id);
@@ -885,8 +902,16 @@
             }
         };
         
-        window.openEdit = (id) => {
+        window.openEdit = async (id) => {
             const l = todosLivros.find(livro => livro.id === id);
+            // Buscar capa se ainda não carregada pelo lazy
+            if (!l._capaResolvida) {
+                try {
+                    const url = await window.DB.getCapaUnica(l.id);
+                    l.imagem_url = url || null;
+                    l._capaResolvida = url ? 'tem' : 'sem';
+                } catch(e) { l._capaResolvida = 'sem'; }
+            }
             document.getElementById('editId').value = l.id;
             document.getElementById('editIsbn').value = l.isbn || '';
             document.getElementById('editAcabamento').value = l.acabamento || '';
@@ -962,7 +987,7 @@
                     categoria: document.getElementById('editCategoria').value,
                     quantidade_total: parseInt(document.getElementById('editQtd').value),
                     sinopse: document.getElementById('editSinopse').value,
-                    alt_text: document.getElementById('editCapaAltText')?.value?.trim() || undefined
+                    alt_text: document.getElementById('editCapaAltText')?.value?.trim() || null
                 });
                 // Capa: upload novo arquivo ou remover
                 if (window._editCapaBase64) {

@@ -121,7 +121,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro")
+                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro, alt_text")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
@@ -210,7 +210,14 @@ const DB = {
                         quantidade_disponivel: novaQuantidadeDisponivel,
                         autor: livro.autor || existente.autor,
                         isbn: livro.isbn || existente.isbn,
-                        sinopse: livro.sinopse || existente.sinopse
+                        sinopse: livro.sinopse || existente.sinopse,
+                        editora: livro.editora || existente.editora,
+                        colaboradores: livro.colaboradores?.length ? livro.colaboradores : existente.colaboradores,
+                        prateleira: livro.prateleira || existente.prateleira,
+                        acabamento: livro.acabamento || existente.acabamento,
+                        categoria: livro.categoria || existente.categoria,
+                        pub_independente: livro.pub_independente ?? existente.pub_independente,
+                        alt_text: livro.alt_text || existente.alt_text,
                     })
                     .eq("id", existente.id)
                     .select()
