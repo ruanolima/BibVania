@@ -874,29 +874,29 @@
             if (!confirm('CONFIRMAR DEVOLUÇÃO?')) return;
             try {
                 await window.DB.registrarDevolucao(id, new Date().toISOString());
-                mostrarMsg('msgEmp', '✓ DEVOLUÇÃO REGISTRADA!', 'success');
+                window.mostrarMsg('msgEmp', '✓ DEVOLUÇÃO REGISTRADA!', 'success');
                 load();
                 carregarDevolucoes();
-            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+            } catch(err) { window.mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
         window.delEmp = async (id) => {
             if (!confirm('EXCLUIR REGISTRO DE EMPRÉSTIMO?')) return;
             try {
                 await window.DB.excluirEmprestimo(id);
-                mostrarMsg('msgEmp', '✓ EXCLUÍDO!', 'success');
+                window.mostrarMsg('msgEmp', '✓ EXCLUÍDO!', 'success');
                 load();
                 carregarDevolucoes();
-            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+            } catch(err) { window.mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
         
         window.delLivro = async (id) => {
             if(confirm('EXCLUIR ESTE LIVRO DO ACERVO?\n\nATENÇÃO: Esta ação é irreversível!')) {
                 try {
                     await window.DB.excluirLivro(id);
-                    mostrarMsg('msgLivro', '✓ LIVRO EXCLUÍDO COM SUCESSO!', 'success');
+                    window.mostrarMsg('msgLivro', '✓ LIVRO EXCLUÍDO COM SUCESSO!', 'success');
                     load();
                 } catch(err) {
-                    mostrarMsg('msgLivro', '❌ ' + err.message, 'danger');
+                    window.mostrarMsg('msgLivro', '❌ ' + err.message, 'danger');
                     console.error('Erro ao excluir livro:', err);
                 }
             }
@@ -935,7 +935,7 @@
             const editLista = document.getElementById('editListaColaboradores');
             editLista.innerHTML = '';
             if (l.colaboradores && l.colaboradores.length > 0) {
-                l.colaboradores.forEach(co => adicionarColaboradorEdit(co.funcao, co.nome));
+                l.colaboradores.forEach(co => window.adicionarColaboradorEdit(co.funcao, co.nome));
             }
             // Capa no modal de edição
             window._editCapaBase64 = null;
@@ -949,7 +949,7 @@
                 editImg.className = 'cover-img';
                 if (editCapaLbl) editCapaLbl.style.display = 'none';
                 if (editWrap) { editWrap.classList.remove('sem-capa'); editWrap.classList.add('capa-carregada'); }
-                renderBotoesCapa('edit');
+                window.renderBotoesCapa('edit');
             } else {
                 editImg.src = '';
                 editImg.style.display = 'none';
@@ -980,7 +980,7 @@
                     acabamento: document.getElementById('editAcabamento').value,
                     titulo: document.getElementById('editTitulo').value,
                     autor: document.getElementById('editAutor').value,
-                    colaboradores: coletarColaboradoresEdit(),
+                    colaboradores: window.coletarColaboradoresEdit(),
                     editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
                     pub_independente: document.getElementById('editPubIndependente').checked,
                     prateleira: document.getElementById('editPrateleira').value,
@@ -1007,7 +1007,7 @@
                         window._editCapaBase64 = null;
                     } catch(capErr) {
                         console.error('Capa não salva:', capErr);
-                        mostrarMsg('msgLivro', '⚠️ DADOS SALVOS, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
+                        window.mostrarMsg('msgLivro', '⚠️ DADOS SALVOS, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
                     }
                 } else if (window._editCapaExcluir) {
                     try {
@@ -1017,16 +1017,16 @@
                         if (livroCache) livroCache.imagem_url = null;
                     } catch(capErr) {
                         console.error('Erro ao remover capa:', capErr);
-                        mostrarMsg('msgLivro', '⚠️ ERRO AO REMOVER CAPA: ' + (capErr.message || capErr), 'danger');
+                        window.mostrarMsg('msgLivro', '⚠️ ERRO AO REMOVER CAPA: ' + (capErr.message || capErr), 'danger');
                     }
                 }
                 btnEdit.textContent = lblEdit; btnEdit.disabled = false;
-                mostrarMsg('msgLivro', '✓ ALTERAÇÕES SALVAS!', 'success');
+                window.mostrarMsg('msgLivro', '✓ ALTERAÇÕES SALVAS!', 'success');
                 closeModal();
                 load();
             } catch(err) {
                 btnEdit.textContent = lblEdit; btnEdit.disabled = false;
-                mostrarMsg('msgLivro', '❌ ERRO AO SALVAR: ' + err.message, 'danger');
+                window.mostrarMsg('msgLivro', '❌ ERRO AO SALVAR: ' + err.message, 'danger');
             }
         });
 
@@ -1097,12 +1097,12 @@
                 });
                 
                 closeModalRenovar();
-                mostrarMsg('msgEmp', '✓ RENOVADO!', 'success');
+                window.mostrarMsg('msgEmp', '✓ RENOVADO!', 'success');
                 load();
                 carregarDevolucoes();
             } catch(err) {
                 console.error('Erro ao renovar:', err);
-                mostrarMsg('msgEmp', '❌ ERRO AO RENOVAR: ' + (err.message || 'Erro desconhecido'), 'danger');
+                window.mostrarMsg('msgEmp', '❌ ERRO AO RENOVAR: ' + (err.message || 'Erro desconhecido'), 'danger');
             }
         });
         
@@ -1138,14 +1138,14 @@
             if (isP) {
                 const nomeProf = document.getElementById('editEmpNomeProfessor').value.trim();
                 if (!nomeProf) {
-                    mostrarMsg('msgEmp', '❌ INFORME O NOME DO PROFESSOR/FUNCIONÁRIO.', 'danger');
+                    window.mostrarMsg('msgEmp', '❌ INFORME O NOME DO PROFESSOR/FUNCIONÁRIO.', 'danger');
                     document.getElementById('editEmpNomeProfessor').focus();
                     return;
                 }
             } else {
                 const nomeAluno = document.getElementById('editEmpNome').value.trim();
                 if (!nomeAluno) {
-                    mostrarMsg('msgEmp', '❌ INFORME O NOME DO ALUNO.', 'danger');
+                    window.mostrarMsg('msgEmp', '❌ INFORME O NOME DO ALUNO.', 'danger');
                     document.getElementById('editEmpNome').focus();
                     return;
                 }
@@ -1176,12 +1176,12 @@
                 await window.DB.atualizarEmprestimo(data);
                 if (btnEE) { btnEE.textContent = lblEE; btnEE.disabled = false; }
                 document.getElementById('modalEditEmp').classList.add('hidden');
-                mostrarMsg('msgEmp', '✓ EMPRÉSTIMO ATUALIZADO!', 'success');
+                window.mostrarMsg('msgEmp', '✓ EMPRÉSTIMO ATUALIZADO!', 'success');
                 load();
                 carregarDevolucoes();
             } catch(err) {
                 if (btnEE) { btnEE.textContent = lblEE; btnEE.disabled = false; }
-                mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger');
+                window.mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger');
             }
         });
 
@@ -1205,12 +1205,12 @@
                     sinopse: document.getElementById('sinopse').value || window.livroEmDuplicidade.sinopse
                 });
                 
-                mostrarMsg('msgLivro', '✓ QUANTIDADE ADICIONADA!', 'success');
+                window.mostrarMsg('msgLivro', '✓ QUANTIDADE ADICIONADA!', 'success');
                 document.getElementById('formLivro').reset();
                 closeModalDuplicidade();
                 load();
             } catch(err) {
-                mostrarMsg('msgLivro', '❌ ERRO AO ADICIONAR QUANTIDADE', 'danger');
+                window.mostrarMsg('msgLivro', '❌ ERRO AO ADICIONAR QUANTIDADE', 'danger');
             }
         };
         
@@ -1242,7 +1242,7 @@
                     acabamento: document.getElementById('acabamento').value,
                     titulo: document.getElementById('titulo').value,
                     autor: document.getElementById('autor').value,
-                    colaboradores: coletarColaboradores(),
+                    colaboradores: window.coletarColaboradores(),
                     editora: document.getElementById('pubIndependente').checked ? '' : document.getElementById('editora').value,
                     pub_independente: document.getElementById('pubIndependente').checked,
                     prateleira: document.getElementById('prateleira').value,
@@ -1256,21 +1256,20 @@
                     try {
                         const capaUrl = window._capaBase64;
                         await window.DB.uploadCapa(resultado.data.id, capaUrl);
-                        // Salva no cache para aparecer imediatamente após o load()
-                        const novoLivro = todosLivros.find(l => l.id === resultado.data.id);
-                        if (novoLivro) novoLivro.imagem_url = capaUrl;
+                        const livroCache = todosLivros.find(l => l.id === resultado.data.id);
+                        if (livroCache) { livroCache.imagem_url = capaUrl; livroCache._capaResolvida = 'tem'; }
                     } catch(capErr) {
                         console.error('Capa não salva:', capErr);
-                        mostrarMsg('msgLivro', '⚠️ LIVRO SALVO, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
+                        window.mostrarMsg('msgLivro', '⚠️ LIVRO SALVO, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
                     }
                 }
                 window._capaBase64 = null;
                 // Reset preview capa
                 const capaImg = document.getElementById('capaPreview');
                 capaImg.src = ''; capaImg.style.display = 'none'; capaImg.className = 'cover-img';
-                removerCapa('cadastro','capaPreview','capaBtns','capaInput');
+                window.removerCapa('cadastro','capaPreview','capaBtns','capaInput');
                 btnLivro.textContent = lblLivro; btnLivro.disabled = false;
-                mostrarMsg('msgLivro', '✓ CADASTRADO!', 'success');
+                window.mostrarMsg('msgLivro', resultado.action === 'updated' ? '✓ QUANTIDADE E DADOS ATUALIZADOS!' : '✓ CADASTRADO!', 'success');
                 e.target.reset();
                 document.getElementById('listaColaboradores').innerHTML = '';
                 document.getElementById('acabamento').value = '';
@@ -1279,7 +1278,7 @@
                 if (piCb.checked) { piCb.checked = false; piCb.dispatchEvent(new Event('change')); }
                 document.getElementById('labelPubIndependente').classList.remove('checked');
                 load();
-            } catch(err) { btnLivro.textContent = lblLivro; btnLivro.disabled = false; mostrarMsg('msgLivro', '❌ ERRO: ' + (err.message || 'Erro desconhecido ao cadastrar livro'), 'danger'); console.error('Erro ao cadastrar livro:', err); }
+            } catch(err) { btnLivro.textContent = lblLivro; btnLivro.disabled = false; window.mostrarMsg('msgLivro', '❌ ERRO: ' + (err.message || 'Erro desconhecido ao cadastrar livro'), 'danger'); console.error('Erro ao cadastrar livro:', err); }
         });
 
         window.toggleTipoPessoa = () => {
@@ -1334,7 +1333,7 @@
                 const livroId = parseInt(document.getElementById('livroId').value);
                 if (!livroId || !todosLivros.find(l => l.id === livroId)) {
                     btnEmp.textContent = lblEmp; btnEmp.disabled = false;
-                    mostrarMsg('msgEmp', '❌ LIVRO NÃO ENCONTRADO. VERIFIQUE O ID DO LIVRO.', 'danger');
+                    window.mostrarMsg('msgEmp', '❌ LIVRO NÃO ENCONTRADO. VERIFIQUE O ID DO LIVRO.', 'danger');
                     return;
                 }
                 const data = {
@@ -1355,7 +1354,7 @@
                     );
                     if (!funcCadastrado) {
                         btnEmp.textContent = lblEmp; btnEmp.disabled = false;
-                        mostrarMsg('msgEmp', '❌ FUNCIONÁRIO NÃO CADASTRADO. CADASTRE-O PRIMEIRO NA ABA "CADASTRAR PESSOAS".', 'danger');
+                        window.mostrarMsg('msgEmp', '❌ FUNCIONÁRIO NÃO CADASTRADO. CADASTRE-O PRIMEIRO NA ABA "CADASTRAR PESSOAS".', 'danger');
                         return;
                     }
                 }
@@ -1374,7 +1373,7 @@
                     );
                     if (!alunoCadastrado) {
                         btnEmp.textContent = lblEmp; btnEmp.disabled = false;
-                        mostrarMsg('msgEmp', '❌ ALUNO NÃO CADASTRADO. CADASTRE-O PRIMEIRO NA ABA "CADASTRAR PESSOAS".', 'danger');
+                        window.mostrarMsg('msgEmp', '❌ ALUNO NÃO CADASTRADO. CADASTRE-O PRIMEIRO NA ABA "CADASTRAR PESSOAS".', 'danger');
                         return;
                     }
 
@@ -1388,20 +1387,20 @@
                     );
                     if (alunoTemEmprestimoAtivo) {
                         btnEmp.textContent = lblEmp; btnEmp.disabled = false;
-                        mostrarMsg('msgEmp', '❌ EMPRÉSTIMO CANCELADO: ALUNO JÁ TEM UM EMPRÉSTIMO ATIVO!', 'danger');
+                        window.mostrarMsg('msgEmp', '❌ EMPRÉSTIMO CANCELADO: ALUNO JÁ TEM UM EMPRÉSTIMO ATIVO!', 'danger');
                         return;
                     }
                 }
                 
                 await window.DB.registrarEmprestimo(data);
                 btnEmp.textContent = lblEmp; btnEmp.disabled = false;
-                mostrarMsg('msgEmp', '✓ REGISTRADO!', 'success');
+                window.mostrarMsg('msgEmp', '✓ REGISTRADO!', 'success');
                 e.target.reset();
                 document.getElementById('dataEmprestimo').value = '';
                 toggleTipoPessoa();
                 toggleData();
                 load();
-            } catch(err) { btnEmp.textContent = lblEmp; btnEmp.disabled = false; mostrarMsg('msgEmp', '❌ ' + err.message, 'danger'); }
+            } catch(err) { btnEmp.textContent = lblEmp; btnEmp.disabled = false; window.mostrarMsg('msgEmp', '❌ ' + err.message, 'danger'); }
         });
 
         // ── ABA PESSOAS ──────────────────────────────────────────────────────
@@ -1614,7 +1613,7 @@
             const turma = func ? null : document.getElementById('turmaPessoa').value.trim().toUpperCase();
 
             if (!nome || !sexo || (!func && (!ano || !turma))) {
-                mostrarMsg('msgPessoa', '❌ PREENCHA TODOS OS CAMPOS OBRIGATÓRIOS.', 'danger');
+                window.mostrarMsg('msgPessoa', '❌ PREENCHA TODOS OS CAMPOS OBRIGATÓRIOS.', 'danger');
                 btn.textContent = lbl; btn.disabled = false; return;
             }
             // Verificar duplicidade (normalizado)
@@ -1624,17 +1623,17 @@
                 (func || (p.ano_aluno == ano && p.turma_aluno === turma))
             );
             if (duplicado) {
-                mostrarMsg('msgPessoa', '❌ JÁ EXISTE UM CADASTRO COM ESTE NOME NESTA TURMA.', 'danger');
+                window.mostrarMsg('msgPessoa', '❌ JÁ EXISTE UM CADASTRO COM ESTE NOME NESTA TURMA.', 'danger');
                 btn.textContent = lbl; btn.disabled = false; return;
             }
             try {
                 const nova = await window.DB.salvarPessoa({ nome, sexo, tipo: func ? 'funcionario' : 'aluno', ano_aluno: ano, turma_aluno: turma });
                 todasPessoas.push(nova);
-                mostrarMsg('msgPessoa', '✓ CADASTRADO COM SUCESSO!', 'success');
+                window.mostrarMsg('msgPessoa', '✓ CADASTRADO COM SUCESSO!', 'success');
                 e.target.reset();
                 toggleTipoCadastro();
             } catch(err) {
-                mostrarMsg('msgPessoa', '❌ ERRO: ' + err.message, 'danger');
+                window.mostrarMsg('msgPessoa', '❌ ERRO: ' + err.message, 'danger');
             }
             btn.textContent = lbl; btn.disabled = false;
         });
@@ -1848,7 +1847,7 @@
                 await window.DB.registrarDevolucao(id, new Date().toISOString());
                 load();
                 carregarDevolucoes();
-            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+            } catch(err) { window.mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
 
         window.delEmpEAtualizar = async (id) => {
@@ -1857,7 +1856,7 @@
                 await window.DB.excluirEmprestimo(id);
                 load();
                 carregarDevolucoes();
-            } catch(err) { mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
+            } catch(err) { window.mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
         // ── FIM ABA DEVOLUÇÕES ────────────────────────────────────────────────
     </script>
