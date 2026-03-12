@@ -960,7 +960,7 @@
                     <button type="button" class="btn-block btn-outline"
                         onclick="document.getElementById('editCapaInput').click()">📷 ESCOLHER IMAGEM</button>
                     <input type="file" id="editCapaInput" accept="image/*" style="display:none;"
-                        onchange="preVisualizarCapa(this,'editCapaPreview','editCapaBtns',true)">
+                        onchange="preVisualizarCapa(this,'editCapaPreview','editCapaBtns','editCapaLabel',true)">
                 `;
             }
             document.getElementById('modalEdit').classList.remove('hidden');
@@ -2062,7 +2062,7 @@
             <button type="button" class="btn-block btn-danger"
                 onclick="removerCapa('${modo}','${imgId}','${btnsId}','${inputId}')">🗑️ EXCLUIR</button>
             <input type="file" id="${inputId}" accept="image/*" style="display:none;"
-                onchange="preVisualizarCapa(this,'${imgId}','${btnsId}',${modo === 'edit'})">
+                onchange="preVisualizarCapa(this,'${imgId}','${btnsId}','${modo === 'edit' ? 'editCapaLabel' : 'capaPreviewLabel'}',${modo === 'edit'})">
         `;
     };
 
@@ -2092,7 +2092,7 @@
             <button type="button" class="btn-block btn-outline"
                 onclick="document.getElementById('${inputId}').click()">📷 ESCOLHER IMAGEM</button>
             <input type="file" id="${inputId}" accept="image/*" style="display:none;"
-                onchange="preVisualizarCapa(this,'${imgId}','${btnsId}',${modo === 'edit'})">
+                onchange="preVisualizarCapa(this,'${imgId}','${btnsId}','${modo === 'edit' ? 'editCapaLabel' : 'capaPreviewLabel'}',${modo === 'edit'})">
         `;
     };
 
