@@ -303,49 +303,48 @@ input:disabled {
 .btn-danger { background: var(--danger); color: white; }
 .btn-outline { background: var(--card); border: 1px solid var(--border); color: var(--text); }
 
-/* Tabs e Categorias */
-.tabs-container, .category-tabs {
+/* ── Abas de navegação ─────────────────────────────── */
+.tabs-container {
     display: flex;
-    background: var(--card);
-    padding: 0.4rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    border: 1px solid var(--border);
-    overflow-x: auto;
-    gap: 0.5rem;
-    scrollbar-width: none; /* Firefox */
-}
-
-.tabs-container::-webkit-scrollbar, .category-tabs::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem;
+    background: var(--bg);
+    border-radius: var(--radius);
 }
 
 .tab-btn {
-    flex: 0 0 auto;
-    padding: 0.75rem 1.25rem;
-    border: 1px solid transparent;
-    background: var(--bg);
-    color: var(--text-light);
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--card);
+    color: var(--text);
     font-weight: 700;
     font-size: 0.75rem;
-    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.1s ease, color 0.1s ease;
     white-space: nowrap;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
+    transition: background 0.15s, color 0.15s;
 }
 
-.tab-btn.active {
-    background: var(--primary) !important;
-    color: white !important;
-    border-color: var(--primary-dark);
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
-    transform: scale(1.02);
+.tab-btn.active,
+.tab-btn[aria-selected="true"] {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
 }
 
-/* Listagem de Livros */
+.tab-btn:hover:not(.active) {
+    background: var(--border);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
 
 /* ── CAPA DO LIVRO ─────────────────────────────────── */
 .book-cover-wrap {
@@ -847,10 +846,42 @@ a:focus:not(:focus-visible) {
     display: flex;
     align-items: center;
 }
-.search-voice-wrap input[type="text"] {
+.search-voice-wrap input[type="text"],
+.search-voice-wrap input[type="search"] {
     padding-right: 3rem;
     width: 100%;
 }
+/* Dois botões visíveis: X + voz */
+.search-voice-wrap:has(.clear-btn[style*="flex"]) input {
+    padding-right: 5rem;
+}
+.clear-btn {
+    position: absolute;
+    right: 2.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: color 0.15s, background 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+}
+.clear-btn:hover { background: var(--bg); color: var(--danger); }
+/* Suprimir botão X nativo do browser em input[type="search"] — usamos o nosso */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+input[type="search"] { appearance: none; -webkit-appearance: none; }
 .voice-btn {
     position: absolute;
     right: 0.5rem;
@@ -976,3 +1007,64 @@ a:focus:not(:focus-visible) {
     color: var(--text);
     line-height: 1.5;
 }
+
+/* ── Dropdown de categoria customizado ─────────────────────── */
+.cat-dropdown-wrap { position: relative; }
+.cat-dropdown-display {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--text);
+    font-size: var(--font-size);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.cat-dropdown-display::after { content: '▼'; font-size: 0.6rem; color: var(--text-light); flex-shrink: 0; }
+.cat-dropdown-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    z-index: 200;
+    max-height: 300px;
+    overflow: hidden;
+    flex-direction: column;
+}
+.cat-dropdown-panel.aberto { display: flex; }
+.cat-dropdown-search {
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    flex-shrink: 0;
+}
+.cat-dropdown-list {
+    overflow-y: auto;
+    flex: 1;
+}
+.cat-dropdown-item {
+    padding: 0.55rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+}
+.cat-dropdown-item:last-child { border-bottom: none; }
+.cat-dropdown-item:hover { background: var(--bg); }
+.cat-dropdown-item.selecionado { background: var(--primary); color: #fff; font-weight: 700; }
+

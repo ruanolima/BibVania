@@ -12,7 +12,7 @@
     <meta name="keywords" content="relatório biblioteca escolar, livros mais lidos, acervo escolar, sistema de biblioteca gratuito, relatório anual mensal biblioteca">
     <link rel="canonical" href="https://ruanolima.github.io/BibVania/relatorios.html">
     <meta name="author" content="Ruan Oliveira Lima">
-    <meta name="version" content="1.1">
+    <meta name="version" content="1.2">
     <meta name="year" content="2026">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
@@ -37,6 +37,15 @@
     body { overflow-x: hidden; }
     .card { overflow: hidden; }
     #previewRelatorio { white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; overflow-x: hidden; max-width: 100%; }
+    #btnBaixar.baixando {
+        animation: _pulsar-baixar 0.8s ease-in-out infinite;
+        cursor: not-allowed;
+        background: var(--primary-dark, #1d4ed8);
+    }
+    @keyframes _pulsar-baixar {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.7; transform: scale(0.98); }
+    }
 </style>
     <link rel="stylesheet" href="style.css">
     <script type="application/ld+json">
@@ -62,7 +71,7 @@
     </div>
 
     <header role="banner">
-        <img src="logo.png" alt="Logo BibVania" class="header-logo">
+        <img src="logo.png" alt="Logo BibVania" class="header-logo" onerror="if(!this._retry){this._retry=true;this.src='logo.png?v='+Date.now();}">
         <h1>RELATÓRIOS</h1>
         <div class="school-name"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
     </header>
@@ -70,8 +79,8 @@
     <main id="conteudo-principal">
     <main class="container">
         <nav style="display:flex;gap:0.5rem;margin-bottom:1rem;padding:0 0.25rem;">
-            <button onclick="window.location.href='admin.html'" style="flex:1;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:20px;background:var(--card);color:var(--text);font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap;">← VOLTAR AO PAINEL</button>
-            <button onclick="window.DB.signOut()" style="flex:0 0 auto;padding:0.6rem 1.2rem;border:none;border-radius:20px;background:#ef4444;color:#fff;font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap;">SAIR</button>
+            <button onclick="navegarCom('admin.html')" style="flex:1;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:20px;background:var(--card);color:var(--text);font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap;">← VOLTAR AO PAINEL</button>
+            <button onclick="(window.navegarCom||((u)=>window.location.href=u));window.DB.signOut()" style="flex:0 0 auto;padding:0.6rem 1.2rem;border:none;border-radius:20px;background:#ef4444;color:#fff;font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap;">SAIR</button>
         </nav>
 
         <div class="card">
@@ -91,12 +100,12 @@
                 <label>MÊS / ANO</label>
                 <input type="month" id="filtroMes" onchange="gerar()">
             </div>
-            <button onclick="baixar()" class="btn-block btn-primary" style="margin-top:1rem;" id="btnBaixar" disabled>📥 BAIXAR .TXT</button>
+            <button onclick="baixar()" class="btn-block btn-primary" style="margin-top:1rem;" id="btnBaixar" disabled>📥 BAIXAR RELATÓRIO EM TXT</button>
         </div>
 
         <div class="card">
             <h2>PRÉ-VISUALIZAÇÃO</h2>
-            <div id="previewRelatorio" aria-live="polite" aria-atomic="true" aria-label="Pré-visualização do relatório" style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;overflow-x:hidden;max-width:100%;font-family:monospace;font-size:0.78rem;">CONFIGURE E CLIQUE EM "GERAR RELATÓRIO".</div>
+            <div id="previewRelatorio" aria-live="polite" aria-atomic="true" aria-label="Pré-visualização do relatório" style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;overflow-x:hidden;max-width:100%;font-family:monospace;font-size:0.82rem;line-height:1.5;">CARREGANDO RELATÓRIO...</div>
         </div>
     </div>
 
@@ -108,7 +117,6 @@
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
         const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
-        // Preencher padrões
         document.getElementById('filtroAno').value = new Date().getFullYear();
         const _now = new Date();
         document.getElementById('filtroMes').value = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
@@ -128,171 +136,211 @@
             const anual = document.getElementById('tipoRelatorio').value === 'anual';
             document.getElementById('containerAno').classList.toggle('hidden', !anual);
             document.getElementById('containerMes').classList.toggle('hidden', anual);
-            gerar();
+            const _sy = window.scrollY;
+            gerar(true).then(() => requestAnimationFrame(() => window.scrollTo({ top: _sy, behavior: 'instant' })));
         };
-
-        const E60 = () => '═'.repeat(62);
-        const D60 = () => '─'.repeat(62);
 
         function ehFunc(e) {
             return e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
         }
 
         window.gerar = async (silencioso = false) => {
-            if (!silencioso) document.getElementById('previewRelatorio').textContent = 'CARREGANDO DADOS DO BANCO...';
-
+            const preview = document.getElementById('previewRelatorio');
+            if (!silencioso) preview.textContent = 'CARREGANDO RELATÓRIO...';
             try {
                 const [livros, emprestimos] = await Promise.all([
-                    window.DB.getLivros(),
-                    window.DB.getEmprestimos()
+                    window.DB.getLivros(), window.DB.getEmprestimos()
                 ]);
-
                 const tipo = document.getElementById('tipoRelatorio').value;
                 const hoje = new Date();
                 let labelPeriodo, empFiltrados;
-
                 if (tipo === 'anual') {
                     const ano = parseInt(document.getElementById('filtroAno').value) || hoje.getFullYear();
-                    labelPeriodo = `RELATÓRIO ANUAL DE ${ano}`;
+                    labelPeriodo = 'RELATÓRIO ANUAL DE ' + ano;
                     empFiltrados = emprestimos.filter(e => new Date(e.data_emprestimo).getFullYear() === ano);
                 } else {
                     const [ano, mes] = document.getElementById('filtroMes').value.split('-');
-                    labelPeriodo = `RELATÓRIO MENSAL DE ${MESES[parseInt(mes)-1]} DE ${ano}`;
+                    labelPeriodo = 'RELATÓRIO MENSAL DE ' + MESES[parseInt(mes)-1] + ' DE ' + ano;
                     empFiltrados = emprestimos.filter(e => {
                         const d = new Date(e.data_emprestimo);
                         return d.getFullYear() === parseInt(ano) && (d.getMonth()+1) === parseInt(mes);
                     });
                 }
-
                 const livroMap = {};
                 livros.forEach(l => { livroMap[l.id] = l; });
-
-                // Apenas empréstimos de alunos (sem prof/func)
-                const empAlunos = empFiltrados.filter(e => !ehFunc(e));
-
+                const normEx = n => n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+                const EXCLUIR = new Set(['ANTONIO','ANTÔNIO','MARIA','LUANA']);
+                const empAlunos = empFiltrados.filter(e =>
+                    !ehFunc(e) && !EXCLUIR.has(normEx(e.nome_aluno||'').split(' ')[0])
+                );
                 const dataStr = hoje.toLocaleDateString('pt-BR');
-                const horaStr = hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                let txt = '';
-
-                // ── CABEÇALHO ─────────────────────────────────────────────────
-                txt += E60() + '\n';
-                txt += 'BIBVANIA ONLINE\n';
-                txt += 'SISTEMA DA BIBLIOTECA ESCOLAR DA EMTI\n';
-                txt += 'PROFESSORA MARIA VÂNIA FARIAS LINHARES\n';
-                txt += E60() + '\n';
-                txt += labelPeriodo + '\n';
-                txt += `DATA DO RELATÓRIO: ${dataStr}   HORÁRIO: ${horaStr}\n`;
-                txt += E60() + '\n\n';
-
-                // ── 1. LIVROS CADASTRADOS ─────────────────────────────────────
-                txt += E60() + '\n';
-                txt += '1. LIVROS CADASTRADOS\n';
-                txt += E60() + '\n';
-
-                // Agrupar por categoria e listar livros
-                const catLivros = {};
-                livros.forEach(l => {
-                    const cat = l.categoria || 'SEM CATEGORIA';
-                    if (!catLivros[cat]) catLivros[cat] = [];
-                    catLivros[cat].push(l);
-                });
-                let numLivro = 0;
-                Object.keys(catLivros).sort().forEach(cat => {
-                    txt += `\n▸ ${cat}\n`;
-                    catLivros[cat].sort((a,b) => a.id - b.id).forEach(l => {
-                        numLivro++;
-                        const qtd = l.quantidade_total || 0;
-                        txt += `  ${String(numLivro).padStart(3)}. ${l.id}-${l.titulo} (${qtd} EXEMPLAR${qtd !== 1 ? 'ES' : ''})\n`;
-                    });
-                });
-                txt += '\n';
-
-                // ── 2. TOP 15 LIVROS MAIS LIDOS ───────────────────────────────
-                txt += '\n' + E60() + '\n';
-                txt += '2. OS 15 LIVROS MAIS LIDOS NO PERÍODO\n';
-                txt += E60() + '\n';
-                txt += '(EM BREVE)\n';
-
-                // ── 3. DESTAQUE POR SALA ──────────────────────────────────────
-                txt += '\n' + E60() + '\n';
-                txt += '3. DESTAQUE DE LEITURA POR SALA\n';
-                txt += E60() + '\n';
-                txt += '(EM BREVE)\n';
-
-                txt += '\n' + E60() + '\n';
-                txt += 'FIM DO RELATÓRIO\n';
-                txt += E60() + '\n';
-
-                relatorioTexto = txt;
-                if (!silencioso) {
-                    document.getElementById('previewRelatorio').textContent = txt;
-                    document.getElementById('btnBaixar').disabled = false;
-                } else {
-                    document.getElementById('btnBaixar').disabled = false;
-                }
-
+                const horaStr = hoje.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+                window._relDados = { livroMap, empAlunos, labelPeriodo, dataStr, horaStr };
+                relatorioTexto = _gerarTxt(window._relDados);
+                preview.textContent = relatorioTexto;
+                document.getElementById('btnBaixar').disabled = false;
             } catch(err) {
-                document.getElementById('previewRelatorio').textContent = '❌ ERRO: ' + err.message;
+                preview.textContent = 'ERRO: ' + err.message + '\n\n📶 Internet instável? Recarregue a página.';
+            }
+        };
+
+        function _gerarTxt({ livroMap, empAlunos, labelPeriodo, dataStr, horaStr }) {
+            const SEP  = '='.repeat(60);
+            const sep2 = '-'.repeat(40);
+
+            // calcular dados
+            const cntLivros = {}, leitPorLivro = {};
+            empAlunos.forEach(e => {
+                if (!e.livro_id) return;
+                cntLivros[e.livro_id] = (cntLivros[e.livro_id]||0)+1;
+                if (!leitPorLivro[e.livro_id]) leitPorLivro[e.livro_id] = [];
+                leitPorLivro[e.livro_id].push(e);
+            });
+            const top15 = Object.entries(cntLivros).sort((a,b)=>b[1]-a[1]).slice(0,15);
+            const tAlunos = {};
+            empAlunos.forEach(e => {
+                if (ehFunc(e)) return;
+                const key = e.ano_aluno + '|' + e.turma_aluno;
+                if (!tAlunos[key]) tAlunos[key] = {};
+                if (!tAlunos[key][e.nome_aluno]) tAlunos[key][e.nome_aluno] = { emps:[], sexo:e.sexo };
+                tAlunos[key][e.nome_aluno].emps.push(e);
+            });
+            const turmasOrd = Object.keys(tAlunos).sort((a,b) => {
+                const [aA,tA]=a.split('|'); const [aB,tB]=b.split('|');
+                return aA-aB || tA.localeCompare(tB);
+            });
+
+            let t = '';
+            t += SEP + '\n';
+            t += 'BIBVANIA ONLINE\n';
+            t += 'BIBLIOTECA ESCOLAR DA EMTI\n';
+            t += 'PROFESSORA MARIA VÂNIA FARIAS LINHARES\n';
+            t += SEP + '\n';
+            t += labelPeriodo + '\n';
+            t += 'DATA: ' + dataStr + '   HORA: ' + horaStr + '\n';
+            t += SEP + '\n\n';
+
+            t += SEP + '\n';
+            t += '1. OS ' + (window._relDados?.numSalas || 15) + ' LIVROS MAIS LIDOS NO PERÍODO\n';
+            t += SEP + '\n';
+            if (!top15.length) {
+                t += 'Nenhum empréstimo no período.\n';
+            } else {
+                top15.forEach(([id, qtd], i) => {
+                    const l = livroMap[id];
+                    const titulo = l ? l.titulo : ('Livro ID ' + id);
+                    const leitores = (leitPorLivro[id]||[]).sort((a,b)=>a.nome_aluno.localeCompare(b.nome_aluno));
+                    t += '\n' + (i+1) + '. ' + titulo + ' (' + qtd + ' empréstimo' + (qtd!==1?'s':'') + ')\n';
+                    if (l && l.autor)     t += '   Autor: ' + l.autor + '\n';
+                    if (l && l.categoria) t += '   Categoria: ' + l.categoria + '\n';
+                    if (leitores.length) {
+                        t += '   Leitores:\n';
+                        leitores.forEach(e => {
+                            const info = ehFunc(e) ? 'Func./Prof.' : (e.ano_aluno + 'º Ano — Turma ' + e.turma_aluno);
+                            t += '   - ' + e.nome_aluno + ' (' + info + ')\n';
+                        });
+                    }
+                });
             }
 
+            t += '\n' + SEP + '\n';
+            t += '2. DESTAQUE DE LEITURA POR SALA\n';
+            t += SEP + '\n';
+            if (!turmasOrd.length) {
+                t += 'Nenhum empréstimo de alunos no período.\n';
+            } else {
+                turmasOrd.forEach(key => {
+                    const [ano, turma] = key.split('|');
+                    t += '\n' + sep2 + '\n';
+                    t += ano + 'º ANO - TURMA ' + turma + '\n';
+                    t += sep2 + '\n';
+                    const arr = Object.entries(tAlunos[key])
+                        .map(([nome,d])=>({nome,sexo:d.sexo,qtd:d.emps.length,emps:d.emps}))
+                        .sort((a,b)=>b.qtd-a.qtd);
+                    [arr.find(a=>a.sexo==='M'), arr.find(a=>a.sexo==='F')].filter(Boolean).forEach(d => {
+                        const rotulo = d.sexo==='M' ? 'ALUNO DESTAQUE' : 'ALUNA DESTAQUE';
+                        t += '\n* ' + rotulo + ': ' + d.nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                        t += '  Livros lidos:\n';
+                        d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                            const l = livroMap[e.livro_id]; if (!l) return;
+                            t += '  - ' + l.titulo;
+                            if (l.autor)     t += ' | Autor: ' + l.autor;
+                            if (l.categoria) t += ' | Cat.: ' + l.categoria;
+                            t += '\n';
+                        });
+                    });
+                });
+            }
 
-        };
+            t += '\n' + SEP + '\n';
+            t += 'BibVania v1.2 © 2026 — ruanolima.github.io/BibVania\n';
+            t += SEP + '\n';
+            return t;
+        }
 
         window.baixar = () => {
-            if (!relatorioTexto) return;
-            const tipo = document.getElementById('tipoRelatorio').value;
-            const nomeArq = tipo === 'anual'
-                ? `RELATORIO_ANUAL_${document.getElementById('filtroAno').value}.txt`
-                : `RELATORIO_${document.getElementById('filtroMes').value.replace('-','_')}.txt`;
-            const blob = new Blob([relatorioTexto], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = nomeArq; a.click();
-            URL.revokeObjectURL(url);
+            const btn = document.getElementById('btnBaixar');
+            if (!relatorioTexto || btn.disabled) return;
+
+            // Estado de carregando — animação pulsante + mensagem
+            btn.disabled = true;
+            btn.classList.add('baixando');
+            btn.textContent = '⏳ BAIXANDO...';
+
+            // Pequeno delay para o browser pintar a animação antes de acionar o download
+            setTimeout(() => {
+                try {
+                    const tipo = document.getElementById('tipoRelatorio').value;
+                    const nomeArq = tipo === 'anual'
+                        ? 'RELATORIO_ANUAL_' + document.getElementById('filtroAno').value + '.txt'
+                        : 'RELATORIO_' + document.getElementById('filtroMes').value.replace('-','_') + '.txt';
+                    const blob = new Blob([relatorioTexto], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = nomeArq; a.click();
+                    URL.revokeObjectURL(url);
+                } finally {
+                    // Manter animação por mais 600ms após disparar o download
+                    // para o usuário ver claramente que o arquivo foi acionado
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.classList.remove('baixando');
+                        btn.textContent = '📥 BAIXAR RELATÓRIO EM TXT';
+                    }, 600);
+                }
+            }, 150);
         };
+
+        async function gerarSilencioso() {
+            await gerar(true);
+        }
 
         async function init() {
             await window.DB.checkAuth();
+            document.body.style.visibility = 'visible';
             const t = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
             document.getElementById('darkModeBtn').innerText = t === 'dark' ? '☀️' : '🌙';
         }
 
-        // Regenera silenciosamente — só troca o texto do preview se o conteúdo mudou (sem piscar)
-        async function gerarSilencioso() {
-            const textoAntes = relatorioTexto;
-            await gerar(true);
-            if (relatorioTexto !== textoAntes) {
-                document.getElementById('previewRelatorio').textContent = relatorioTexto;
-            }
-        }
-
         init().then(() => {
             gerar();
-            // Realtime: atualiza ao detectar mudanças no banco
-            window.DB.onLivrosChange(() => gerarSilencioso());
-            window.DB.onEmprestimosChange(() => gerarSilencioso());
-
-            // Atualiza data/hora em tempo real na pré-visualização
-            setInterval(() => {
-                const preview = document.getElementById('previewRelatorio');
-                if (!relatorioTexto) return;
-                const agora = new Date();
-                const novaData = agora.toLocaleDateString('pt-BR');
-                const novaHora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const atualizado = relatorioTexto.replace(
-                    /DATA DO RELATÓRIO: [\d/]+ {3}HORÁRIO: [\d:]+/,
-                    `DATA DO RELATÓRIO: ${novaData}   HORÁRIO: ${novaHora}`
-                );
-                if (preview.textContent !== atualizado) {
-                    preview.textContent = atualizado;
-                }
-            }, 1000);
+            let _rtTimer = null;
+            const regenarDebounce = () => { clearTimeout(_rtTimer); _rtTimer = setTimeout(gerarSilencioso, 400); };
+            window.DB.onLivrosChange(regenarDebounce);
+            window.DB.onEmprestimosChange(regenarDebounce);
+            window.DB.onPessoasChange(regenarDebounce);
         });
+
     </script>
     </main>
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+
+    <footer style="text-align:center;padding:1.5rem 1rem;font-size:0.7rem;color:var(--text-light);border-top:1px solid var(--border);margin-top:2rem;" aria-label="Rodapé">
+        <p>BibVania v1.2 &copy; 2026 <a href="https://github.com/ruanolima" rel="author noopener" style="color:inherit;">Ruan Oliveira Lima</a> &mdash; <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" style="color:inherit;">CC-BY-4.0</a> &mdash; <a href="https://github.com/ruanolima/BibVania" rel="noopener" style="color:inherit;">GitHub</a></p>
+    </footer>
+    <script src="bibvania-transition.js"></script>
 </body>
 </html>

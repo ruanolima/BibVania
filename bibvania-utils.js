@@ -112,3 +112,85 @@ function _micSVG() {
         <line x1="8" y1="23" x2="16" y2="23"/>
     </svg>`;
 }
+
+/**
+ * Cria dropdown customizado de categoria com busca.
+ * @param {string} inputId - ID do input hidden que guarda o valor
+ * @param {string[]} cats - lista de categorias
+ * @param {function} onChange - callback(valor)
+ */
+export function criarDropdownCategoria(containerId, cats, onChange) {
+    const wrap = document.getElementById(containerId);
+    if (!wrap) return;
+
+    const todas = ['TODOS', ...cats];
+    let valorAtual = 'TODOS';
+
+    wrap.innerHTML = `
+        <div class="cat-dropdown-wrap" id="${containerId}-wrap">
+            <button type="button" class="cat-dropdown-display" id="${containerId}-btn" aria-haspopup="listbox" aria-expanded="false">
+                <span id="${containerId}-label">TODOS</span>
+            </button>
+            <div class="cat-dropdown-panel" id="${containerId}-panel" role="listbox">
+                <input type="text" class="cat-dropdown-search" placeholder="🔍 BUSCAR CATEGORIA..." id="${containerId}-search" autocomplete="off">
+                <div class="cat-dropdown-list" id="${containerId}-list"></div>
+            </div>
+        </div>`;
+
+    const btn    = document.getElementById(`${containerId}-btn`);
+    const panel  = document.getElementById(`${containerId}-panel`);
+    const search = document.getElementById(`${containerId}-search`);
+    const list   = document.getElementById(`${containerId}-list`);
+    const label  = document.getElementById(`${containerId}-label`);
+
+    function renderItens(filtro = '') {
+        const f = filtro.toUpperCase();
+        const itens = todas.filter(c => !f || c.includes(f));
+        list.innerHTML = itens.map(c => `
+            <div class="cat-dropdown-item${c === valorAtual ? ' selecionado' : ''}"
+                 role="option" aria-selected="${c === valorAtual}" data-val="${c}">${c}</div>
+        `).join('');
+        list.querySelectorAll('.cat-dropdown-item').forEach(el => {
+            el.addEventListener('click', () => selecionar(el.dataset.val));
+        });
+    }
+
+    function selecionar(val) {
+        valorAtual = val;
+        label.textContent = val;
+        fechar();
+        onChange(val);
+    }
+
+    function abrir() {
+        panel.classList.add('aberto');
+        btn.setAttribute('aria-expanded', 'true');
+        search.value = '';
+        renderItens();
+        search.focus();
+    }
+
+    function fechar() {
+        panel.classList.remove('aberto');
+        btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.classList.contains('aberto') ? fechar() : abrir();
+    });
+
+    search.addEventListener('input', () => renderItens(search.value));
+
+    document.addEventListener('click', (e) => {
+        if (!wrap.contains(e.target)) fechar();
+    });
+
+    renderItens();
+
+    // Método público para sincronizar valor externo
+    wrap._setValor = (val) => {
+        if (todas.includes(val)) { valorAtual = val; label.textContent = val; renderItens(); }
+    };
+}
+

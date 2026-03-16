@@ -16,7 +16,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
-    <meta name="version" content="1.1">
+    <meta name="version" content="1.2">
     <meta name="year" content="2026">
 
     <!-- Open Graph -->
@@ -83,29 +83,28 @@
     </div>
 
 <header role="banner">
-        <img src="logo.png" alt="Logo BibVania — Sistema de Biblioteca Escolar" class="header-logo">
+        <img src="logo.png" alt="Logo BibVania — Sistema de Biblioteca Escolar" class="header-logo" onerror="if(!this._retry){this._retry=true;this.src='logo.png?v='+Date.now();}">
         <h1>ÁREA DO BIBLIOTECÁRIO</h1>
         <div class="school-name" id="nomeEscolaAdmin" aria-label="Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
     </header>
 
     <main class="container" id="conteudo-admin">
         <nav aria-label="Navegação do sistema" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-            <button onclick="window.location.href='index.html'" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para a página de leitores"><span aria-hidden="true">👥</span> LEITORES</button>
-            <button onclick="window.location.href='relatorios.html'" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para relatórios"><span aria-hidden="true">📊</span> RELATÓRIOS</button>
+            <button onclick="navegarCom('index.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para a página de leitores"><span aria-hidden="true">👥</span> LEITORES</button>
+            <button onclick="navegarCom('relatorios.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para relatórios"><span aria-hidden="true">📊</span> RELATÓRIOS</button>
             <button onclick="window.DB.signOut()" class="btn-block btn-danger" style="grid-column: 1 / -1; min-width: auto;" aria-label="Sair do sistema">SAIR DO SISTEMA</button>
         </nav>
 
         <div class="tabs-container" role="tablist" aria-label="Seções do painel">
-            <button class="tab-btn active" onclick="switchTab(event, 'tab-cadastro')" role="tab" aria-selected="true" aria-controls="tab-cadastro" id="tab-btn-cadastro">CADASTRO</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-cadastro')" role="tab" aria-selected="false" aria-controls="tab-cadastro" id="tab-btn-cadastro">CADASTRO</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-emprestimo')" role="tab" aria-selected="false" aria-controls="tab-emprestimo" id="tab-btn-emprestimo">EMPRÉSTIMO</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-registro')" role="tab" aria-selected="false" aria-controls="tab-registro" id="tab-btn-registro">ACERVO</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-devolucoes'); carregarDevolucoes()" role="tab" aria-selected="false" aria-controls="tab-devolucoes" id="tab-btn-devolucoes">DEVOLUÇÕES</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-pessoas')" role="tab" aria-selected="false" aria-controls="tab-pessoas" id="tab-btn-pessoas">CADASTRAR PESSOAS</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-listapessoas'); carregarListaPessoas()" role="tab" aria-selected="false" aria-controls="tab-listapessoas" id="tab-btn-listapessoas">LISTA DE PESSOAS</button>
         </div>
-
         <!-- TAB: CADASTRO -->
-        <div id="tab-cadastro" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-cadastro" class="tab-content active">
+        <div id="tab-cadastro" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-cadastro" class="tab-content">
             <div class="card">
                 <h2><span>➕</span> NOVO LIVRO</h2>
                 <form id="formLivro">
@@ -238,7 +237,10 @@
                         <input type="search" id="buscaAdmin" placeholder="BUSCAR LIVRO..." aria-label="Filtrar livros no acervo" autocomplete="off">
                     </div>
                 </div>
-                <div id="admin-cats" class="category-tabs" role="tablist" aria-label="Filtrar por categoria"></div>
+                <div class="form-group" style="margin-top:0.5rem;">
+                    <label>CATEGORIA</label>
+                    <div id="catDropAdmin"></div>
+                </div>
             </div>
 
             <div id="secaoAtrasadosAdmin" class="atrasados-section hidden">
@@ -349,7 +351,9 @@
             <div class="card">
                 <h2><span>📋</span> LISTA DE ALUNOS E FUNCIONÁRIOS</h2>
                 <div class="form-group" style="margin-bottom:1rem;">
-                    <input type="search" id="buscaPessoas" placeholder="BUSCAR POR NOME, ANO, TURMA OU PROF/FUNC..." autocomplete="off" oninput="renderListaPessoas()" style="width:100%;">
+                    <div class="search-voice-wrap">
+                        <input type="search" id="buscaPessoas" placeholder="BUSCAR POR NOME, ANO, TURMA OU PROF/FUNC..." autocomplete="off" style="width:100%;">
+                    </div>
                 </div>
                 <div id="listaPessoas"><p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p></div>
             </div>
@@ -357,8 +361,33 @@
 
         <!-- TAB: DEVOLUÇÕES -->
         <div id="tab-devolucoes" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-devolucoes" class="tab-content">
+            <div class="card">
+                <div class="form-group">
+                    <label for="buscaDevolucoes">FILTRAR DEVOLUÇÕES</label>
+                    <div class="search-voice-wrap">
+                        <input type="search" id="buscaDevolucoes" placeholder="BUSCAR POR NOME, LIVRO..." autocomplete="off">
+                    </div>
+                </div>
+            </div>
             <div id="listaDevolucoes"></div>
         </div>
+        <script>
+            // Restaura a aba salva depois que todos os elementos existem,
+            // mas ainda de forma síncrona (antes do JS async rodar).
+            // Como body tem visibility:hidden, o browser não pintou nada ainda.
+            (function() {
+                var tab = sessionStorage.getItem('bibvania_tab') || 'tab-cadastro';
+                if (!document.getElementById(tab)) tab = 'tab-cadastro';
+                document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+                document.querySelectorAll('.tab-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                document.getElementById(tab).classList.add('active');
+                var btn = document.querySelector('.tab-btn[aria-controls="' + tab + '"]');
+                if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
+            })();
+        </script>
 
     <!-- MODAL EDIÇÃO PESSOA -->
     <div id="modalEditPessoa" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tituloModalEditPessoa">
@@ -470,7 +499,7 @@
 
     <script type="module">
         import DB from './database.js';
-        import { iniciarBuscaVoz } from './bibvania-utils.js';
+        import { iniciarBuscaVoz, criarDropdownCategoria } from './bibvania-utils.js';
         window.DB = DB;
 
         let currentCat = 'TODOS';
@@ -508,14 +537,14 @@
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
 
             const cats = window.DB.CATEGORIAS;
+            // Criar dropdown de categorias com busca
+            if (!document.getElementById('catDropAdmin')?._setValor) {
+                criarDropdownCategoria('catDropAdmin', cats, setCat);
+            }
             const options = '<option value="">SELECIONE</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('categoria').innerHTML = options;
             document.getElementById('editCategoria').innerHTML = options;
 
-            const catTabs = ['TODOS', ...cats].map(c => 
-                `<button class="tab-btn ${currentCat === c ? 'active' : ''}" onclick="setCat('${c}')">${c}</button>`
-            ).join('');
-            document.getElementById('admin-cats').innerHTML = catTabs;
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => load());
@@ -526,16 +555,10 @@
             if (inputAdmin) iniciarBuscaVoz(inputAdmin, () => renderAcervo());
 
             // Restaurar aba ativa após atualizar a página
-            const tabSalva = sessionStorage.getItem('bibvania_tab');
-            if (tabSalva && document.getElementById(tabSalva)) {
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tabs-container .tab-btn').forEach(b => b.classList.remove('active'));
-                document.getElementById(tabSalva).classList.add('active');
-                const btn = document.querySelector(`.tabs-container .tab-btn[onclick*="${tabSalva}"]`);
-                if (btn) btn.classList.add('active');
-                if (tabSalva === 'tab-devolucoes') setTimeout(() => window.carregarDevolucoes?.(), 0);
-                if (tabSalva === 'tab-listapessoas') setTimeout(() => window.carregarListaPessoas?.(), 0);
-            }
+            // Carregar conteúdo da aba que foi restaurada pelo script inline
+            const tabSalva = sessionStorage.getItem('bibvania_tab') || 'tab-cadastro';
+            if (tabSalva === 'tab-devolucoes') setTimeout(() => window.carregarDevolucoes?.(), 0);
+            if (tabSalva === 'tab-listapessoas') setTimeout(() => window.carregarListaPessoas?.(), 0);
 
             // Carregar livros e pessoas em paralelo
             Promise.all([
@@ -544,23 +567,6 @@
             ]).then(() => iniciarAutocompletePessoas());
         }
 
-        async function carregarCapasLazy() {
-            try {
-                const ids = todosLivros.map(l => l.id);
-                if (ids.length === 0) return;
-                const capas = await window.DB.getCapas(ids);
-                todosLivros.forEach(l => {
-                    if (capas[l.id]) {
-                        l.imagem_url = capas[l.id];
-                        l._capaResolvida = 'tem';
-                    } else {
-                        l.imagem_url = null;
-                        l._capaResolvida = 'sem';
-                    }
-                });
-                aplicarCapasNoDOM();
-            } catch(e) { console.warn('Erro ao carregar capas:', e); }
-        }
 
         function aplicarCapasNoDOM(livros) {
             const alvo = livros || todosLivros;
@@ -616,10 +622,10 @@
         let _renderTimer = null;
         window.setCat = (c) => {
             currentCat = c;
-            document.querySelectorAll('#admin-cats .tab-btn').forEach(b => b.classList.toggle('active', b.innerText === c));
+            const w = document.getElementById('catDropAdmin');
+            if (w && w._setValor) w._setValor(c);
             _renderToken++;
             clearTimeout(_renderTimer);
-            // Não limpa o DOM agora — renderAcervo vai substituir quando o primeiro card estiver pronto
             renderAcervo();
         };
 
@@ -627,6 +633,10 @@
         let idsAtrasadosCache = [];
         let empsAtivosCache = {};    // livro_id → [empréstimos] — para accordion do acervo
         let empsComLivroCache = [];  // lista completa com dados de livro — para aba Devoluções
+        let _suprimirRenderAcervo = 0;
+        let _scrollProtegido = null;
+        let _idsComCapaCache = null;
+        let _jaCarregouUmaVez = false;
 
         // load(): busca livros e empréstimos em paralelo (mais rápido)
         async function load() {
@@ -636,11 +646,18 @@
                 if (l.imagem_url) capasCache[l.id] = { url: l.imagem_url, res: l._capaResolvida };
             });
 
-            const [livros, empsComLivro] = await Promise.all([
-                window.DB.getLivros(),
-                window.DB.getEmprestimosAtivosComLivro()
-            ]);
+            let livros, empsComLivro;
+            try {
+                [livros, empsComLivro] = await Promise.all([
+                    window.DB.getLivros(),
+                    window.DB.getEmprestimosAtivosComLivro()
+                ]);
+            } catch(err) {
+                document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">📶 Internet instável? Recarregue a página.</p>';
+                return;
+            }
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
+            _idsComCapaCache = null;
             idsAtrasadosCache = [...new Set(empsComLivro.filter(e => e.atrasado).map(e => e.livro_id))];
 
             // Restaurar capas já carregadas do cache — evita piscada ao re-renderizar
@@ -659,12 +676,13 @@
             });
             empsComLivroCache = empsComLivro;
 
-            // Renderiza o acervo se a aba estiver visível
             const abaAtiva = document.getElementById('tab-registro').classList.contains('active');
-            if (abaAtiva) {
+            if (abaAtiva && _suprimirRenderAcervo === 0) {
                 _renderToken++;
                 clearTimeout(_renderTimer);
                 _renderTimer = setTimeout(renderAcervo, 0);
+            } else if (abaAtiva && _scrollProtegido !== null) {
+                requestAnimationFrame(() => window.scrollTo({ top: _scrollProtegido, behavior: 'instant' }));
             }
 
             // Se a aba de devoluções estiver visível, atualiza ela também
@@ -684,12 +702,12 @@
 
         // renderAcervo(): filtra e exibe sem ir ao Supabase — incremental
         async function renderAcervo() {
+            const _scrollY = _scrollProtegido !== null ? _scrollProtegido : null;
             const termo = normalizar(document.getElementById('buscaAdmin').value);
 
             let filtrados = todosLivros;
             if (currentCat !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCat);
             if (termo) filtrados = filtrados.filter(l =>
-                l.id.toString().includes(termo) ||
                 normalizar(l.titulo).includes(termo) ||
                 (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
                 (l.autor && normalizar(l.autor).includes(termo)) ||
@@ -718,29 +736,47 @@
             const token = ++_renderToken;
             _renderEmAndamento = true;
 
-            (async () => {
-                let primeiroInserido = false;
+            // ── Caminho rápido: todos já resolvidos → renderiza tudo de uma vez, sem flash ──
+            const todoResolvido = naoAtrasados.every(l => l._capaResolvida);
+            if (todoResolvido) {
+                lista.innerHTML = naoAtrasados.map(l => renderLivro(l, false)).join('');
+                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
+                _jaCarregouUmaVez = true;
+                _renderEmAndamento = false;
+                return;
+            }
 
-                // Busca quais IDs têm capa de uma vez (query leve, sem base64)
-                // Só para livros ainda não resolvidos
+            // ── Caminho incremental: há capas pendentes ──
+            const elLoading = document.createElement('p');
+            elLoading.setAttribute('role', 'status');
+            elLoading.style.cssText = 'text-align:center;padding:1rem;color:var(--text-light);font-size:0.85rem;';
+            elLoading.textContent = 'CARREGANDO...';
+            if (_jaCarregouUmaVez) {
+                lista.innerHTML = '';
+                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
+                lista.appendChild(elLoading);
+            }
+
+            (async () => {
+                const cancelar = () => {
+                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
+                };
+
                 const naoResolvidos = naoAtrasados.filter(l => !l._capaResolvida);
                 if (naoResolvidos.length > 0) {
-                    try {
-                        const idsComCapa = await window.DB.getIdsComCapa();
-                        naoResolvidos.forEach(l => {
-                            if (!idsComCapa.has(l.id)) {
-                                l.imagem_url = null;
-                                l._capaResolvida = 'sem';
-                            }
-                            // Se tem capa, deixa _capaResolvida vazio — vai buscar base64 no loop
-                        });
-                    } catch(e) { /* segue sem pré-filtro */ }
+                    if (!_idsComCapaCache) {
+                        try { _idsComCapaCache = await window.DB.getIdsComCapa(); } catch(e) { _idsComCapaCache = new Set(); }
+                    }
+                    if (token !== _renderToken) { cancelar(); _renderEmAndamento = false; return; }
+                    naoResolvidos.forEach(l => {
+                        if (!_idsComCapaCache.has(l.id)) { l.imagem_url = null; l._capaResolvida = 'sem'; }
+                    });
                 }
 
                 for (let i = 0; i < naoAtrasados.length; i++) {
+                    if (token !== _renderToken) { cancelar(); _renderEmAndamento = false; return; }
                     const l = naoAtrasados[i];
 
-                    // Busca base64 só se tem capa e ainda não foi resolvido
                     if (!l._capaResolvida) {
                         try {
                             const url = await window.DB.getCapaUnica(l.id);
@@ -749,21 +785,21 @@
                         } catch(e) { l._capaResolvida = 'sem'; }
                     }
 
-                    // Token mudou: outro render começou, para aqui
-                    if (token !== _renderToken) { _renderEmAndamento = false; return; }
+                    if (token !== _renderToken) { cancelar(); _renderEmAndamento = false; return; }
 
+                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
+                    else if (!_jaCarregouUmaVez) lista.innerHTML = '';
                     const div = document.createElement('div');
                     div.innerHTML = renderLivro(l, false);
-
-                    // Primeiro card: substitui todo o conteúdo antigo de uma vez (sem flash de branco)
-                    if (!primeiroInserido) {
-                        lista.innerHTML = '';
-                        primeiroInserido = true;
-                    }
                     lista.appendChild(div.firstElementChild);
+                    _jaCarregouUmaVez = true;
 
-                    if (i < naoAtrasados.length - 1) await new Promise(r => setTimeout(r, 0));
+                    if (i < naoAtrasados.length - 1) {
+                        lista.appendChild(elLoading);
+                        await new Promise(r => setTimeout(r, 0));
+                    }
                 }
+                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
                 _renderEmAndamento = false;
             })();
         }
@@ -973,58 +1009,59 @@
             const btnEdit = e.target.querySelector('button[type="submit"]');
             const lblEdit = btnEdit.textContent;
             btnEdit.textContent = 'SALVANDO...'; btnEdit.disabled = true;
+            const livroId = parseInt(document.getElementById('editId').value);
+            const novosDados = {
+                id: livroId,
+                isbn: document.getElementById('editIsbn').value,
+                acabamento: document.getElementById('editAcabamento').value,
+                titulo: document.getElementById('editTitulo').value,
+                autor: document.getElementById('editAutor').value,
+                colaboradores: window.coletarColaboradoresEdit(),
+                editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
+                pub_independente: document.getElementById('editPubIndependente').checked,
+                prateleira: document.getElementById('editPrateleira').value,
+                categoria: document.getElementById('editCategoria').value,
+                quantidade_total: parseInt(document.getElementById('editQtd').value),
+                sinopse: document.getElementById('editSinopse').value,
+                alt_text: document.getElementById('editCapaAltText')?.value?.trim() || null
+            };
+            const capaBase64 = window._editCapaBase64 || null;
+            const capaExcluir = !!window._editCapaExcluir;
+            const _scrollY = window.scrollY;
+            _suprimirRenderAcervo++;
+            _scrollProtegido = window.scrollY;
             try {
-                await window.DB.atualizarLivro({
-                    id: parseInt(document.getElementById('editId').value),
-                    isbn: document.getElementById('editIsbn').value,
-                    acabamento: document.getElementById('editAcabamento').value,
-                    titulo: document.getElementById('editTitulo').value,
-                    autor: document.getElementById('editAutor').value,
-                    colaboradores: window.coletarColaboradoresEdit(),
-                    editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
-                    pub_independente: document.getElementById('editPubIndependente').checked,
-                    prateleira: document.getElementById('editPrateleira').value,
-                    categoria: document.getElementById('editCategoria').value,
-                    quantidade_total: parseInt(document.getElementById('editQtd').value),
-                    sinopse: document.getElementById('editSinopse').value,
-                    alt_text: document.getElementById('editCapaAltText')?.value?.trim() || null
-                });
-                // Capa: upload novo arquivo ou remover
-                if (window._editCapaBase64) {
-                    try {
-                        const livroId = parseInt(document.getElementById('editId').value);
-                        await window.DB.uploadCapa(livroId, window._editCapaBase64);
-                        // Atualiza cache e DOM imediatamente
-                        const capaUrl = window._editCapaBase64;
-                        const livroCache = todosLivros.find(l => l.id === livroId);
-                        if (livroCache) livroCache.imagem_url = capaUrl;
-                        document.querySelectorAll(`[data-lightbox-id="${livroId}"] img`).forEach(img => {
-                            img.src = capaUrl;
-                            img.style.display = 'block';
-                            img.className = 'cover-img';
-                            img.closest('.book-cover-wrap').classList.add('has-image');
-                        });
-                        window._editCapaBase64 = null;
-                    } catch(capErr) {
-                        console.error('Capa não salva:', capErr);
-                        window.mostrarMsg('msgLivro', '⚠️ DADOS SALVOS, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger');
-                    }
-                } else if (window._editCapaExcluir) {
-                    try {
-                        const livroId = parseInt(document.getElementById('editId').value);
-                        await window.DB.removerCapa(livroId);
-                        const livroCache = todosLivros.find(l => l.id === livroId);
-                        if (livroCache) livroCache.imagem_url = null;
-                    } catch(capErr) {
-                        console.error('Erro ao remover capa:', capErr);
-                        window.mostrarMsg('msgLivro', '⚠️ ERRO AO REMOVER CAPA: ' + (capErr.message || capErr), 'danger');
-                    }
+                await window.DB.atualizarLivro(novosDados);
+                if (capaBase64) {
+                    try { await window.DB.uploadCapa(livroId, capaBase64); window._editCapaBase64 = null; }
+                    catch(capErr) { window.mostrarMsg('msgLivro', '⚠️ DADOS SALVOS, MAS A CAPA NÃO FOI SALVA: ' + (capErr.message || capErr), 'danger'); }
+                } else if (capaExcluir) {
+                    try { await window.DB.removerCapa(livroId); window._editCapaExcluir = false; }
+                    catch(capErr) { window.mostrarMsg('msgLivro', '⚠️ ERRO AO REMOVER CAPA: ' + (capErr.message || capErr), 'danger'); }
                 }
                 btnEdit.textContent = lblEdit; btnEdit.disabled = false;
                 window.mostrarMsg('msgLivro', '✓ ALTERAÇÕES SALVAS!', 'success');
                 closeModal();
-                load();
+                const livroCache = todosLivros.find(l => l.id === livroId);
+                if (livroCache) {
+                    Object.assign(livroCache, novosDados);
+                    if (capaBase64)  { livroCache.imagem_url = capaBase64; livroCache._capaResolvida = 'tem'; }
+                    if (capaExcluir) { livroCache.imagem_url = null; livroCache._capaResolvida = 'sem'; }
+                    document.querySelectorAll('.book-header[data-id="' + livroId + '"]').forEach(header => {
+                        const bookItem = header.closest('.book-item');
+                        if (!bookItem) return;
+                        const isAtr = bookItem.closest('#listaAtrasadosAdmin') !== null;
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = renderLivro(livroCache, isAtr);
+                        bookItem.replaceWith(tmp.firstElementChild);
+                    });
+                }
+                window.scrollTo({ top: _scrollY, behavior: 'instant' });
+                _idsComCapaCache = null;
+                load().finally(() => { setTimeout(() => { _suprimirRenderAcervo = Math.max(0, _suprimirRenderAcervo - 1); if (_suprimirRenderAcervo === 0) _scrollProtegido = null; }, 1200); });
             } catch(err) {
+                _suprimirRenderAcervo = Math.max(0, _suprimirRenderAcervo - 1);
+                if (_suprimirRenderAcervo === 0) _scrollProtegido = null;
                 btnEdit.textContent = lblEdit; btnEdit.disabled = false;
                 window.mostrarMsg('msgLivro', '❌ ERRO AO SALVAR: ' + err.message, 'danger');
             }
@@ -1426,13 +1463,19 @@
         }
 
         window.carregarListaPessoas = async () => {
+            document.getElementById('listaPessoas').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             await carregarPessoas();
             renderListaPessoas();
         };
         window.renderListaPessoas = renderListaPessoas;
 
+        // Token para cancelar renders anteriores ao digitar nova busca
+        let _renderPessoasToken = 0;
+
         function renderListaPessoas() {
+            const token = ++_renderPessoasToken;
             const container = document.getElementById('listaPessoas');
+
             if (!todasPessoas.length) {
                 container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUMA PESSOA CADASTRADA.</p>';
                 return;
@@ -1442,26 +1485,18 @@
 
             let pessoas = todasPessoas;
             if (termo) {
-                const matchAnoTurma = termo.match(/^([0-9])([A-Z])$/);  // ex: 6B ou 0F
-                const matchAno = termo.match(/^([0-9])$/);              // ex: 8 ou 0
-
+                const matchAnoTurma = termo.match(/^([0-9])([A-Z])$/);
+                const matchAno = termo.match(/^([0-9])$/);
                 if (matchAnoTurma) {
                     const [, ano, turma] = matchAnoTurma;
-                    if (ano === '0') {
-                        // 0F → especificamente professores/funcionários
-                        pessoas = pessoas.filter(p => p.tipo === 'funcionario');
-                    } else {
-                        pessoas = pessoas.filter(p => p.tipo === 'aluno' && String(p.ano_aluno) === ano && normalizar(p.turma_aluno) === turma);
-                    }
+                    pessoas = ano === '0'
+                        ? pessoas.filter(p => p.tipo === 'funcionario')
+                        : pessoas.filter(p => p.tipo === 'aluno' && String(p.ano_aluno) === ano && normalizar(p.turma_aluno) === turma);
                 } else if (matchAno) {
                     const [, ano] = matchAno;
-                    if (ano === '0') {
-                        // 0 → todos os não-alunos
-                        pessoas = pessoas.filter(p => p.tipo === 'funcionario');
-                    } else {
-                        // Dígito 1-9 → todos do ano, qualquer turma
-                        pessoas = pessoas.filter(p => p.tipo === 'aluno' && String(p.ano_aluno) === ano);
-                    }
+                    pessoas = ano === '0'
+                        ? pessoas.filter(p => p.tipo === 'funcionario')
+                        : pessoas.filter(p => p.tipo === 'aluno' && String(p.ano_aluno) === ano);
                 } else {
                     pessoas = pessoas.filter(p => normalizar(p.nome).includes(termo));
                 }
@@ -1472,6 +1507,7 @@
                 return;
             }
 
+            // Montar grupos (turmas + funcionários)
             const funcionarios = pessoas.filter(p => p.tipo === 'funcionario').sort((a,b) => a.nome.localeCompare(b.nome));
             const alunos = pessoas.filter(p => p.tipo === 'aluno');
             const turmaMap = {};
@@ -1484,26 +1520,39 @@
                 const [anoA, turA] = a.split('|'); const [anoB, turB] = b.split('|');
                 return anoA - anoB || turA.localeCompare(turB);
             });
-            let html = '';
-            turmaKeys.forEach(key => {
+
+            // Grupos a renderizar: turmas + funcionários no fim
+            const grupos = turmaKeys.map(key => {
                 const [ano, turma] = key.split('|');
                 const lista = turmaMap[key].sort((a,b) => a.nome.localeCompare(b.nome));
-                html += `<div style="margin-bottom:1rem;">
-                    <div style="font-size:0.8rem;font-weight:800;color:var(--primary);margin-bottom:0.5rem;letter-spacing:0.05em;">
-                        ${ano}º ANO — TURMA ${turma} <span style="font-weight:400;color:var(--text-light);">(${lista.length})</span>
-                    </div>
-                    ${lista.map(p => renderPessoaItem(p)).join('')}
-                </div>`;
+                return { titulo: `${ano}º ANO — TURMA ${turma}`, count: lista.length, itens: lista };
             });
             if (funcionarios.length) {
-                html += `<div style="margin-bottom:1rem;">
-                    <div style="font-size:0.8rem;font-weight:800;color:var(--primary);margin-bottom:0.5rem;letter-spacing:0.05em;">
-                        PROFESSORES E FUNCIONÁRIOS <span style="font-weight:400;color:var(--text-light);">(${funcionarios.length})</span>
-                    </div>
-                    ${funcionarios.map(p => renderPessoaItem(p)).join('')}
-                </div>`;
+                grupos.push({ titulo: 'PROFESSORES E FUNCIONÁRIOS', count: funcionarios.length, itens: funcionarios });
             }
-            container.innerHTML = html;
+
+            // Limpar imediatamente — resposta instantânea ao clique
+            container.innerHTML = '';
+
+            // Renderizar grupo por grupo — cede controle entre grupos, não entre pessoas
+            // (pessoa por pessoa causava piscada visual a cada inserção)
+            (async () => {
+                for (let gi = 0; gi < grupos.length; gi++) {
+                    if (token !== _renderPessoasToken) return;
+                    const g = grupos[gi];
+
+                    const grupoDiv = document.createElement('div');
+                    grupoDiv.style.marginBottom = '1rem';
+                    // Renderizar todo o grupo de uma vez (sem await interno)
+                    grupoDiv.innerHTML = `<div style="font-size:0.8rem;font-weight:800;color:var(--primary);margin-bottom:0.5rem;letter-spacing:0.05em;">
+                        ${g.titulo} <span style="font-weight:400;color:var(--text-light);">(${g.count})</span>
+                    </div>${g.itens.map(p => renderPessoaItem(p)).join('')}`;
+                    container.appendChild(grupoDiv);
+
+                    // Cede o controle ao browser entre grupos (não entre pessoas)
+                    if (gi < grupos.length - 1) await new Promise(r => setTimeout(r, 0));
+                }
+            })();
         }
 
         function renderPessoaItem(p) {
@@ -1698,13 +1747,48 @@
 
 
         document.getElementById('buscaAdmin').addEventListener('input', renderAcervo);
+        _iniciarBotaoLimpar(document.getElementById('buscaAdmin'), renderAcervo);
+
+        // Busca por voz e botão X nas pessoas
+        iniciarBuscaVoz(document.getElementById('buscaPessoas'), () => renderListaPessoas());
+        document.getElementById('buscaPessoas').addEventListener('input', renderListaPessoas);
+        _iniciarBotaoLimpar(document.getElementById('buscaPessoas'), renderListaPessoas);
+
+        // Busca por voz, botão X e filtro nas devoluções
+        iniciarBuscaVoz(document.getElementById('buscaDevolucoes'), () => renderDevolucoes());
+        document.getElementById('buscaDevolucoes').addEventListener('input', renderDevolucoes);
+        _iniciarBotaoLimpar(document.getElementById('buscaDevolucoes'), renderDevolucoes);
+
         init();
+
+        function _iniciarBotaoLimpar(inputEl, onClear) {
+            const wrap = inputEl.parentElement;
+            if (!wrap.classList.contains('search-voice-wrap')) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'clear-btn';
+            btn.setAttribute('aria-label', 'Limpar busca');
+            btn.title = 'Limpar';
+            btn.innerHTML = '✕';
+            btn.style.display = 'none';
+            wrap.appendChild(btn);
+            const atualizar = () => { btn.style.display = inputEl.value ? 'flex' : 'none'; };
+            inputEl.addEventListener('input', atualizar);
+            btn.addEventListener('click', () => { inputEl.value = ''; atualizar(); inputEl.focus(); onClear(); });
+        }
 
         // ── ABA DEVOLUÇÕES ────────────────────────────────────────────────────
         // renderDevolucoes(): usa cache local — instantâneo, sem chamada ao banco
         function renderDevolucoes() {
+            const _scrollY = window.scrollY;
             const container = document.getElementById('listaDevolucoes');
-            const emps = empsComLivroCache;
+            const termoDev = (document.getElementById('buscaDevolucoes')?.value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+            const emps = termoDev
+                ? empsComLivroCache.filter(e =>
+                    (e.nome_aluno||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().includes(termoDev) ||
+                    ((e.livros?.titulo)||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().includes(termoDev)
+                  )
+                : empsComLivroCache;
 
             if (!emps.length) {
                 container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM EMPRÉSTIMO ATIVO.</p>';
@@ -1749,6 +1833,7 @@
             }
 
             container.innerHTML = html;
+            requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
         }
 
         // carregarDevolucoes(): mantido por compatibilidade — renderiza do cache e atualiza em segundo plano
@@ -2019,8 +2104,20 @@
         const submitBtn = document.querySelector('#formLivro button[type="submit"]');
         if (!isEdit && submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'PROCESSANDO IMAGEM...'; }
 
+        // Mostrar miniatura imediatamente (antes da compressão)
+        const imgPrevia = document.getElementById(imgId);
+        const wrapPrevia = imgPrevia?.closest('.book-cover-wrap');
+        const lblPrevia = wrapPrevia?.querySelector('.book-cover-label');
+        const urlTemp = URL.createObjectURL(file);
+        imgPrevia.src = urlTemp;
+        imgPrevia.style.display = 'block';
+        imgPrevia.className = 'cover-img';
+        if (lblPrevia) lblPrevia.style.display = 'none';
+        if (wrapPrevia) { wrapPrevia.classList.remove('sem-capa'); wrapPrevia.classList.add('capa-carregada'); }
+
         const reader = new FileReader();
         reader.onload = async (e) => {
+            URL.revokeObjectURL(urlTemp); // liberar memória
             const base64 = await comprimirImagem(e.target.result);
 
             const img = document.getElementById(imgId);
@@ -2126,5 +2223,9 @@
             document.getElementById('capLightbox').classList.add('open');
         }, true); // true = captura, antes do toggleAccordion
     </script>
+    <footer style="text-align:center;padding:1.5rem 1rem;font-size:0.7rem;color:var(--text-light);border-top:1px solid var(--border);margin-top:2rem;" aria-label="Rodapé">
+        <p>BibVania v1.2 &copy; 2026 <a href="https://github.com/ruanolima" rel="author noopener" style="color:inherit;">Ruan Oliveira Lima</a> &mdash; <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" style="color:inherit;">CC-BY-4.0</a> &mdash; <a href="https://github.com/ruanolima/BibVania" rel="noopener" style="color:inherit;">GitHub</a></p>
+    </footer>
+    <script src="bibvania-transition.js"></script>
 </body>
 </html>

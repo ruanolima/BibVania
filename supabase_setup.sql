@@ -1,7 +1,11 @@
 -- ============================================================================
--- BIBVANIA ONLINE — CONFIGURAÇÃO DO BANCO DE DADOS
+-- BIBVANIA ONLINE — CONFIGURAÇÃO DO BANCO DE DADOS v1.2
 -- Execute este script no SQL Editor do Supabase para configuração inicial.
+-- Seguro executar em bancos já existentes — todos os comandos usam IF NOT EXISTS.
 -- ============================================================================
+
+-- 0. EXTENSÕES NECESSÁRIAS
+CREATE EXTENSION IF NOT EXISTS unaccent; -- busca sem acento (usada no script de limpeza)
 
 -- 1. TABELA DE LIVROS
 CREATE TABLE IF NOT EXISTS livros (
@@ -15,6 +19,7 @@ CREATE TABLE IF NOT EXISTS livros (
     editora TEXT,
     pub_independente BOOLEAN DEFAULT FALSE,
     prateleira TEXT,
+    alt_text TEXT,
     categoria TEXT NOT NULL,
     sinopse TEXT,
     quantidade_total INTEGER NOT NULL DEFAULT 1,
@@ -122,9 +127,36 @@ CREATE POLICY "Leitura pública de pessoas" ON pessoas FOR SELECT USING (true);
 CREATE POLICY "Escrita autenticada de pessoas" ON pessoas FOR ALL USING (auth.role() = 'authenticated');
 
 -- 8. REALTIME
--- Após executar este script, acesse Database → Replication no painel do Supabase
--- e habilite o Realtime para as tabelas: 'livros', 'emprestimos' e 'pessoas'.
--- Alternativamente, execute os comandos abaixo:
-ALTER PUBLICATION supabase_realtime ADD TABLE livros;
-ALTER PUBLICATION supabase_realtime ADD TABLE emprestimos;
-ALTER PUBLICATION supabase_realtime ADD TABLE pessoas;
+-- Habilita atualizações em tempo real para todas as tabelas.
+-- Necessário para que o acervo, relatórios e painel atualizem automaticamente.
+-- Usa DO block para evitar erro se a tabela já estiver habilitada.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'livros'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE livros;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'emprestimos'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE emprestimos;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'pessoas'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE pessoas;
+    END IF;
+END $$;
+
+-- 9. VERIFICAR REALTIME ATIVO
+-- Execute para confirmar que as 3 tabelas estão com Realtime habilitado:
+-- SELECT schemaname, tablename
+-- FROM pg_publication_tables
+-- WHERE pubname = 'supabase_realtime'
+-- ORDER BY tablename;

@@ -16,7 +16,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
-    <meta name="version" content="1.1">
+    <meta name="version" content="1.2">
     <meta name="year" content="2026">
 
     <!-- Open Graph -->
@@ -66,7 +66,7 @@
     }
     </script>
 </head>
-<body style="display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+<body style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; visibility:hidden;">
     <!-- Skip navigation -->
     <a href="#loginForm" class="skip-link">Ir para o formulário de login</a>
 
@@ -99,7 +99,7 @@
         </form>
 
         <nav style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);" aria-label="Navegação de retorno">
-            <button onclick="window.location.href='index.html'" class="btn-block btn-outline" style="background: none; border: 1px solid var(--border); color: var(--text-light);" aria-label="Voltar para a página de consulta do acervo">
+            <button onclick="navegarCom('index.html')" class="btn-block btn-outline" style="background: none; border: 1px solid var(--border); color: var(--text-light);" aria-label="Voltar para a página de consulta do acervo">
                 ← VOLTAR PARA CONSULTA
             </button>
         </nav>
@@ -137,6 +137,8 @@
         (async () => {
             aplicarPreferencias();
             await window.DB.redirectIfLoggedIn();
+            // Só revela se não foi redirecionado (sem sessão ativa)
+            document.body.style.visibility = 'visible';
         })();
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -149,14 +151,22 @@
             
             try {
                 await window.DB.signIn(email, password);
-                window.location.href = 'admin.html';
+                navegarCom('admin.html');
             } catch (error) {
-                errorDiv.innerText = "❌ E-MAIL OU SENHA INCORRETOS.";
+                const isRede = error instanceof TypeError || (error.message || '').toLowerCase().includes('fetch') || (error.message || '').toLowerCase().includes('network');
+                errorDiv.innerText = isRede
+                    ? '📶 Internet instável? Verifique sua conexão e tente novamente.'
+                    : '❌ E-MAIL OU SENHA INCORRETOS.';
             }
         });
     </script>
     <div vw class="enabled"><div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div></div>
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+
+    <footer style="text-align:center;padding:1.5rem 1rem;font-size:0.7rem;color:var(--text-light);border-top:1px solid var(--border);margin-top:2rem;" aria-label="Rodapé">
+        <p>BibVania v1.2 &copy; 2026 <a href="https://github.com/ruanolima" rel="author noopener" style="color:inherit;">Ruan Oliveira Lima</a> &mdash; <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" style="color:inherit;">CC-BY-4.0</a> &mdash; <a href="https://github.com/ruanolima/BibVania" rel="noopener" style="color:inherit;">GitHub</a></p>
+    </footer>
+    <script src="bibvania-transition.js"></script>
 </body>
 </html>

@@ -29,12 +29,19 @@ const CATEGORIAS_FIXAS = [
     "INFANTIL (1º AO 4º)",
     "INFANTOJUVENIL (5º E 6º)",
     "JUVENIL (7º AO 9º)",
-    "DIDÁTICO (1º AO 4º)",
+    "JOVEM ADULTO (10º AO 12º)",
+    "DIDÁTICO (1º)",
+    "DIDÁTICO (2º)",
+    "DIDÁTICO (3º)",
+    "DIDÁTICO (4º)",
     "DIDÁTICO (5º)",
     "DIDÁTICO (6º)",
     "DIDÁTICO (7º)",
     "DIDÁTICO (8º)",
     "DIDÁTICO (9º)",
+    "DIDÁTICO (10º)",
+    "DIDÁTICO (11º)",
+    "DIDÁTICO (12º)",
     "DE REFERÊNCIA",
     "CLÁSSICOS & REGIONAIS",
     "POESIA"
@@ -85,7 +92,7 @@ const DB = {
     async signOut() {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        window.location.href = 'login.html';
+        (window.navegarCom || (u => window.location.href = u))('login.html');
     },
 
     async getSession() {
@@ -97,7 +104,7 @@ const DB = {
     async checkAuth() {
         const session = await this.getSession();
         if (!session) {
-            window.location.href = 'login.html';
+            (window.navegarCom || (u => window.location.href = u))('login.html');
             return null;
         }
         return session;
@@ -106,7 +113,7 @@ const DB = {
     async redirectIfLoggedIn() {
         const session = await this.getSession();
         if (session) {
-            window.location.href = 'admin.html';
+            (window.navegarCom || (u => window.location.href = u))('admin.html');
         }
     },
 
@@ -547,6 +554,13 @@ const DB = {
         return supabase
             .channel('emprestimos-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'emprestimos' }, callback)
+            .subscribe();
+    },
+
+    onPessoasChange(callback) {
+        return supabase
+            .channel('pessoas-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pessoas' }, callback)
             .subscribe();
     },
 

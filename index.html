@@ -16,14 +16,14 @@
     <meta name="robots" content="index, follow">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
-    <meta name="version" content="1.1">
+    <meta name="version" content="1.2">
     <meta name="year" content="2026">
     <link rel="canonical" href="https://ruanolima.github.io/BibVania/">
 
     <!-- Open Graph (WhatsApp, Facebook, etc.) -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="BibVania — Acervo da Biblioteca Escolar">
-    <meta property="og:description" content="Consulte o acervo, veja disponibilidade de livros e acompanhe empréstimos em tempo real. Sistema gratuito de biblioteca escolar.">
+    <meta property="og:description" content="Consulte o acervo, veja disponibilidade de livros e acompanhe empréstimos em tempo real.">
     <meta property="og:url" content="https://ruanolima.github.io/BibVania/">
     <meta property="og:image" content="https://ruanolima.github.io/BibVania/og-image.png">
     <meta property="og:image:width" content="1200">
@@ -94,14 +94,14 @@
     </div>
 
 <header role="banner">
-        <img src="logo.png" alt="Logo BibVania — Sistema de Biblioteca Escolar" class="header-logo">
+        <img src="logo.png" alt="Logo BibVania — Sistema de Biblioteca Escolar" class="header-logo" onerror="if(!this._retry){this._retry=true;this.src='logo.png?v='+Date.now();}">
         <h1>BIBVANIA ONLINE</h1>
         <div class="school-name" id="nomeEscolaExibicao" aria-label="Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
     </header>
 
     <div class="container">
         <nav aria-label="Navegação principal">
-            <button onclick="window.location.href='login.html'" class="btn-block btn-primary">
+            <button onclick="irParaAdmin()" class="btn-block btn-primary">
                 <span aria-hidden="true">🔑</span> ÁREA DO BIBLIOTECÁRIO
             </button>
         </nav>
@@ -115,7 +115,10 @@
                 </div>
             </div>
             
-            <div id="category-tabs" class="category-tabs" role="tablist" aria-label="Filtrar por categoria"></div>
+            <div class="form-group" style="margin-top:0.5rem;">
+                <label>CATEGORIA</label>
+                <div id="catDropIndex"></div>
+            </div>
         </div>
 
         <!-- SEÇÃO DE ATRASADOS -->
@@ -125,14 +128,14 @@
         </section>
 
         <section id="listaLivros" aria-label="Lista de livros do acervo" aria-live="polite">
-            <div style="text-align: center; padding: 2rem; color: var(--text-light);" role="status">CARREGANDO ACERVO...</div>
+            <div style="text-align:center;padding:2rem;color:var(--text-light);font-size:1.2rem;" role="status">CARREGANDO ACERVO...</div>
         </section>
         </main>
     </div>
 
     <script type="module">
         import DB from './database.js';
-        import { iniciarBuscaVoz } from './bibvania-utils.js';
+        import { iniciarBuscaVoz, criarDropdownCategoria } from './bibvania-utils.js';
         window.DB = DB;
 
         let currentCategory = 'TODOS';
@@ -144,6 +147,8 @@
         const _collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
         // Cache da lista ordenada — só recalcula quando todosLivros muda
         let _livrosOrdenados = [];
+        let _idsComCapaCache = null;
+        let _jaCarregouUmaVez = false;
 
         // ── Preferências ───────────────────────────────────────────
         window.changeFontSize = (delta) => {
@@ -196,18 +201,10 @@
         let _renderTimer = null;
         window.setCategory = (cat) => {
             currentCategory = cat;
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                const active = b.textContent.trim() === cat;
-                b.classList.toggle('active', active);
-                b.setAttribute('aria-selected', active ? 'true' : 'false');
-            });
-            // Incrementa token para cancelar renders em andamento
+            const w = document.getElementById('catDropIndex');
+            if (w && w._setValor) w._setValor(cat);
             _renderToken++;
             clearTimeout(_renderTimer);
-            // Limpa imediatamente para evitar flash do conteúdo antigo
-            document.getElementById('listaLivros').innerHTML = '';
-            document.getElementById('listaAtrasados').innerHTML = '';
-            document.getElementById('secaoAtrasados').classList.add('hidden');
             renderAcervo();
         };
 
@@ -325,7 +322,6 @@
             let filtrados = todosLivros;
             if (currentCategory !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCategory);
             if (termo) filtrados = filtrados.filter(l =>
-                l.id.toString().includes(termo) ||
                 normalizar(l.titulo).includes(termo) ||
                 (l.isbn && normalizar(l.isbn).includes(termo)) ||
                 (l.autor && normalizar(l.autor).includes(termo)) ||
@@ -356,15 +352,54 @@
                 return;
             }
 
-            // Render incremental — 1 por vez, capa antes do card, sem flash de branco
             const token = ++_renderToken;
 
+            // ── Caminho rápido: todos já resolvidos → renderiza sem flash ──
+            const todoResolvido = normais.every(l => l._capaResolvida);
+            if (todoResolvido) {
+                lista.innerHTML = normais.map(l => renderizarLivro(l, false)).join('');
+                _jaCarregouUmaVez = true;
+                return;
+            }
+
+            // ── Caminho incremental: há capas pendentes ──
+            const elLoading = document.createElement('p');
+            elLoading.setAttribute('role', 'status');
+            elLoading.style.cssText = 'text-align:center;padding:1rem;color:var(--text-light);font-size:0.85rem;';
+            elLoading.textContent = 'CARREGANDO...';
+            if (_jaCarregouUmaVez) { lista.innerHTML = ''; lista.appendChild(elLoading); }
+
             (async () => {
-                let primeiroInserido = false;
+                const cancelar = () => {
+                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
+                };
+
+                // Buscar cache de IDs com capa UMA vez antes do loop — marca todos sem-capa instantaneamente
+                if (!_idsComCapaCache) {
+                    try { _idsComCapaCache = await window.DB.getIdsComCapa(); } catch(e) { _idsComCapaCache = new Set(); }
+                    if (token !== _renderToken) { cancelar(); return; }
+                }
+                // Marcar todos os livros sem capa de uma vez (sem request individual)
+                normais.forEach(l => {
+                    if (!l._capaResolvida && !_idsComCapaCache.has(l.id)) {
+                        l.imagem_url = null; l._capaResolvida = 'sem';
+                    }
+                });
+
+                // Re-verificar caminho rápido após marcação em lote
+                if (normais.every(l => l._capaResolvida)) {
+                    cancelar();
+                    lista.innerHTML = normais.map(l => renderizarLivro(l, false)).join('');
+                    _jaCarregouUmaVez = true;
+                    return;
+                }
+
                 for (let i = 0; i < normais.length; i++) {
+                    if (token !== _renderToken) { cancelar(); return; }
                     const l = normais[i];
 
                     if (!l._capaResolvida) {
+                        // Só chega aqui se tem capa no Supabase
                         try {
                             const url = await window.DB.getCapaUnica(l.id);
                             l.imagem_url = url || null;
@@ -372,44 +407,25 @@
                         } catch(e) { l._capaResolvida = 'sem'; }
                     }
 
-                    if (token !== _renderToken) return;
+                    if (token !== _renderToken) { cancelar(); return; }
+
+                    // Remover loading ou texto estático antes do primeiro card
+                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
+                    else if (!_jaCarregouUmaVez) lista.innerHTML = '';
 
                     const div = document.createElement('div');
                     div.innerHTML = renderizarLivro(l, false);
-
-                    // Primeiro card: limpa o conteúdo antigo só agora (sem flash de branco)
-                    if (!primeiroInserido) {
-                        lista.innerHTML = '';
-                        primeiroInserido = true;
-                    }
                     lista.appendChild(div.firstElementChild);
+                    _jaCarregouUmaVez = true;
 
-                    if (i < normais.length - 1) await new Promise(r => setTimeout(r, 0));
+                    if (i < normais.length - 1) {
+                        lista.appendChild(elLoading);
+                        await new Promise(r => setTimeout(r, 0));
+                    }
                 }
             })();
         }
 
-        // ── Carregamento ───────────────────────────────────────────
-        // carregarCapasLazy: busca todas as capas e re-renderiza uma única vez
-        async function carregarCapasLazy() {
-            try {
-                const ids = todosLivros.map(l => l.id);
-                if (!ids.length) return;
-                const capas = await window.DB.getCapas(ids);
-                // Setar estado final em TODOS os livros de uma vez
-                todosLivros.forEach(l => {
-                    if (capas[l.id]) {
-                        l.imagem_url = capas[l.id];
-                        l._capaResolvida = 'tem';
-                    } else {
-                        l.imagem_url = null;
-                        l._capaResolvida = 'sem';
-                    }
-                });
-                // Atualiza capas e estado visual diretamente no DOM — sem re-renderizar
-                aplicarCapasNoDOM();
-            } catch(e) { console.warn('Erro ao carregar capas:', e); }
-        }
 
         // carregarSemCapas: chamado pelo Realtime/interval — preserva capas já resolvidas
         async function carregarSemCapas() {
@@ -417,10 +433,15 @@
                 const capaCache = {};
                 todosLivros.forEach(l => { if (l._capaResolvida) capaCache[l.id] = { url: l.imagem_url, res: l._capaResolvida }; });
 
-                const [livros, emps] = await Promise.all([window.DB.getLivros(), window.DB.getEmprestimosAtivos()]);
+                const [livros, emps, idsCapas] = await Promise.all([
+                    window.DB.getLivros(),
+                    window.DB.getEmprestimosAtivos(),
+                    window.DB.getIdsComCapa()
+                ]);
                 todosLivros = livros;
                 _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
-                // Restaurar capas já resolvidas; para livros novos, usar imagem_url do getLivros
+                _idsComCapaCache = idsCapas;
+                // Restaurar capas já resolvidas
                 todosLivros.forEach(l => {
                     if (capaCache[l.id]) { l.imagem_url = capaCache[l.id].url; l._capaResolvida = capaCache[l.id].res; }
                 });
@@ -435,9 +456,14 @@
 
         window.carregarLivros = async function carregarLivros() {
             try {
-                const [livros, emps] = await Promise.all([window.DB.getLivros(), window.DB.getEmprestimosAtivos()]);
+                const [livros, emps, idsCapas] = await Promise.all([
+                    window.DB.getLivros(),
+                    window.DB.getEmprestimosAtivos(),
+                    window.DB.getIdsComCapa()
+                ]);
                 todosLivros = livros;
                 _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
+                _idsComCapaCache = idsCapas;
                 idsAtrasadosCache = [...new Set(emps.filter(e=>e.atrasado).map(e=>e.livro_id))];
                 empsAtivosCache = {};
                 emps.forEach(e => { (empsAtivosCache[e.livro_id]||(empsAtivosCache[e.livro_id]=[])).push(e); });
@@ -448,6 +474,7 @@
                     '<div style="text-align:center;padding:2rem;">' +
                     '<p style="color:var(--danger);font-weight:bold;margin-bottom:1rem;">⚠️ ERRO AO CARREGAR ACERVO</p>' +
                     '<p style="color:var(--text-light);font-size:0.85rem;margin-bottom:1rem;">Verifique sua conexão com a internet e tente novamente.</p>' +
+                    '<p style="font-size:0.8rem;color:var(--text-light);margin-top:0.5rem;">📶 Internet instável? Recarregue a página.</p>' +
                     '<button onclick="carregarLivros()" class="btn-block btn-primary" style="max-width:200px;margin:0 auto;">🔄 TENTAR NOVAMENTE</button>' +
                     '</div>';
             }
@@ -457,15 +484,11 @@
         async function inicializar() {
             aplicarPreferencias();
 
-            const categorias = ['TODOS', ...window.DB.CATEGORIAS];
-            document.getElementById('category-tabs').innerHTML = categorias.map((c,i) =>
-                `<button class="tab-btn ${c==='TODOS'?'active':''}"
-                    onclick="setCategory('${c}')" role="tab"
-                    aria-selected="${c==='TODOS'}" id="tab-${i}">${c}</button>`
-            ).join('');
-
             // Busca por voz
             iniciarBuscaVoz(document.getElementById('buscaLivros'), () => renderAcervo());
+
+            // Botão X de limpar — aparece à esquerda do botão de voz
+            _iniciarBotaoLimpar(document.getElementById('buscaLivros'), renderAcervo);
 
             // Listener de busca por texto
             document.getElementById('buscaLivros').addEventListener('input', renderAcervo);
@@ -481,8 +504,34 @@
             window.DB.onEmprestimosChange(debounce);
             setInterval(debounce, 60000);
 
+            // Criar dropdown de categorias com busca
+            criarDropdownCategoria('catDropIndex', window.DB.CATEGORIAS, setCategory);
             await carregarLivros();
         }
+
+        function _iniciarBotaoLimpar(inputEl, onClear) {
+            const wrap = inputEl.parentElement;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'clear-btn';
+            btn.setAttribute('aria-label', 'Limpar busca');
+            btn.title = 'Limpar';
+            btn.innerHTML = '✕';
+            btn.style.display = 'none';
+            wrap.appendChild(btn);
+            const atualizar = () => { btn.style.display = inputEl.value ? 'flex' : 'none'; };
+            inputEl.addEventListener('input', atualizar);
+            btn.addEventListener('click', () => { inputEl.value = ''; atualizar(); inputEl.focus(); onClear(); });
+        }
+
+        window.irParaAdmin = async function() {
+            try {
+                const session = await window.DB.getSession();
+                navegarCom(session ? 'admin.html' : 'login.html');
+            } catch(e) {
+                navegarCom('login.html');
+            }
+        };
 
         inicializar();
 
@@ -490,6 +539,7 @@
         window.addEventListener('pageshow', (e) => {
             if (e.persisted) carregarLivros();
         });
+
     </script>
     <!-- VLibras — Libras accessibility widget -->
     <div vw class="enabled" aria-label="Widget de acessibilidade em Libras" role="complementary">
@@ -509,7 +559,7 @@
         <button class="lightbox-back" onclick="fecharLightbox()">← VOLTAR</button>
     </div>
     <footer style="text-align:center;padding:1.5rem 1rem;font-size:0.7rem;color:var(--text-light);border-top:1px solid var(--border);margin-top:2rem;" aria-label="Rodapé">
-        <p>BibVania v1.1 &copy; 2026 <a href="https://github.com/ruanolima" rel="author noopener" style="color:inherit;">Ruan Oliveira Lima</a> &mdash; <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" style="color:inherit;">CC-BY-4.0</a> &mdash; <a href="https://github.com/ruanolima/BibVania" rel="noopener" style="color:inherit;">GitHub</a></p>
+        <p>BibVania v1.2 &copy; 2026 <a href="https://github.com/ruanolima" rel="author noopener" style="color:inherit;">Ruan Oliveira Lima</a> &mdash; <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" style="color:inherit;">CC-BY-4.0</a> &mdash; <a href="https://github.com/ruanolima/BibVania" rel="noopener" style="color:inherit;">GitHub</a></p>
     </footer>
     <script>
         function fecharLightbox() {
@@ -538,5 +588,6 @@
             setTimeout(() => { const btn = lb.querySelector('.lightbox-back'); if (btn) btn.focus(); }, 50);
         }, true);
     </script>
+    <script src="bibvania-transition.js"></script>
 </body>
 </html>
