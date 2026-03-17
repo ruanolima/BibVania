@@ -11,16 +11,13 @@ CREATE EXTENSION IF NOT EXISTS unaccent; -- busca sem acento (usada no script de
 CREATE TABLE IF NOT EXISTS livros (
     id BIGINT PRIMARY KEY,
     isbn TEXT,
-    acabamento TEXT,
     imagem_url TEXT,
     titulo TEXT NOT NULL,
     autor TEXT,
-    colaboradores JSONB DEFAULT '[]',
-    editora TEXT,
     pub_independente BOOLEAN DEFAULT FALSE,
     prateleira TEXT,
+    palavras_chave TEXT[] DEFAULT '{}',
     alt_text TEXT,
-    sinopse TEXT,
     quantidade_total INTEGER NOT NULL DEFAULT 1,
     quantidade_disponivel INTEGER NOT NULL DEFAULT 1,
     data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -99,10 +96,7 @@ FOR EACH ROW EXECUTE FUNCTION recalcular_disponivel();
 
 -- 6. COLUNAS ADICIONAIS
 -- Seguro executar mesmo se o banco já existia — IF NOT EXISTS evita erros.
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS colaboradores JSONB DEFAULT '[]';
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS acabamento TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS editora TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS pub_independente BOOLEAN DEFAULT FALSE;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS alt_text TEXT;

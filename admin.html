@@ -108,29 +108,24 @@
             <div class="card">
                 <h2><span>➕</span> NOVO LIVRO</h2>
                 <form id="formLivro">
-                    <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="isbn"></div>
-                    <div class="form-group"><label>ACABAMENTO</label><select id="acabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
                     <div class="form-group"><label>TÍTULO DO LIVRO *</label><input type="text" id="titulo" required></div>
+                    <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="isbn"></div>
                     <div class="form-group"><label>AUTOR (OPCIONAL)</label><input type="text" id="autor"></div>
-                    
-                    <!-- COLABORADORES -->
-                    <div class="form-group full-width" id="colaboradoresContainer">
-                        <div id="listaColaboradores"></div>
-                        <button type="button" onclick="adicionarColaborador()" class="btn-block btn-outline" style="margin-top:0.5rem;">+ ADICIONAR COLABORADOR</button>
-                    </div>
-
-                    <div class="form-group"><label>EDITORA (OPCIONAL)</label><input type="text" id="editora"></div>
                     <div class="form-group">
                         <label class="checkbox-container" id="labelPubIndependente" style="margin-top:0.25rem;">
-                            <input type="checkbox" id="pubIndependente" onchange="togglePubIndependente(this, 'editora')">
+                            <input type="checkbox" id="pubIndependente">
                             PUBLICAÇÃO INDEPENDENTE
                         </label>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
-<div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
+                        <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;" placeholder="Ex: C3/C4" required oninput="validarPrateleira(this)"></div>
                     </div>
                     <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="quantidade" min="1" required></div>
-                    <div class="form-group full-width"><label>SINOPSE (OPCIONAL)</label><textarea id="sinopse" rows="3"></textarea></div>
+                    <div class="form-group full-width">
+                        <label for="palavrasChave">PALAVRAS-CHAVE (OPCIONAL)</label>
+                        <input type="text" id="palavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off">
+                        <small style="color:var(--text-light);font-size:0.7rem;">Separe por vírgula. Use #palavra-chave na busca.</small>
+                    </div>
                     <!-- CAPA DO LIVRO -->
                     <div class="form-group full-width">
                         <label for="capaInput">CAPA DO LIVRO (OPCIONAL)</label>
@@ -255,29 +250,24 @@
             <h2 id="modalEditTitle" style="border:none;">EDITAR LIVRO</h2>
             <form id="formEdit">
                 <input type="hidden" id="editId">
-                <div class="form-group"><label>ISBN</label><input type="text" id="editIsbn"></div>
-                <div class="form-group"><label>ACABAMENTO</label><select id="editAcabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
                 <div class="form-group"><label>TÍTULO *</label><input type="text" id="editTitulo" required></div>
+                <div class="form-group"><label>ISBN</label><input type="text" id="editIsbn"></div>
                 <div class="form-group"><label>AUTOR</label><input type="text" id="editAutor"></div>
-
-                <!-- COLABORADORES EDIÇÃO -->
-                <div class="form-group full-width" id="editColaboradoresContainer">
-                    <div id="editListaColaboradores"></div>
-                    <button type="button" onclick="adicionarColaboradorEdit()" class="btn-block btn-outline" style="margin-top:0.5rem;">+ ADICIONAR COLABORADOR</button>
-                </div>
-
-                <div class="form-group"><label>EDITORA</label><input type="text" id="editEditora"></div>
                 <div class="form-group">
                     <label class="checkbox-container" id="labelEditPubIndependente" style="margin-top:0.25rem;">
-                        <input type="checkbox" id="editPubIndependente" onchange="togglePubIndependente(this, 'editEditora')">
+                        <input type="checkbox" id="editPubIndependente">
                         PUBLICAÇÃO INDEPENDENTE
                     </label>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
-<div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
+                    <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;" placeholder="Ex: C3/C4" required oninput="validarPrateleira(this)"></div>
                 </div>
                 <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="editQtd" required></div>
-                <div class="form-group"><label>SINOPSE</label><textarea id="editSinopse" rows="3"></textarea></div>
+                <div class="form-group full-width">
+                    <label for="editPalavrasChave">PALAVRAS-CHAVE (OPCIONAL)</label>
+                    <input type="text" id="editPalavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off">
+                    <small style="color:var(--text-light);font-size:0.7rem;">Separe por vírgula. Use #palavra-chave na busca.</small>
+                </div>
                 <!-- CAPA DO LIVRO - EDIÇÃO -->
                 <div class="form-group full-width" style="margin-top:0.5rem;">
                     <label>CAPA DO LIVRO</label>
@@ -504,6 +494,15 @@
             localStorage.setItem('fontSize', fontSize);
         };
 
+        window.filtrarPorTag = (tag, isAdmin) => {
+            const inputId = isAdmin ? 'buscaAdmin' : 'buscaLivros';
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = '#' + tag;
+            input.dispatchEvent(new Event('input'));
+            input.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
         window.toggleDarkMode = () => {
             const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', theme);
@@ -691,14 +690,17 @@
             const termo = normalizar(document.getElementById('buscaAdmin').value);
 
             let filtrados = todosLivros;
-            if (termo) filtrados = filtrados.filter(l =>
-                normalizar(l.titulo).includes(termo) ||
-                (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
-                (l.autor && normalizar(l.autor).includes(termo)) ||
-                (l.sinopse && normalizar(l.sinopse).includes(termo)) ||
-                (l.editora && normalizar(l.editora).includes(termo)) ||
-                (l.colaboradores && l.colaboradores.some(co => co.nome && normalizar(co.nome).includes(termo)))
-            );
+            if (termo) {
+                const termoTag = termo.startsWith('#') ? termo.slice(1) : null;
+                filtrados = filtrados.filter(l =>
+                    normalizar(l.titulo).includes(termo) ||
+                    (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
+                    (l.autor && normalizar(l.autor).includes(termo)) ||
+                    (termoTag
+                        ? (l.palavras_chave||[]).some(p => normalizar(p).includes(termoTag))
+                        : (l.palavras_chave||[]).some(p => normalizar(p).includes(termo)))
+                );
+            }
 
             // Atrasados (geralmente poucos — renderiza de uma vez)
             const atrasados = filtrados.filter(l => idsAtrasadosCache.includes(l.id));
@@ -779,14 +781,15 @@
             };
 
             // 1 query por capa, todas simultâneas — cada uma injeta ao chegar
-            comCapa.forEach(l => {
-                window.DB.getCapaUnica(l.id)
-                    .then(url => {
-                        if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
-                        injetar(l, url);
-                    })
-                    .catch(() => { l._capaResolvida = 'sem'; });
-            });
+            // Sequencial: 1 capa por vez, de cima para baixo
+            for (const l of comCapa) {
+                if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
+                try {
+                    const url = await window.DB.getCapaUnica(l.id);
+                    if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
+                    injetar(l, url);
+                } catch(e) { l._capaResolvida = 'sem'; }
+            }
         }
 
         function renderLivro(l, isAtr) {
@@ -817,12 +820,10 @@
                             <div class="book-title">${isAtr ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
                             <div class="book-meta-box">
                                 <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
-                                ${l.colaboradores && l.colaboradores.length > 0 ? l.colaboradores.map(co => `<div class="book-meta-item"><strong>${co.funcao || 'COLABORADOR'}:</strong> ${co.nome}</div>`).join('') : ''}
-                                ${l.editora ? `<div class="book-meta-item"><strong>EDITORA:</strong> ${l.editora}</div>` : (l.pub_independente ? `<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>` : '')}
+                                ${l.pub_independente ? '<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>' : ''}
                                 <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
-                                ${l.acabamento ? `<div class="book-meta-item"><strong>ACABAMENTO:</strong> ${l.acabamento}</div>` : ''}
                                 ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
-                                ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
+                                ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="filtrarPorTag('${p}',true)">#${p}</span>`).join(' ')}</div>` : ''}
                             </div>
                             <div class="book-status-row">
                                 <span></span>
@@ -935,12 +936,10 @@
             }
             document.getElementById('editId').value = l.id;
             document.getElementById('editIsbn').value = l.isbn || '';
-            document.getElementById('editAcabamento').value = l.acabamento || '';
             document.getElementById('editTitulo').value = l.titulo;
             document.getElementById('editAutor').value = l.autor || '';
             document.getElementById('editQtd').value = l.quantidade_total;
-            document.getElementById('editSinopse').value = l.sinopse || '';
-            document.getElementById('editEditora').value = l.editora || '';
+            document.getElementById('editPalavrasChave').value = (l.palavras_chave || []).join(', ');
             document.getElementById('editPrateleira').value = l.prateleira || '';
             // Alt text existente
             const editAltTa = document.getElementById('editCapaAltText');
@@ -952,11 +951,7 @@
             editPubCb.dispatchEvent(new Event('change'));
             document.getElementById('labelEditPubIndependente').classList.toggle('checked', !!l.pub_independente);
             // Carregar colaboradores existentes
-            const editLista = document.getElementById('editListaColaboradores');
-            editLista.innerHTML = '';
-            if (l.colaboradores && l.colaboradores.length > 0) {
-                l.colaboradores.forEach(co => window.adicionarColaboradorEdit(co.funcao, co.nome));
-            }
+
             // Capa no modal de edição
             window._editCapaBase64 = null;
             window._editCapaExcluir = false;
@@ -995,15 +990,13 @@
             const novosDados = {
                 id: livroId,
                 isbn: document.getElementById('editIsbn').value,
-                acabamento: document.getElementById('editAcabamento').value,
                 titulo: document.getElementById('editTitulo').value,
                 autor: document.getElementById('editAutor').value,
-                colaboradores: window.coletarColaboradoresEdit(),
-                editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
+                palavras_chave: document.getElementById('editPalavrasChave').value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean),
                 pub_independente: document.getElementById('editPubIndependente').checked,
                 prateleira: document.getElementById('editPrateleira').value,
                 quantidade_total: parseInt(document.getElementById('editQtd').value),
-                sinopse: document.getElementById('editSinopse').value,
+
                 alt_text: document.getElementById('editCapaAltText')?.value?.trim() || null
             };
             const capaBase64 = window._editCapaBase64 || null;
@@ -1262,15 +1255,12 @@
                 
                 const resultado = await window.DB.salvarLivro({
                     isbn: document.getElementById('isbn').value,
-                    acabamento: document.getElementById('acabamento').value,
                     titulo: document.getElementById('titulo').value,
                     autor: document.getElementById('autor').value,
-                    colaboradores: window.coletarColaboradores(),
-                    editora: document.getElementById('pubIndependente').checked ? '' : document.getElementById('editora').value,
                     pub_independente: document.getElementById('pubIndependente').checked,
                     prateleira: document.getElementById('prateleira').value,
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
-                    sinopse: document.getElementById('sinopse').value,
+                    palavras_chave: document.getElementById('palavrasChave').value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean),
                     alt_text: document.getElementById('capaAltText')?.value?.trim() || ''
                 });
                 // Salvar capa (base64) se houver imagem selecionada
@@ -1298,6 +1288,7 @@
                 document.getElementById('listaColaboradores').innerHTML = '';
                 document.getElementById('acabamento').value = '';
                 document.getElementById('prateleira').value = '';
+                document.getElementById('palavrasChave').value = '';
                 const piCb = document.getElementById('pubIndependente');
                 if (piCb.checked) { piCb.checked = false; piCb.dispatchEvent(new Event('change')); }
                 document.getElementById('labelPubIndependente').classList.remove('checked');

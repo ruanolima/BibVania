@@ -39,13 +39,7 @@ const padronizarObjeto = (obj) => {
             novoObj[key] = toUpper(novoObj[key]);
         }
     }
-    // Normalizar colaboradores: array de {funcao, nome} em uppercase
-    if (Array.isArray(novoObj.colaboradores)) {
-        novoObj.colaboradores = novoObj.colaboradores.map(co => ({
-            funcao: toUpper(co.funcao) || 'COLABORADOR',
-            nome: toUpper(co.nome)
-        }));
-    }
+
     return novoObj;
 };
 
@@ -106,7 +100,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, editora, isbn, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro, alt_text")
+                .select("id, titulo, autor, isbn, prateleira, quantidade_total, quantidade_disponivel, pub_independente, palavras_chave, data_cadastro, alt_text")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
@@ -195,12 +189,9 @@ const DB = {
                         quantidade_disponivel: novaQuantidadeDisponivel,
                         autor: livro.autor || existente.autor,
                         isbn: livro.isbn || existente.isbn,
-                        sinopse: livro.sinopse || existente.sinopse,
-                        editora: livro.editora || existente.editora,
-                        colaboradores: livro.colaboradores?.length ? livro.colaboradores : existente.colaboradores,
                         prateleira: livro.prateleira || existente.prateleira,
-                        acabamento: livro.acabamento || existente.acabamento,
                         pub_independente: livro.pub_independente ?? existente.pub_independente,
+                        palavras_chave: livro.palavras_chave?.length ? livro.palavras_chave : existente.palavras_chave,
                         alt_text: livro.alt_text || existente.alt_text,
                     })
                     .eq("id", existente.id)
