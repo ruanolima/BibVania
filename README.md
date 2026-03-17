@@ -5,8 +5,6 @@ EMTI Professora Maria Vânia Farias Linhares
 
 > Desenvolvido por [Ruan Oliveira Lima](https://github.com/ruanolima) · Licença [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
-🌐 **[Site dos Leitores](https://ruanolima.github.io/BibVania/)**
-
 ---
 
 ## Sobre

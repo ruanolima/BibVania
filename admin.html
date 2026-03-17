@@ -547,7 +547,7 @@
 
 
             window.DB.onLivrosChange(() => load());
-            window.DB.onEmprestimosChange(() => load());
+            window.DB.onEmprestimosChange(() => { load(); if (document.getElementById("tab-listapessoas")?.classList.contains("active")) carregarListaPessoas(); });
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);" role="status">CARREGANDO...</p>';
             // Busca por voz no acervo
@@ -640,12 +640,6 @@
 
         // load(): busca livros e empréstimos em paralelo (mais rápido)
         async function load() {
-            // Salvar capas já carregadas antes de atualizar a lista
-            const capasCache = {};
-            todosLivros.forEach(l => {
-                if (l.imagem_url) capasCache[l.id] = { url: l.imagem_url, res: l._capaResolvida };
-            });
-
             let livros, empsComLivro;
             try {
                 [livros, empsComLivro] = await Promise.all([
@@ -657,16 +651,13 @@
                 return;
             }
             todosLivros = [...livros].sort((a, b) => new Date(b.data_cadastro) - new Date(a.data_cadastro));
-            _idsComCapaCache = null;
-            idsAtrasadosCache = [...new Set(empsComLivro.filter(e => e.atrasado).map(e => e.livro_id))];
-
-            // Restaurar capas já carregadas do cache — evita piscada ao re-renderizar
+            // Preservar capas já resolvidas em memória ao recarregar
+            const _capaCache = {};
+            todosLivros.forEach(l => { if (l._capaResolvida) _capaCache[l.id] = { url: l.imagem_url, res: l._capaResolvida }; });
             todosLivros.forEach(l => {
-                if (capasCache[l.id]) {
-                    l.imagem_url = capasCache[l.id].url;
-                    l._capaResolvida = capasCache[l.id].res;
-                }
+                if (_capaCache[l.id]) { l.imagem_url = _capaCache[l.id].url; l._capaResolvida = _capaCache[l.id].res; }
             });
+            idsAtrasadosCache = [...new Set(empsComLivro.filter(e => e.atrasado).map(e => e.livro_id))];
 
             // Derivar empsAtivosCache de empsComLivro — evita query duplicada
             empsAtivosCache = {};
@@ -675,6 +666,14 @@
                 empsAtivosCache[e.livro_id].push(e);
             });
             empsComLivroCache = empsComLivro;
+
+            // Atualizar cache por nome (para accordion da lista de pessoas)
+            empsAtivosNomeCache = {};
+            empsComLivro.forEach(e => {
+                const key = (e.nome_aluno || '').toUpperCase();
+                if (!empsAtivosNomeCache[key]) empsAtivosNomeCache[key] = [];
+                empsAtivosNomeCache[key].push(e);
+            });
 
             const abaAtiva = document.getElementById('tab-registro').classList.contains('active');
             if (abaAtiva && _suprimirRenderAcervo === 0) {
@@ -733,75 +732,79 @@
                 return;
             }
 
-            const token = ++_renderToken;
+            ++_renderToken;
             _renderEmAndamento = true;
 
-            // ── Caminho rápido: todos já resolvidos → renderiza tudo de uma vez, sem flash ──
-            const todoResolvido = naoAtrasados.every(l => l._capaResolvida);
-            if (todoResolvido) {
-                lista.innerHTML = naoAtrasados.map(l => renderLivro(l, false)).join('');
-                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
-                _jaCarregouUmaVez = true;
-                _renderEmAndamento = false;
-                return;
+            // Render imediato — sem capas base64 no HTML, zero travamento
+            lista.innerHTML = naoAtrasados.map(l => renderLivro(l, false)).join('');
+            if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
+            _jaCarregouUmaVez = true;
+            _renderEmAndamento = false;
+
+            // Buscar capas em background, sequencialmente, injetando no DOM sem re-render
+            _buscarCapasSequencialAdmin(naoAtrasados);
+        }
+
+        let _capaTokenAdmin = 0;
+        async function _buscarCapasSequencialAdmin(livros) {
+            const capaToken = ++_capaTokenAdmin;
+            const pendentes = livros.filter(l => !l._capaResolvida);
+            if (!pendentes.length) return;
+
+            // Passo 1: 1 query leve para saber quais têm capa (sem base64)
+            if (!_idsComCapaCache) {
+                try { _idsComCapaCache = await window.DB.getIdsComCapa(); }
+                catch(e) { _idsComCapaCache = new Set(); }
             }
+            if (capaToken !== _capaTokenAdmin) return;
 
-            // ── Caminho incremental: há capas pendentes ──
-            const elLoading = document.createElement('p');
-            elLoading.setAttribute('role', 'status');
-            elLoading.style.cssText = 'text-align:center;padding:1rem;color:var(--text-light);font-size:0.85rem;';
-            elLoading.textContent = 'CARREGANDO...';
-            if (_jaCarregouUmaVez) {
-                lista.innerHTML = '';
-                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
-                lista.appendChild(elLoading);
-            }
-
-            (async () => {
-                const cancelar = () => {
-                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
-                };
-
-                const naoResolvidos = naoAtrasados.filter(l => !l._capaResolvida);
-                if (naoResolvidos.length > 0) {
-                    if (!_idsComCapaCache) {
-                        try { _idsComCapaCache = await window.DB.getIdsComCapa(); } catch(e) { _idsComCapaCache = new Set(); }
+            // Marcar sem-capa instantaneamente
+            const comCapa = [];
+            pendentes.forEach(l => {
+                if (_idsComCapaCache.has(l.id)) {
+                    comCapa.push(l);
+                } else {
+                    l._capaResolvida = 'sem';
+                    const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                    if (wrap) {
+                        wrap.classList.add('sem-capa', 'capa-carregada');
+                        const lbl = wrap.querySelector('.book-cover-label');
+                        if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
                     }
-                    if (token !== _renderToken) { cancelar(); _renderEmAndamento = false; return; }
-                    naoResolvidos.forEach(l => {
-                        if (!_idsComCapaCache.has(l.id)) { l.imagem_url = null; l._capaResolvida = 'sem'; }
+                }
+            });
+
+            if (!comCapa.length) return;
+
+            // Passo 2: buscar base64 em lotes de 5
+            const LOTE = 5;
+            for (let i = 0; i < comCapa.length; i += LOTE) {
+                if (capaToken !== _capaTokenAdmin) return;
+                const lote = comCapa.slice(i, i + LOTE);
+                try {
+                    const mapa = await window.DB.getCapas(lote.map(l => l.id));
+                    lote.forEach(l => {
+                        const url = mapa[l.id] || null;
+                        l.imagem_url = url;
+                        l._capaResolvida = url ? 'tem' : 'sem';
+                        const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                        if (!wrap) return;
+                        if (url) {
+                            const img = wrap.querySelector('img.cover-img');
+                            if (img) img.src = url;
+                            wrap.classList.add('has-image', 'capa-carregada');
+                            const lbl = wrap.querySelector('.book-cover-label');
+                            if (lbl) lbl.style.display = 'none';
+                        } else {
+                            wrap.classList.add('sem-capa', 'capa-carregada');
+                            const lbl = wrap.querySelector('.book-cover-label');
+                            if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                        }
                     });
+                } catch(e) {
+                    lote.forEach(l => { l._capaResolvida = 'sem'; });
                 }
-
-                for (let i = 0; i < naoAtrasados.length; i++) {
-                    if (token !== _renderToken) { cancelar(); _renderEmAndamento = false; return; }
-                    const l = naoAtrasados[i];
-
-                    if (!l._capaResolvida) {
-                        try {
-                            const url = await window.DB.getCapaUnica(l.id);
-                            l.imagem_url = url || null;
-                            l._capaResolvida = url ? 'tem' : 'sem';
-                        } catch(e) { l._capaResolvida = 'sem'; }
-                    }
-
-                    if (token !== _renderToken) { cancelar(); _renderEmAndamento = false; return; }
-
-                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
-                    else if (!_jaCarregouUmaVez) lista.innerHTML = '';
-                    const div = document.createElement('div');
-                    div.innerHTML = renderLivro(l, false);
-                    lista.appendChild(div.firstElementChild);
-                    _jaCarregouUmaVez = true;
-
-                    if (i < naoAtrasados.length - 1) {
-                        lista.appendChild(elLoading);
-                        await new Promise(r => setTimeout(r, 0));
-                    }
-                }
-                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
-                _renderEmAndamento = false;
-            })();
+            }
         }
 
         function renderLivro(l, isAtr) {
@@ -1442,6 +1445,7 @@
 
         // ── ABA PESSOAS ──────────────────────────────────────────────────────
         let todasPessoas = []; // cache local
+        let empsAtivosNomeCache = {}; // nome_aluno (upper) → [empréstimos] — para accordion de pessoas
 
         window.toggleTipoCadastro = () => {
             const func = document.getElementById('ehFuncionario').checked;
@@ -1465,6 +1469,17 @@
         window.carregarListaPessoas = async () => {
             document.getElementById('listaPessoas').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             await carregarPessoas();
+            // Usar empsComLivroCache (já populado por load()) para ter o título do livro
+            // Se o cache ainda estiver vazio, buscar com join
+            const emps = empsComLivroCache.length
+                ? empsComLivroCache
+                : await window.DB.getEmprestimosAtivosComLivro().catch(() => []);
+            empsAtivosNomeCache = {};
+            (emps || []).forEach(e => {
+                const key = (e.nome_aluno || '').toUpperCase();
+                if (!empsAtivosNomeCache[key]) empsAtivosNomeCache[key] = [];
+                empsAtivosNomeCache[key].push(e);
+            });
             renderListaPessoas();
         };
         window.renderListaPessoas = renderListaPessoas;
@@ -1560,14 +1575,69 @@
                 ? (p.sexo === 'M' ? 'Funcionário' : 'Funcionária')
                 : (p.sexo === 'M' ? 'Aluno' : 'Aluna');
             const extra = p.tipo === 'aluno' ? ` — ${p.ano_aluno}º ${p.turma_aluno}` : '';
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.3rem;background:var(--card);gap:0.5rem;">
-                <span style="font-size:0.8rem;flex:1;"><strong>${p.nome}</strong> <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span></span>
-                <div style="display:flex;gap:0.35rem;flex-shrink:0;">
-                    <button onclick="abrirEditPessoa(${p.id})" class="btn-small btn-primary" style="font-size:0.7rem;">EDITAR</button>
-                    <button onclick="excluirPessoa(${p.id})" class="btn-small btn-danger" style="font-size:0.7rem;">EXCLUIR</button>
+            const emps = empsAtivosNomeCache[p.nome.toUpperCase()] || [];
+            const totalEmps = emps.length;
+            const temAtrasado = emps.some(e => e.atrasado);
+
+            // Badge de empréstimos ativos
+            const badgeEmp = totalEmps > 0
+                ? `<span style="background:${temAtrasado ? 'var(--danger)' : 'var(--primary)'};color:#fff;border-radius:12px;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:700;margin-left:0.35rem;">${totalEmps} ${totalEmps === 1 ? 'LIVRO' : 'LIVROS'}</span>`
+                : '';
+
+            // Lista de empréstimos para o accordion
+            const empsHtml = totalEmps === 0
+                ? `<p style="font-size:0.75rem;color:var(--text-light);padding:0.5rem 0;">SEM EMPRÉSTIMOS ATIVOS.</p>`
+                : emps.map(e => {
+                    const titulo = e.livros?.titulo || `LIVRO #${e.livro_id}`;
+                    const devolucao = e.sem_data_definida
+                        ? 'SEM DATA DEFINIDA'
+                        : e.data_prevista_devolucao
+                            ? new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')
+                            : '—';
+                    return `<div style="padding:0.45rem 0.6rem;border-radius:6px;background:var(--bg);margin-bottom:0.3rem;font-size:0.72rem;border:1px solid ${e.atrasado ? 'var(--danger)' : 'var(--border)'};">
+                        <strong>${titulo}</strong>
+                        <div style="color:var(--text-light);margin-top:0.15rem;">
+                            DEVOLUÇÃO: <span style="color:${e.atrasado ? 'var(--danger)' : 'inherit'};font-weight:${e.atrasado ? '700' : '400'};">${devolucao}${e.atrasado ? ' ⚠️ ATRASADO' : ''}</span>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            const uid = `pemp-${p.id}`;
+            return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.3rem;background:var(--card);overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;gap:0.5rem;">
+                    <!-- Botão accordion (nome + badge) -->
+                    <button onclick="togglePessoaAccordion('${uid}')" style="background:none;border:none;cursor:pointer;flex:1;text-align:left;padding:0;display:flex;align-items:center;gap:0.3rem;min-width:0;" aria-expanded="false" aria-controls="${uid}">
+                        <span style="font-size:0.75rem;color:var(--text-light);transition:transform .2s;" id="${uid}-arrow">▶</span>
+                        <span style="font-size:0.8rem;flex:1;min-width:0;">
+                            <strong>${p.nome}</strong>
+                            <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span>
+                            ${badgeEmp}
+                        </span>
+                    </button>
+                    <!-- Botões de ação -->
+                    <div style="display:flex;gap:0.35rem;flex-shrink:0;">
+                        <button onclick="abrirEditPessoa(${p.id})" class="btn-small btn-primary" style="font-size:0.7rem;">EDITAR</button>
+                        <button onclick="excluirPessoa(${p.id})" class="btn-small btn-danger" style="font-size:0.7rem;">EXCLUIR</button>
+                    </div>
+                </div>
+                <!-- Painel retrátil de empréstimos -->
+                <div id="${uid}" style="display:none;padding:0 0.75rem 0.6rem;border-top:1px solid var(--border);">
+                    <div style="font-size:0.7rem;font-weight:700;color:var(--text-light);padding:0.4rem 0 0.3rem;letter-spacing:0.04em;">EMPRÉSTIMOS ATIVOS</div>
+                    ${empsHtml}
                 </div>
             </div>`;
         }
+
+        window.togglePessoaAccordion = (uid) => {
+            const painel = document.getElementById(uid);
+            const arrow = document.getElementById(uid + '-arrow');
+            const btn = arrow?.closest('button');
+            if (!painel) return;
+            const aberto = painel.style.display === 'none' || painel.style.display === '';
+            painel.style.display = aberto ? 'block' : 'none';
+            if (arrow) arrow.style.transform = aberto ? 'rotate(90deg)' : '';
+            if (btn) btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+        };
 
         window.excluirPessoa = async (id) => {
             if (!confirm('EXCLUIR ESTE CADASTRO?')) return;

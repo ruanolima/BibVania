@@ -147,8 +147,6 @@
         const _collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
         // Cache da lista ordenada — só recalcula quando todosLivros muda
         let _livrosOrdenados = [];
-        let _idsComCapaCache = null;
-        let _jaCarregouUmaVez = false;
 
         // ── Preferências ───────────────────────────────────────────
         window.changeFontSize = (delta) => {
@@ -316,6 +314,11 @@
 
         // Token de renderização — cancela renders anteriores ao mudar de categoria
         let _renderToken = 0;
+        let _capaToken = 0; // cancela busca de capas anterior ao re-renderizar
+
+        // Primeiro: busca quais IDs têm capa (1 query leve, sem base64)
+        // Depois: busca as capas em lotes, injetando no DOM sem re-render
+        let _idsComCapaCache = null;
 
         async function renderAcervo() {
             const termo = normalizar(document.getElementById('buscaLivros').value);
@@ -335,7 +338,7 @@
                 filtrados.sort((a, b) => _collator.compare(a.titulo, b.titulo));
             }
 
-            // Atrasados (geralmente poucos — renderiza de uma vez)
+            // Atrasados
             const atrasados = filtrados.filter(l => idsAtrasadosCache.includes(l.id));
             const secao = document.getElementById('secaoAtrasados');
             if (atrasados.length) {
@@ -348,126 +351,127 @@
 
             if (!normais.length) {
                 lista.innerHTML = atrasados.length ? '' : '<p style="text-align:center;padding:2rem;">NENHUM LIVRO ENCONTRADO.</p>';
-                aplicarCapasNoDOM();
                 return;
             }
 
+            // Renderizar em chunks de 20 — cede ao browser entre cada chunk para não travar a UI
+            const CHUNK = 20;
             const token = ++_renderToken;
-
-            // ── Caminho rápido: todos já resolvidos → renderiza sem flash ──
-            const todoResolvido = normais.every(l => l._capaResolvida);
-            if (todoResolvido) {
-                lista.innerHTML = normais.map(l => renderizarLivro(l, false)).join('');
-                _jaCarregouUmaVez = true;
-                return;
+            lista.innerHTML = '';
+            for (let i = 0; i < normais.length; i += CHUNK) {
+                if (token !== _renderToken) return;
+                const frag = document.createDocumentFragment();
+                const tmp = document.createElement('div');
+                tmp.innerHTML = normais.slice(i, i + CHUNK).map(l => renderizarLivro(l, false)).join('');
+                while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+                lista.appendChild(frag);
+                if (i + CHUNK < normais.length) await new Promise(r => setTimeout(r, 0));
             }
 
-            // ── Caminho incremental: há capas pendentes ──
-            const elLoading = document.createElement('p');
-            elLoading.setAttribute('role', 'status');
-            elLoading.style.cssText = 'text-align:center;padding:1rem;color:var(--text-light);font-size:0.85rem;';
-            elLoading.textContent = 'CARREGANDO...';
-            if (_jaCarregouUmaVez) { lista.innerHTML = ''; lista.appendChild(elLoading); }
-
-            (async () => {
-                const cancelar = () => {
-                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
-                };
-
-                // Buscar cache de IDs com capa UMA vez antes do loop — marca todos sem-capa instantaneamente
-                if (!_idsComCapaCache) {
-                    try { _idsComCapaCache = await window.DB.getIdsComCapa(); } catch(e) { _idsComCapaCache = new Set(); }
-                    if (token !== _renderToken) { cancelar(); return; }
-                }
-                // Marcar todos os livros sem capa de uma vez (sem request individual)
-                normais.forEach(l => {
-                    if (!l._capaResolvida && !_idsComCapaCache.has(l.id)) {
-                        l.imagem_url = null; l._capaResolvida = 'sem';
-                    }
-                });
-
-                // Re-verificar caminho rápido após marcação em lote
-                if (normais.every(l => l._capaResolvida)) {
-                    cancelar();
-                    lista.innerHTML = normais.map(l => renderizarLivro(l, false)).join('');
-                    _jaCarregouUmaVez = true;
-                    return;
-                }
-
-                for (let i = 0; i < normais.length; i++) {
-                    if (token !== _renderToken) { cancelar(); return; }
-                    const l = normais[i];
-
-                    if (!l._capaResolvida) {
-                        // Só chega aqui se tem capa no Supabase
-                        try {
-                            const url = await window.DB.getCapaUnica(l.id);
-                            l.imagem_url = url || null;
-                            l._capaResolvida = url ? 'tem' : 'sem';
-                        } catch(e) { l._capaResolvida = 'sem'; }
-                    }
-
-                    if (token !== _renderToken) { cancelar(); return; }
-
-                    // Remover loading ou texto estático antes do primeiro card
-                    if (elLoading.parentNode) elLoading.parentNode.removeChild(elLoading);
-                    else if (!_jaCarregouUmaVez) lista.innerHTML = '';
-
-                    const div = document.createElement('div');
-                    div.innerHTML = renderizarLivro(l, false);
-                    lista.appendChild(div.firstElementChild);
-                    _jaCarregouUmaVez = true;
-
-                    if (i < normais.length - 1) {
-                        lista.appendChild(elLoading);
-                        await new Promise(r => setTimeout(r, 0));
-                    }
-                }
-            })();
+            // Capas: buscar IDs com capa (query leve), depois base64 em lotes de 5
+            _buscarCapasEmLotes(normais, token);
         }
 
+        // 1 query para saber quais têm capa → lotes de 5 para base64 → injeta no DOM
+        async function _buscarCapasEmLotes(livros, renderToken) {
+            const capaToken = ++_capaToken;
 
-        // carregarSemCapas: chamado pelo Realtime/interval — preserva capas já resolvidas
+            // Só os que ainda não foram resolvidos
+            const pendentes = livros.filter(l => !l._capaResolvida);
+            if (!pendentes.length) return;
+
+            // Passo 1: descobrir quais têm capa (1 query, só IDs — sem base64)
+            if (!_idsComCapaCache) {
+                try { _idsComCapaCache = await window.DB.getIdsComCapa(); }
+                catch(e) { _idsComCapaCache = new Set(); }
+            }
+            if (capaToken !== _capaToken || renderToken !== _renderToken) return;
+
+            // Marcar sem-capa instantaneamente — sem nenhuma query adicional
+            const comCapa = [];
+            pendentes.forEach(l => {
+                if (_idsComCapaCache.has(l.id)) {
+                    comCapa.push(l);
+                } else {
+                    l._capaResolvida = 'sem';
+                    const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                    if (wrap) {
+                        wrap.classList.add('sem-capa', 'capa-carregada');
+                        const lbl = wrap.querySelector('.book-cover-label');
+                        if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                    }
+                }
+            });
+
+            if (!comCapa.length) return;
+
+            // Passo 2: buscar base64 em lotes de 5
+            const LOTE = 5;
+            for (let i = 0; i < comCapa.length; i += LOTE) {
+                if (capaToken !== _capaToken || renderToken !== _renderToken) return;
+                const lote = comCapa.slice(i, i + LOTE);
+                try {
+                    const mapa = await window.DB.getCapas(lote.map(l => l.id));
+                    lote.forEach(l => {
+                        const url = mapa[l.id] || null;
+                        l.imagem_url = url;
+                        l._capaResolvida = url ? 'tem' : 'sem';
+                        const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                        if (!wrap) return;
+                        if (url) {
+                            const img = wrap.querySelector('img.cover-img');
+                            if (img) img.src = url;
+                            wrap.classList.add('has-image', 'capa-carregada');
+                            const lbl = wrap.querySelector('.book-cover-label');
+                            if (lbl) lbl.style.display = 'none';
+                        } else {
+                            wrap.classList.add('sem-capa', 'capa-carregada');
+                            const lbl = wrap.querySelector('.book-cover-label');
+                            if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                        }
+                    });
+                } catch(e) {
+                    lote.forEach(l => { l._capaResolvida = 'sem'; });
+                }
+            }
+        }
+
+        // Realtime/interval — preserva capas já resolvidas em memória
         async function carregarSemCapas() {
             try {
                 const capaCache = {};
                 todosLivros.forEach(l => { if (l._capaResolvida) capaCache[l.id] = { url: l.imagem_url, res: l._capaResolvida }; });
 
-                const [livros, emps, idsCapas] = await Promise.all([
+                const [livros, emps] = await Promise.all([
                     window.DB.getLivros(),
-                    window.DB.getEmprestimosAtivos(),
-                    window.DB.getIdsComCapa()
+                    window.DB.getEmprestimosAtivos()
                 ]);
                 todosLivros = livros;
-                _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
-                _idsComCapaCache = idsCapas;
-                // Restaurar capas já resolvidas
                 todosLivros.forEach(l => {
                     if (capaCache[l.id]) { l.imagem_url = capaCache[l.id].url; l._capaResolvida = capaCache[l.id].res; }
                 });
-
+                // _idsComCapaCache permanece válido — só invalida se capa foi alterada (tratado no onLivrosChange)
+                _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
                 idsAtrasadosCache = [...new Set(emps.filter(e=>e.atrasado).map(e=>e.livro_id))];
                 empsAtivosCache = {};
                 emps.forEach(e => { (empsAtivosCache[e.livro_id]||(empsAtivosCache[e.livro_id]=[])).push(e); });
                 renderAcervo();
-                aplicarCapasNoDOM();
             } catch(e) { console.warn('Erro ao atualizar acervo:', e); }
         }
 
         window.carregarLivros = async function carregarLivros() {
             try {
-                const [livros, emps, idsCapas] = await Promise.all([
+                // Só metadados — sem imagem_url — para render instantâneo
+                const [livros, emps] = await Promise.all([
                     window.DB.getLivros(),
-                    window.DB.getEmprestimosAtivos(),
-                    window.DB.getIdsComCapa()
+                    window.DB.getEmprestimosAtivos()
                 ]);
                 todosLivros = livros;
                 _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
-                _idsComCapaCache = idsCapas;
                 idsAtrasadosCache = [...new Set(emps.filter(e=>e.atrasado).map(e=>e.livro_id))];
                 empsAtivosCache = {};
                 emps.forEach(e => { (empsAtivosCache[e.livro_id]||(empsAtivosCache[e.livro_id]=[])).push(e); });
-                renderAcervo();
+                renderAcervo(); // renderiza imediatamente — capas buscadas em background por _buscarCapasSequencial
             } catch(err) {
                 console.error('Erro ao carregar acervo:', err);
                 document.getElementById('listaLivros').innerHTML =
@@ -498,7 +502,14 @@
             const debounce = () => { clearTimeout(_rt); _rt = setTimeout(carregarSemCapas, 300); };
             window.DB.onLivrosChange(payload => {
                 const cols = payload?.new && payload?.old ? Object.keys(payload.new).filter(k=>payload.new[k]!==payload.old[k]) : null;
-                if (cols?.length === 1 && cols[0] === 'imagem_url') return;
+                if (cols?.length === 1 && cols[0] === 'imagem_url') {
+                    // Capa alterada: invalidar cache de IDs e o registro em memória
+                    _idsComCapaCache = null;
+                    const id = payload.new?.id;
+                    if (id) { const l = todosLivros.find(x => x.id === id); if (l) { l._capaResolvida = null; l.imagem_url = null; } }
+                    debounce();
+                    return;
+                }
                 debounce();
             });
             window.DB.onEmprestimosChange(debounce);
