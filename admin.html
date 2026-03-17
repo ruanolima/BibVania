@@ -2108,50 +2108,62 @@
     // CAPA DO LIVRO — PRÉ-VISUALIZAÇÃO E UPLOAD
     // =====================================================================
 
-    // Abre seletor de origem da imagem (câmera ou galeria) — em desktop abre direto
-    // Input permanente reutilizável para câmera e galeria — evita problemas de DOM
-    (function() {
-        const _inpGaleria = document.createElement('input');
-        _inpGaleria.type = 'file'; _inpGaleria.accept = 'image/*'; _inpGaleria.style.display = 'none';
-        document.body.appendChild(_inpGaleria);
+    // Input único reutilizável — capture trocado dinamicamente conforme origem
+    // Criado aqui uma única vez e nunca removido do DOM
+    const _inpCapa = document.createElement('input');
+    _inpCapa.type = 'file';
+    _inpCapa.accept = 'image/*';
+    _inpCapa.style.display = 'none';
+    document.body.appendChild(_inpCapa);
 
-        const _inpCamara = document.createElement('input');
-        _inpCamara.type = 'file'; _inpCamara.accept = 'image/*';
-        _inpCamara.setAttribute('capture', 'environment'); _inpCamara.style.display = 'none';
-        document.body.appendChild(_inpCamara);
+    // Estado atual do seletor — preenchido antes de abrir o input
+    let _capaCtx = { imgId: null, btnsId: null, labelId: null, isEdit: false };
 
-        window.abrirSeletorCapa = (inputId, imgId, btnsId, labelId, isEdit) => {
-            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    _inpCapa.addEventListener('change', () => {
+        if (_inpCapa.files[0]) {
+            preVisualizarCapa(_inpCapa, _capaCtx.imgId, _capaCtx.btnsId, _capaCtx.labelId, _capaCtx.isEdit);
+        }
+        _inpCapa.value = '';
+    });
 
-            const bindAndClick = (inp) => {
-                inp.onchange = () => {
-                    if (inp.files[0]) preVisualizarCapa(inp, imgId, btnsId, labelId, isEdit);
-                    inp.value = ''; // resetar para permitir escolher o mesmo arquivo novamente
-                };
-                inp.click();
-            };
+    window.abrirSeletorCapa = (inputId, imgId, btnsId, labelId, isEdit) => {
+        _capaCtx = { imgId, btnsId, labelId, isEdit };
+        const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-            if (!isMobile) { bindAndClick(_inpGaleria); return; }
+        if (!isMobile) {
+            // Desktop: abre galeria diretamente
+            _inpCapa.removeAttribute('capture');
+            _inpCapa.click();
+            return;
+        }
 
-            // Mobile: mostrar modal de escolha câmera/galeria
-            const existing = document.getElementById('_modalOrigemCapa');
-            if (existing) existing.remove();
-            const m = document.createElement('div');
-            m.id = '_modalOrigemCapa';
-            m.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;';
-            m.innerHTML = `
-                <div style="background:var(--card);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:480px;display:flex;flex-direction:column;gap:0.75rem;">
-                    <p style="font-weight:700;text-align:center;margin-bottom:0.25rem;">ESCOLHER IMAGEM</p>
-                    <button id="_btnCamara" class="btn-block btn-primary">📸 CÂMERA</button>
-                    <button id="_btnGaleria" class="btn-block btn-outline">🖼️ GALERIA</button>
-                    <button class="btn-block btn-outline" onclick="document.getElementById('_modalOrigemCapa').remove()">CANCELAR</button>
-                </div>`;
-            document.body.appendChild(m);
-            document.getElementById('_btnCamara').onclick = () => { m.remove(); bindAndClick(_inpCamara); };
-            document.getElementById('_btnGaleria').onclick = () => { m.remove(); bindAndClick(_inpGaleria); };
-            m.addEventListener('click', e => { if (e.target === m) m.remove(); });
-        };
-    })();
+        // Mobile: modal de escolha câmera/galeria
+        const existing = document.getElementById('_modalOrigemCapa');
+        if (existing) existing.remove();
+        const m = document.createElement('div');
+        m.id = '_modalOrigemCapa';
+        m.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;';
+        m.innerHTML = `
+            <div style="background:var(--card);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:480px;display:flex;flex-direction:column;gap:0.75rem;">
+                <p style="font-weight:700;text-align:center;margin-bottom:0.25rem;">ESCOLHER IMAGEM</p>
+                <button id="_btnCamara" class="btn-block btn-primary">📸 CÂMERA</button>
+                <button id="_btnGaleria" class="btn-block btn-outline">🖼️ GALERIA</button>
+                <button class="btn-block btn-outline" onclick="document.getElementById('_modalOrigemCapa').remove()">CANCELAR</button>
+            </div>`;
+        document.body.appendChild(m);
+        // Câmera: clique DIRETO no botão abre o input — sem setTimeout, sem programático intermediário
+        document.getElementById('_btnCamara').addEventListener('click', () => {
+            m.remove();
+            _inpCapa.setAttribute('capture', 'environment');
+            _inpCapa.click();
+        });
+        document.getElementById('_btnGaleria').addEventListener('click', () => {
+            m.remove();
+            _inpCapa.removeAttribute('capture');
+            _inpCapa.click();
+        });
+        m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+    };
 
     // Base64 da capa selecionada no cadastro
     window._capaBase64 = null;
