@@ -52,23 +52,24 @@
             gap: 0.5rem;
         }
         #_bv-transition-dots span {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: #2563eb;
             opacity: 0.3;
-            animation: _bv-bounce 0.9s ease-in-out infinite;
+            animation: _bv-bounce 1.8s ease-in-out infinite;
         }
-        #_bv-transition-dots span:nth-child(1) { animation-delay: -0.6s; }
-        #_bv-transition-dots span:nth-child(2) { animation-delay: -0.3s; }
+        /* 1/3 do ciclo de 1.8s = 0.6s entre cada bolinha */
+        #_bv-transition-dots span:nth-child(1) { animation-delay: -1.2s; }
+        #_bv-transition-dots span:nth-child(2) { animation-delay: -0.6s; }
         #_bv-transition-dots span:nth-child(3) { animation-delay:    0s; }
         @keyframes _bv-pulse {
             0%, 100% { transform: scale(1);   opacity: 1; }
             50%       { transform: scale(1.08); opacity: 0.85; }
         }
         @keyframes _bv-bounce {
-            0%, 100% { transform: translateY(0);    opacity: 0.3; }
-            50%       { transform: translateY(-8px); opacity: 1;   }
+            0%, 100% { transform: translateY(0);     opacity: 0.3; }
+            50%       { transform: translateY(-10px); opacity: 1;   }
         }
     `;
     document.head.appendChild(style);
