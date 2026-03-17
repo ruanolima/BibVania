@@ -327,60 +327,80 @@
 
             const token = ++_renderToken;
 
-            // ── Passo 1: renderizar cards imediatamente ──
-            const CHUNK = 20;
-            lista.innerHTML = '';
-            for (let i = 0; i < normais.length; i += CHUNK) {
-                if (token !== _renderToken) return;
-                const frag = document.createDocumentFragment();
-                const tmp = document.createElement('div');
-                tmp.innerHTML = normais.slice(i, i + CHUNK).map(l => renderizarLivro(l, false)).join('');
-                while (tmp.firstChild) frag.appendChild(tmp.firstChild);
-                lista.appendChild(frag);
-                if (i + CHUNK < normais.length) await new Promise(r => setTimeout(r, 0));
+            // DOM-swap: renderizar fora da tela e só substituir o container de uma vez
+            // Evita piscada, reflow e scroll jump ao recarregar via Realtime
+            const novoHtml = normais.map(l => renderizarLivro(l, false)).join('');
+
+            // Só atualizar o DOM se o conteúdo realmente mudou
+            if (lista.dataset.lastHtmlHash !== _hash(novoHtml)) {
+                lista.dataset.lastHtmlHash = _hash(novoHtml);
+                const scrollY = window.scrollY;
+                lista.innerHTML = novoHtml;
+                // Preservar posição do scroll — evita pulo para o topo
+                if (scrollY > 0) requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
             }
 
-            // ── Passo 2: buscar capas em background (já iniciado em paralelo com render) ──
+            // Buscar capas pendentes em background — 1 única query para todas
             _buscarCapasRestantes(normais, token);
         }
 
-        // Injeta capas ainda pendentes após o render inicial — sem re-renderizar nada
+        // Hash leve para comparar conteúdo sem serializar tudo
+        function _hash(str) {
+            let h = 0;
+            for (let i = 0; i < Math.min(str.length, 500); i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+            return h + str.length;
+        }
+
+        // Injeta capas pendentes — 1 única query para todas de uma vez
         async function _buscarCapasRestantes(livros, renderToken) {
             const capaToken = ++_capaToken;
-            const comCapa = livros.filter(l => !l._capaResolvida);
+            const pendentes = livros.filter(l => !l._capaResolvida);
+            if (!pendentes.length) return;
+
+            // Marcar sem-capa instantaneamente (sem query)
+            if (!_idsComCapaCache) _idsComCapaCache = new Set();
+            pendentes.forEach(l => {
+                if (!_idsComCapaCache.has(l.id)) { l._capaResolvida = 'sem'; l.imagem_url = null; }
+            });
+            const comCapa = pendentes.filter(l => !l._capaResolvida);
+
+            // Marcar sem-capa no DOM
+            pendentes.filter(l => l._capaResolvida === 'sem').forEach(l => {
+                const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                if (wrap) {
+                    wrap.classList.add('sem-capa', 'capa-carregada');
+                    const lbl = wrap.querySelector('.book-cover-label');
+                    if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                }
+            });
+
             if (!comCapa.length) return;
 
-            // Lote agora calculado com altura real dos cards já no DOM
-            const primeiro = document.querySelector('#listaLivros .book-item');
-            const alturaCard = primeiro ? primeiro.getBoundingClientRect().height + 8 : 130;
-            const LOTE = Math.max(3, Math.ceil((window.innerHeight - 48) / alturaCard));
-
-            for (let i = 0; i < comCapa.length; i += LOTE) {
+            // Buscar TODAS as capas pendentes em 1 única query
+            if (capaToken !== _capaToken || renderToken !== _renderToken) return;
+            try {
+                const mapa = await window.DB.getCapas(comCapa.map(l => l.id));
                 if (capaToken !== _capaToken || renderToken !== _renderToken) return;
-                const lote = comCapa.slice(i, i + LOTE);
-                try {
-                    const mapa = await window.DB.getCapas(lote.map(l => l.id));
-                    lote.forEach(l => {
-                        const url = mapa[l.id] || null;
-                        l.imagem_url = url;
-                        l._capaResolvida = url ? 'tem' : 'sem';
-                        const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
-                        if (!wrap) return;
-                        if (url) {
-                            const img = wrap.querySelector('img.cover-img');
-                            if (img) img.src = url;
-                            wrap.classList.add('has-image', 'capa-carregada');
-                            const lbl = wrap.querySelector('.book-cover-label');
-                            if (lbl) lbl.style.display = 'none';
-                        } else {
-                            wrap.classList.add('sem-capa', 'capa-carregada');
-                            const lbl = wrap.querySelector('.book-cover-label');
-                            if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
-                        }
-                    });
-                } catch(e) {
-                    lote.forEach(l => { l._capaResolvida = 'sem'; });
-                }
+                comCapa.forEach(l => {
+                    const url = mapa[l.id] || null;
+                    l.imagem_url = url;
+                    l._capaResolvida = url ? 'tem' : 'sem';
+                    const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                    if (!wrap) return;
+                    if (url) {
+                        const img = wrap.querySelector('img.cover-img');
+                        if (img) img.src = url;
+                        wrap.classList.add('has-image', 'capa-carregada');
+                        const lbl = wrap.querySelector('.book-cover-label');
+                        if (lbl) lbl.style.display = 'none';
+                    } else {
+                        wrap.classList.add('sem-capa', 'capa-carregada');
+                        const lbl = wrap.querySelector('.book-cover-label');
+                        if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                    }
+                });
+            } catch(e) {
+                comCapa.forEach(l => { l._capaResolvida = 'sem'; });
             }
         }
 
