@@ -723,39 +723,13 @@
             const token = ++_renderToken;
             _renderEmAndamento = true;
 
-            // ── Passo 1: resolver IDs + buscar 1º lote de capas ANTES de mostrar cards ──
-            const LOTE_EST = Math.max(3, Math.ceil((window.innerHeight - 48) / 130));
-            const pendentes = naoAtrasados.filter(l => !l._capaResolvida);
-            if (pendentes.length) {
-                if (!_idsComCapaCache) {
-                    try { _idsComCapaCache = await window.DB.getIdsComCapa(); }
-                    catch(e) { _idsComCapaCache = new Set(); }
-                }
-                if (token !== _renderToken) { _renderEmAndamento = false; return; }
-                pendentes.forEach(l => {
-                    if (!_idsComCapaCache.has(l.id)) { l._capaResolvida = 'sem'; l.imagem_url = null; }
-                });
-                const primeirosComCapa = pendentes.filter(l => !l._capaResolvida).slice(0, LOTE_EST);
-                if (primeirosComCapa.length) {
-                    try {
-                        const mapa = await window.DB.getCapas(primeirosComCapa.map(l => l.id));
-                        if (token !== _renderToken) { _renderEmAndamento = false; return; }
-                        primeirosComCapa.forEach(l => {
-                            l.imagem_url = mapa[l.id] || null;
-                            l._capaResolvida = mapa[l.id] ? 'tem' : 'sem';
-                        });
-                    } catch(e) { primeirosComCapa.forEach(l => { l._capaResolvida = 'sem'; }); }
-                }
-            }
-            if (token !== _renderToken) { _renderEmAndamento = false; return; }
-
-            // ── Passo 2: renderizar — 1º lote já tem capas resolvidas ──
+            // Renderizar cards imediatamente — capas chegam em background
             lista.innerHTML = naoAtrasados.map(l => renderLivro(l, false)).join('');
             if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
             _jaCarregouUmaVez = true;
             _renderEmAndamento = false;
 
-            // ── Passo 3: capas restantes em background ──
+            // Buscar capas em background
             _buscarCapasRestantesAdmin(naoAtrasados, token);
         }
 

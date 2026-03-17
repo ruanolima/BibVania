@@ -327,38 +327,7 @@
 
             const token = ++_renderToken;
 
-            // ── Passo 1: resolver IDs com capa + buscar 1º lote ANTES de mostrar cards ──
-            // Calcula lote usando altura estimada (130px) — cards ainda não estão no DOM
-            const LOTE_EST = Math.max(3, Math.ceil((window.innerHeight - 48) / 130));
-
-            // Quais livros pendentes têm capa?
-            const pendentes = normais.filter(l => !l._capaResolvida);
-            if (pendentes.length) {
-                if (!_idsComCapaCache) {
-                    try { _idsComCapaCache = await window.DB.getIdsComCapa(); }
-                    catch(e) { _idsComCapaCache = new Set(); }
-                }
-                if (token !== _renderToken) return;
-                // Marcar sem-capa instantaneamente
-                pendentes.forEach(l => {
-                    if (!_idsComCapaCache.has(l.id)) { l._capaResolvida = 'sem'; l.imagem_url = null; }
-                });
-                // Buscar o 1º lote de capas — aguardar antes de renderizar
-                const primeirosComCapa = pendentes.filter(l => !l._capaResolvida).slice(0, LOTE_EST);
-                if (primeirosComCapa.length) {
-                    try {
-                        const mapa = await window.DB.getCapas(primeirosComCapa.map(l => l.id));
-                        if (token !== _renderToken) return;
-                        primeirosComCapa.forEach(l => {
-                            l.imagem_url = mapa[l.id] || null;
-                            l._capaResolvida = mapa[l.id] ? 'tem' : 'sem';
-                        });
-                    } catch(e) { primeirosComCapa.forEach(l => { l._capaResolvida = 'sem'; }); }
-                }
-            }
-            if (token !== _renderToken) return;
-
-            // ── Passo 2: renderizar todos os cards — 1º lote já tem capas resolvidas ──
+            // ── Passo 1: renderizar cards imediatamente ──
             const CHUNK = 20;
             lista.innerHTML = '';
             for (let i = 0; i < normais.length; i += CHUNK) {
@@ -371,7 +340,7 @@
                 if (i + CHUNK < normais.length) await new Promise(r => setTimeout(r, 0));
             }
 
-            // ── Passo 3: buscar capas restantes em background ──
+            // ── Passo 2: buscar capas em background (já iniciado em paralelo com render) ──
             _buscarCapasRestantes(normais, token);
         }
 
