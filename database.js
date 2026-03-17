@@ -200,7 +200,6 @@ const DB = {
                         colaboradores: livro.colaboradores?.length ? livro.colaboradores : existente.colaboradores,
                         prateleira: livro.prateleira || existente.prateleira,
                         acabamento: livro.acabamento || existente.acabamento,
-                        categoria: livro.categoria || existente.categoria,
                         pub_independente: livro.pub_independente ?? existente.pub_independente,
                         alt_text: livro.alt_text || existente.alt_text,
                     })
@@ -453,7 +452,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("emprestimos")
-                .select("*, livros(titulo, autor, categoria, prateleira)")
+                .select("*, livros(titulo, autor, prateleira)")
                 .eq("status", "emprestado")
                 .order("ano_aluno", { ascending: true })
                 .order("turma_aluno", { ascending: true })

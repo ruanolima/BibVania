@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS livros (
     pub_independente BOOLEAN DEFAULT FALSE,
     prateleira TEXT,
     alt_text TEXT,
-    categoria TEXT NOT NULL,
     sinopse TEXT,
     quantidade_total INTEGER NOT NULL DEFAULT 1,
     quantidade_disponivel INTEGER NOT NULL DEFAULT 1,
@@ -50,7 +49,6 @@ CREATE TABLE IF NOT EXISTS livros_excluidos (
     titulo TEXT,
     autor TEXT,
     isbn TEXT,
-    categoria TEXT,
     data_exclusao TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

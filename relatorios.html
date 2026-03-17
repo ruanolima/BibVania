@@ -232,7 +232,6 @@
                     const leitores = (leitPorLivro[id]||[]).sort((a,b)=>a.nome_aluno.localeCompare(b.nome_aluno));
                     t += '\n' + (i+1) + '. ' + titulo + ' (' + qtd + ' empréstimo' + (qtd!==1?'s':'') + ')\n';
                     if (l && l.autor)     t += '   Autor: ' + l.autor + '\n';
-                    if (l && l.categoria) t += '   Categoria: ' + l.categoria + '\n';
                     if (leitores.length) {
                         t += '   Leitores:\n';
                         leitores.forEach(e => {
@@ -265,7 +264,6 @@
                             const l = livroMap[e.livro_id]; if (!l) return;
                             t += '  - ' + l.titulo;
                             if (l.autor)     t += ' | Autor: ' + l.autor;
-                            if (l.categoria) t += ' | Cat.: ' + l.categoria;
                             t += '\n';
                         });
                     });

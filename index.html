@@ -292,7 +292,7 @@
             });
         }
 
-        // Token de renderização — cancela renders anteriores ao mudar de categoria
+        // Token de renderização
         let _renderToken = 0;
         let _capaToken = 0; // cancela busca de capas anterior ao re-renderizar
 
@@ -464,7 +464,6 @@
             window.DB.onEmprestimosChange(debounce);
             setInterval(debounce, 60000);
 
-            // Criar dropdown de categorias com busca
             await carregarLivros();
         }
 

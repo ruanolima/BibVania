@@ -684,7 +684,7 @@
             return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
         }
 
-        // Token de renderização — cancela renders anteriores ao mudar de categoria
+        // Token de renderização
         let _renderToken = 0;
         let _renderEmAndamento = false;
 

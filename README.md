@@ -25,7 +25,6 @@ BibVania Online é um sistema web para gerenciamento de biblioteca escolar, com 
 
 ### Acervo público (`index.html`)
 - Busca por título, ISBN, autor, sinopse, editora e colaboradores
-- Filtro por categoria com dropdown pesquisável
 - Capas dos livros com lightbox em tela cheia
 - Indicação visual de disponibilidade e devoluções em atraso
 - Acessibilidade: busca por voz, A+/A−, modo escuro, VLibras
@@ -37,7 +36,6 @@ BibVania Online é um sistema web para gerenciamento de biblioteca escolar, com 
 - Cadastro de alunos e funcionários
 - Lista de pessoas por turma com busca por voz
 - Busca de devoluções por nome ou título com voz
-- Filtro de acervo por categoria com dropdown pesquisável
 - Restauração automática da última aba visitada (sem piscar)
 - Realtime: atualiza automaticamente sem recarregar
 - Aviso automático de internet instável
@@ -71,7 +69,7 @@ BibVania/
 ├── relatorios.html         — Gerador de relatórios
 ├── login.html              — Autenticação
 ├── database.js             — Conexão Supabase e todas as queries
-├── bibvania-utils.js       — Utilitários: busca por voz, dropdown de categoria
+├── bibvania-utils.js       — Utilitários: busca por voz, dropdown de prateleira
 ├── bibvania-transition.js  — Tela de transição animada entre páginas
 ├── style.css               — Estilos globais (dark/light mode, responsivo)
 ├── logo.png                — Logo do sistema
@@ -93,7 +91,6 @@ BibVania/
 | INFANTOJUVENIL (5º E 6º) |
 | JUVENIL (7º AO 9º) |
 | JOVEM ADULTO (10º AO 12º) |
-| DIDÁTICO (1º) ao DIDÁTICO (12º) — 12 categorias |
 | DE REFERÊNCIA |
 | CLÁSSICOS & REGIONAIS |
 | POESIA |
@@ -131,8 +128,6 @@ BibVania/
 | Download de relatório em TXT | ❌ | ❌ | ✅ |
 | Top livros dinâmico por salas | ❌ | ❌ | ✅ |
 | Tela de transição animada | ❌ | ❌ | ✅ |
-| Dropdown de categoria pesquisável | ❌ | ❌ | ✅ |
-| Categorias expandidas (20 categorias) | ❌ | ❌ | ✅ |
 | Resolução de capas em lote | ❌ | ❌ | ✅ |
 | Realtime em relatórios | ❌ | ❌ | ✅ |
 | Restauração de aba sem flash | ❌ | ❌ | ✅ |

@@ -1008,9 +1008,9 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     line-height: 1.5;
 }
 
-/* ── Dropdown de categoria customizado ─────────────────────── */
-.cat-dropdown-wrap { position: relative; }
-.cat-dropdown-display {
+/* ── Dropdown customizado (prateleira / busca) ──────────────── */
+.bv-dropdown-wrap { position: relative; }
+.bv-dropdown-display {
     width: 100%;
     padding: 0.6rem 0.9rem;
     border: 1px solid var(--border);
@@ -1026,8 +1026,8 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     justify-content: space-between;
     gap: 0.5rem;
 }
-.cat-dropdown-display::after { content: '▼'; font-size: 0.6rem; color: var(--text-light); flex-shrink: 0; }
-.cat-dropdown-panel {
+.bv-dropdown-display::after { content: '▼'; font-size: 0.6rem; color: var(--text-light); flex-shrink: 0; }
+.bv-dropdown-panel {
     display: none;
     position: absolute;
     top: calc(100% + 4px);
@@ -1041,8 +1041,8 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     overflow: hidden;
     flex-direction: column;
 }
-.cat-dropdown-panel.aberto { display: flex; }
-.cat-dropdown-search {
+.bv-dropdown-panel.aberto { display: flex; }
+.bv-dropdown-search {
     padding: 0.5rem 0.75rem;
     border: none;
     border-bottom: 1px solid var(--border);
@@ -1052,11 +1052,11 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     outline: none;
     flex-shrink: 0;
 }
-.cat-dropdown-list {
+.bv-dropdown-list {
     overflow-y: auto;
     flex: 1;
 }
-.cat-dropdown-item {
+.bv-dropdown-item {
     padding: 0.55rem 0.75rem;
     cursor: pointer;
     font-size: 0.85rem;
@@ -1064,7 +1064,7 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     border-bottom: 1px solid var(--border);
     transition: background 0.1s;
 }
-.cat-dropdown-item:last-child { border-bottom: none; }
-.cat-dropdown-item:hover { background: var(--bg); }
-.cat-dropdown-item.selecionado { background: var(--primary); color: #fff; font-weight: 700; }
+.bv-dropdown-item:last-child { border-bottom: none; }
+.bv-dropdown-item:hover { background: var(--bg); }
+.bv-dropdown-item.selecionado { background: var(--primary); color: #fff; font-weight: 700; }
 
