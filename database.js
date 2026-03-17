@@ -24,28 +24,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // ============================================================================
 // CONSTANTES E CONFIGURAÇÕES
 // ============================================================================
-const CATEGORIAS_FIXAS = [
-    "EDUCAÇÃO INCLUSIVA",
-    "INFANTIL (1º AO 4º)",
-    "INFANTOJUVENIL (5º E 6º)",
-    "JUVENIL (7º AO 9º)",
-    "JOVEM ADULTO (10º AO 12º)",
-    "DIDÁTICO (1º)",
-    "DIDÁTICO (2º)",
-    "DIDÁTICO (3º)",
-    "DIDÁTICO (4º)",
-    "DIDÁTICO (5º)",
-    "DIDÁTICO (6º)",
-    "DIDÁTICO (7º)",
-    "DIDÁTICO (8º)",
-    "DIDÁTICO (9º)",
-    "DIDÁTICO (10º)",
-    "DIDÁTICO (11º)",
-    "DIDÁTICO (12º)",
-    "DE REFERÊNCIA",
-    "CLÁSSICOS & REGIONAIS",
-    "POESIA"
-];
+
 
 // ============================================================================
 // UTILITÁRIOS
@@ -74,7 +53,6 @@ const padronizarObjeto = (obj) => {
 // OBJETO DB - Funções para gerenciar livros, empréstimos e autenticação
 // ============================================================================
 const DB = {
-    CATEGORIAS: CATEGORIAS_FIXAS,
     supabase: supabase,
 
     // ========================================================================
@@ -128,7 +106,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, editora, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro, alt_text")
+                .select("id, titulo, autor, editora, isbn, prateleira, quantidade_total, quantidade_disponivel, sinopse, acabamento, pub_independente, colaboradores, data_cadastro, alt_text")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {

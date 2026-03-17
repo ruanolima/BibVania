@@ -76,7 +76,7 @@
     <a href="#conteudo-admin" class="skip-link">Ir para o conteúdo principal</a>
 
     <div class="accessibility-bar" role="toolbar" aria-label="Barra de acessibilidade">
-        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="flex-grow:1; text-align:left;" aria-label="Abrir repositório no GitHub">📁 Repositório</button>
+        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="width:auto;padding:0 0.75rem;text-align:left;margin-right:auto;" aria-label="Abrir repositório no GitHub">📁 Repositório</button>
         <button class="control-btn" onclick="changeFontSize(1)" aria-label="Aumentar tamanho da fonte">A+</button>
         <button class="control-btn" onclick="changeFontSize(-1)" aria-label="Diminuir tamanho da fonte">A-</button>
         <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn" aria-label="Alternar modo escuro" aria-pressed="false">🌙</button>
@@ -127,8 +127,7 @@
                         </label>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
-                        <div class="form-group" style="margin-bottom:0;"><label>CATEGORIA *</label><select id="categoria" required></select></div>
-                        <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
+<div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
                     </div>
                     <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="quantidade" min="1" required></div>
                     <div class="form-group full-width"><label>SINOPSE (OPCIONAL)</label><textarea id="sinopse" rows="3"></textarea></div>
@@ -143,7 +142,7 @@
                             <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center; flex:1;">
                                 <div id="capaBtns">
                                     <button type="button" class="btn-block btn-outline"
-                                        onclick="document.getElementById('capaInput').click()" aria-label="Escolher imagem para a capa do livro">📷 ESCOLHER IMAGEM</button>
+                                        onclick="abrirSeletorCapa('capaInput','capaPreview','capaBtns','capaPreviewLabel',false)" aria-label="Escolher imagem para a capa do livro">📷 ESCOLHER IMAGEM</button>
                                     <input type="file" id="capaInput" accept="image/*" style="display:none;"
                                         aria-label="Selecionar arquivo de imagem para capa"
                                         onchange="preVisualizarCapa(this,'capaPreview','capaBtns','capaPreviewLabel',false)">
@@ -238,8 +237,6 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-top:0.5rem;">
-                    <label>CATEGORIA</label>
-                    <div id="catDropAdmin"></div>
                 </div>
             </div>
 
@@ -277,8 +274,7 @@
                     </label>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
-                    <div class="form-group" style="margin-bottom:0;"><label>CATEGORIA *</label><select id="editCategoria" required></select></div>
-                    <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
+<div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;"  placeholder="Ex: C3/C4" title="Uma letra + número por prateleira, separados por / (ex: C3 ou C3/C4 ou F3/F4/F6)" required oninput="validarPrateleira(this)"></div>
                 </div>
                 <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="editQtd" required></div>
                 <div class="form-group"><label>SINOPSE</label><textarea id="editSinopse" rows="3"></textarea></div>
@@ -499,10 +495,9 @@
 
     <script type="module">
         import DB from './database.js';
-        import { iniciarBuscaVoz, criarDropdownCategoria } from './bibvania-utils.js';
+        import { iniciarBuscaVoz } from './bibvania-utils.js';
         window.DB = DB;
 
-        let currentCat = 'TODOS';
         let todosLivros = [];
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
 
@@ -536,18 +531,14 @@
             document.getElementById('darkModeBtn').innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
 
-            const cats = window.DB.CATEGORIAS;
-            // Criar dropdown de categorias com busca
-            if (!document.getElementById('catDropAdmin')?._setValor) {
-                criarDropdownCategoria('catDropAdmin', cats, setCat);
-            }
-            const options = '<option value="">SELECIONE</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('categoria').innerHTML = options;
-            document.getElementById('editCategoria').innerHTML = options;
 
 
             window.DB.onLivrosChange(() => load());
-            window.DB.onEmprestimosChange(() => { load(); if (document.getElementById("tab-listapessoas")?.classList.contains("active")) carregarListaPessoas(); });
+            window.DB.onEmprestimosChange(() => {
+                empsComLivroCache = []; // invalidar — será re-buscado com join ao abrir Devoluções
+                load();
+                if (document.getElementById("tab-listapessoas")?.classList.contains("active")) carregarListaPessoas();
+            });
             // Mostrar "carregando" apenas no primeiro load
             document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);" role="status">CARREGANDO...</p>';
             // Busca por voz no acervo
@@ -620,14 +611,6 @@
         };
 
         let _renderTimer = null;
-        window.setCat = (c) => {
-            currentCat = c;
-            const w = document.getElementById('catDropAdmin');
-            if (w && w._setValor) w._setValor(c);
-            _renderToken++;
-            clearTimeout(_renderTimer);
-            renderAcervo();
-        };
 
         // Cache local — evita chamadas desnecessárias ao Supabase na busca/filtro
         let idsAtrasadosCache = [];
@@ -642,10 +625,14 @@
         async function load() {
             let livros, empsComLivro;
             try {
-                [livros, empsComLivro] = await Promise.all([
+                const [_livros, _emps, _idsCapas] = await Promise.all([
                     window.DB.getLivros(),
-                    window.DB.getEmprestimosAtivosComLivro()
+                    window.DB.getEmprestimosAtivos(),   // sem join — rápido
+                    _idsComCapaCache ? Promise.resolve(null) : window.DB.getIdsComCapa()
                 ]);
+                livros = _livros;
+                empsComLivro = _emps;
+                if (_idsCapas) _idsComCapaCache = _idsCapas;
             } catch(err) {
                 document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">📶 Internet instável? Recarregue a página.</p>';
                 return;
@@ -665,7 +652,9 @@
                 if (!empsAtivosCache[e.livro_id]) empsAtivosCache[e.livro_id] = [];
                 empsAtivosCache[e.livro_id].push(e);
             });
-            empsComLivroCache = empsComLivro;
+            // empsComLivroCache requer join com livros — só buscar ao abrir aba Devoluções
+            // (não desperdiçar tempo no load() principal)
+            empsComLivroCache = []; // será populado em carregarDevolucoes()
 
             // Atualizar cache por nome (para accordion da lista de pessoas)
             empsAtivosNomeCache = {};
@@ -684,9 +673,9 @@
                 requestAnimationFrame(() => window.scrollTo({ top: _scrollProtegido, behavior: 'instant' }));
             }
 
-            // Se a aba de devoluções estiver visível, atualiza ela também
+            // Se a aba de devoluções estiver visível, recarregar com join
             if (document.getElementById('tab-devolucoes').classList.contains('active')) {
-                renderDevolucoes();
+                carregarDevolucoes();
             }
         }
 
@@ -705,7 +694,6 @@
             const termo = normalizar(document.getElementById('buscaAdmin').value);
 
             let filtrados = todosLivros;
-            if (currentCat !== 'TODOS') filtrados = filtrados.filter(l => l.categoria === currentCat);
             if (termo) filtrados = filtrados.filter(l =>
                 normalizar(l.titulo).includes(termo) ||
                 (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
@@ -732,54 +720,56 @@
                 return;
             }
 
-            ++_renderToken;
+            const token = ++_renderToken;
             _renderEmAndamento = true;
 
-            // Render imediato — sem capas base64 no HTML, zero travamento
+            // ── Passo 1: resolver IDs + buscar 1º lote de capas ANTES de mostrar cards ──
+            const LOTE_EST = Math.max(3, Math.ceil((window.innerHeight - 48) / 130));
+            const pendentes = naoAtrasados.filter(l => !l._capaResolvida);
+            if (pendentes.length) {
+                if (!_idsComCapaCache) {
+                    try { _idsComCapaCache = await window.DB.getIdsComCapa(); }
+                    catch(e) { _idsComCapaCache = new Set(); }
+                }
+                if (token !== _renderToken) { _renderEmAndamento = false; return; }
+                pendentes.forEach(l => {
+                    if (!_idsComCapaCache.has(l.id)) { l._capaResolvida = 'sem'; l.imagem_url = null; }
+                });
+                const primeirosComCapa = pendentes.filter(l => !l._capaResolvida).slice(0, LOTE_EST);
+                if (primeirosComCapa.length) {
+                    try {
+                        const mapa = await window.DB.getCapas(primeirosComCapa.map(l => l.id));
+                        if (token !== _renderToken) { _renderEmAndamento = false; return; }
+                        primeirosComCapa.forEach(l => {
+                            l.imagem_url = mapa[l.id] || null;
+                            l._capaResolvida = mapa[l.id] ? 'tem' : 'sem';
+                        });
+                    } catch(e) { primeirosComCapa.forEach(l => { l._capaResolvida = 'sem'; }); }
+                }
+            }
+            if (token !== _renderToken) { _renderEmAndamento = false; return; }
+
+            // ── Passo 2: renderizar — 1º lote já tem capas resolvidas ──
             lista.innerHTML = naoAtrasados.map(l => renderLivro(l, false)).join('');
             if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
             _jaCarregouUmaVez = true;
             _renderEmAndamento = false;
 
-            // Buscar capas em background, sequencialmente, injetando no DOM sem re-render
-            _buscarCapasSequencialAdmin(naoAtrasados);
+            // ── Passo 3: capas restantes em background ──
+            _buscarCapasRestantesAdmin(naoAtrasados, token);
         }
 
         let _capaTokenAdmin = 0;
-        async function _buscarCapasSequencialAdmin(livros) {
+        async function _buscarCapasRestantesAdmin(livros, renderToken) {
             const capaToken = ++_capaTokenAdmin;
-            const pendentes = livros.filter(l => !l._capaResolvida);
-            if (!pendentes.length) return;
-
-            // Passo 1: 1 query leve para saber quais têm capa (sem base64)
-            if (!_idsComCapaCache) {
-                try { _idsComCapaCache = await window.DB.getIdsComCapa(); }
-                catch(e) { _idsComCapaCache = new Set(); }
-            }
-            if (capaToken !== _capaTokenAdmin) return;
-
-            // Marcar sem-capa instantaneamente
-            const comCapa = [];
-            pendentes.forEach(l => {
-                if (_idsComCapaCache.has(l.id)) {
-                    comCapa.push(l);
-                } else {
-                    l._capaResolvida = 'sem';
-                    const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
-                    if (wrap) {
-                        wrap.classList.add('sem-capa', 'capa-carregada');
-                        const lbl = wrap.querySelector('.book-cover-label');
-                        if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
-                    }
-                }
-            });
-
+            const comCapa = livros.filter(l => !l._capaResolvida);
             if (!comCapa.length) return;
 
-            // Passo 2: buscar base64 em lotes de 5
-            const LOTE = 5;
+            const primeiro = document.querySelector('#listaAdmin .book-item');
+            const alturaCard = primeiro ? primeiro.getBoundingClientRect().height + 8 : 130;
+            const LOTE = Math.max(3, Math.ceil((window.innerHeight - 48) / alturaCard));
             for (let i = 0; i < comCapa.length; i += LOTE) {
-                if (capaToken !== _capaTokenAdmin) return;
+                if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
                 const lote = comCapa.slice(i, i + LOTE);
                 try {
                     const mapa = await window.DB.getCapas(lote.map(l => l.id));
@@ -839,7 +829,7 @@
                                 ${l.editora ? `<div class="book-meta-item"><strong>EDITORA:</strong> ${l.editora}</div>` : (l.pub_independente ? `<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>` : '')}
                                 <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
                                 ${l.acabamento ? `<div class="book-meta-item"><strong>ACABAMENTO:</strong> ${l.acabamento}</div>` : ''}
-                                <div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}${l.prateleira ? ' | ' + l.prateleira : ''}</div>
+                                ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
                                 ${l.sinopse ? `<div class="book-meta-item" style="margin-top:0.5rem; color:var(--text); font-size:0.75rem; background:var(--bg); padding:0.5rem; border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>` : ''}
                             </div>
                             <div class="book-status-row">
@@ -956,7 +946,6 @@
             document.getElementById('editAcabamento').value = l.acabamento || '';
             document.getElementById('editTitulo').value = l.titulo;
             document.getElementById('editAutor').value = l.autor || '';
-            document.getElementById('editCategoria').value = l.categoria;
             document.getElementById('editQtd').value = l.quantidade_total;
             document.getElementById('editSinopse').value = l.sinopse || '';
             document.getElementById('editEditora').value = l.editora || '';
@@ -1023,7 +1012,6 @@
                 editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
                 pub_independente: document.getElementById('editPubIndependente').checked,
                 prateleira: document.getElementById('editPrateleira').value,
-                categoria: document.getElementById('editCategoria').value,
                 quantidade_total: parseInt(document.getElementById('editQtd').value),
                 sinopse: document.getElementById('editSinopse').value,
                 alt_text: document.getElementById('editCapaAltText')?.value?.trim() || null
@@ -1231,6 +1219,8 @@
         
         window.adicionarQuantidadeExistente = async () => {
             if (!window.livroEmDuplicidade) return;
+            const btnSomar = document.querySelector('#modalDuplicidade .btn-success');
+            if (btnSomar) { btnSomar.textContent = 'SALVANDO...'; btnSomar.disabled = true; }
             try {
                 const novaQuantidadeTotal = parseInt(window.livroEmDuplicidade.quantidade_total) + parseInt(document.getElementById('quantidade').value);
                 const novaQuantidadeDisponivel = parseInt(window.livroEmDuplicidade.quantidade_disponivel) + parseInt(document.getElementById('quantidade').value);
@@ -1240,7 +1230,6 @@
                     isbn: document.getElementById('isbn').value || window.livroEmDuplicidade.isbn,
                     titulo: window.livroEmDuplicidade.titulo,
                     autor: document.getElementById('autor').value || window.livroEmDuplicidade.autor,
-                    categoria: window.livroEmDuplicidade.categoria,
                     quantidade_total: novaQuantidadeTotal,
                     sinopse: document.getElementById('sinopse').value || window.livroEmDuplicidade.sinopse
                 });
@@ -1250,7 +1239,8 @@
                 closeModalDuplicidade();
                 load();
             } catch(err) {
-                window.mostrarMsg('msgLivro', '❌ ERRO AO ADICIONAR QUANTIDADE', 'danger');
+                if (btnSomar) { btnSomar.textContent = 'SOMAR QUANTIDADE'; btnSomar.disabled = false; }
+                window.mostrarMsg('msgLivro', '❌ ERRO AO ADICIONAR QUANTIDADE: ' + (err.message || err), 'danger');
             }
         };
         
@@ -1268,10 +1258,13 @@
                     window.livroEmDuplicidade = livroExistente;
                     document.getElementById('infoDuplicidade').innerHTML = `
                         <strong>ID:</strong> ${livroExistente.id}<br>
-                        <strong>TITULO:</strong> ${livroExistente.titulo}<br>
+                        <strong>TÍTULO:</strong> ${livroExistente.titulo}<br>
                         <strong>AUTOR:</strong> ${livroExistente.autor || 'N/A'}<br>
-                        <strong>QUANTIDADE ATUAL:</strong> ${livroExistente.quantidade_total} exemplares<br>
-                        <strong>DISPONIVEIS:</strong> ${livroExistente.quantidade_disponivel}
+                        <strong>ISBN:</strong> ${livroExistente.isbn || 'N/A'}<br>
+                        <strong>PRATELEIRA:</strong> ${livroExistente.prateleira || 'N/A'}<br>
+                        <strong>EDITORA:</strong> ${livroExistente.editora || (livroExistente.pub_independente ? 'PUBLICAÇÃO INDEPENDENTE' : 'N/A')}<br>
+                        <strong>QUANTIDADE ATUAL:</strong> ${livroExistente.quantidade_total} EXEMPLARES<br>
+                        <strong>DISPONÍVEIS:</strong> ${livroExistente.quantidade_disponivel}
                     `;
                     document.getElementById('modalDuplicidade').classList.remove('hidden');
                     return;
@@ -1286,7 +1279,6 @@
                     editora: document.getElementById('pubIndependente').checked ? '' : document.getElementById('editora').value,
                     pub_independente: document.getElementById('pubIndependente').checked,
                     prateleira: document.getElementById('prateleira').value,
-                    categoria: document.getElementById('categoria').value,
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
                     sinopse: document.getElementById('sinopse').value,
                     alt_text: document.getElementById('capaAltText')?.value?.trim() || ''
@@ -1304,10 +1296,12 @@
                     }
                 }
                 window._capaBase64 = null;
-                // Reset preview capa
-                const capaImg = document.getElementById('capaPreview');
-                capaImg.src = ''; capaImg.style.display = 'none'; capaImg.className = 'cover-img';
+                // Reset COMPLETO da capa — evita capa do livro anterior aparecer no próximo cadastro
                 window.removerCapa('cadastro','capaPreview','capaBtns','capaInput');
+                document.getElementById('altTextGroup').style.display = 'none';
+                document.getElementById('capaAltText').value = '';
+                // Invalidar cache de IDs com capa para que novo livro apareça corretamente
+                _idsComCapaCache = null;
                 btnLivro.textContent = lblLivro; btnLivro.disabled = false;
                 window.mostrarMsg('msgLivro', resultado.action === 'updated' ? '✓ QUANTIDADE E DADOS ATUALIZADOS!' : '✓ CADASTRADO!', 'success');
                 e.target.reset();
@@ -1471,9 +1465,11 @@
             await carregarPessoas();
             // Usar empsComLivroCache (já populado por load()) para ter o título do livro
             // Se o cache ainda estiver vazio, buscar com join
-            const emps = empsComLivroCache.length
-                ? empsComLivroCache
-                : await window.DB.getEmprestimosAtivosComLivro().catch(() => []);
+            // Usar cache com join se disponível, senão buscar
+            if (!empsComLivroCache.length) {
+                try { empsComLivroCache = await window.DB.getEmprestimosAtivosComLivro(); } catch(e) {}
+            }
+            const emps = empsComLivroCache;
             empsAtivosNomeCache = {};
             (emps || []).forEach(e => {
                 const key = (e.nome_aluno || '').toUpperCase();
@@ -1907,7 +1903,13 @@
         }
 
         // carregarDevolucoes(): mantido por compatibilidade — renderiza do cache e atualiza em segundo plano
-        window.carregarDevolucoes = () => {
+        window.carregarDevolucoes = async () => {
+            if (!empsComLivroCache.length) {
+                // Buscar com join só quando a aba for aberta pela primeira vez
+                try {
+                    empsComLivroCache = await window.DB.getEmprestimosAtivosComLivro();
+                } catch(e) { console.warn('Erro ao carregar devoluções:', e); }
+            }
             renderDevolucoes();
         };
 
@@ -1953,7 +1955,7 @@
                         <div style="${separador}">
                             <div style="margin-bottom:0.3rem;"><strong>LIVRO ${emprestimos.length > 1 ? idx+1 + ':' : ':'}</strong> ${livro.titulo || '—'}</div>
                             <div style="margin-bottom:0.3rem;"><strong>AUTOR:</strong> ${livro.autor || 'NÃO INFORMADO'}</div>
-                            <div style="margin-bottom:0.3rem;"><strong>CATEGORIA:</strong> ${livro.categoria || '—'}${livro.prateleira ? ' | ' + livro.prateleira : ''}</div>
+                            ${livro.prateleira ? `<div style="margin-bottom:0.3rem;"><strong>PRATELEIRA:</strong> ${livro.prateleira}</div>` : ''}
                             <div style="margin-bottom:0.3rem;"><strong>EMPRÉSTIMO:</strong> ${new Date(e.data_emprestimo).toLocaleDateString('pt-BR')}</div>
                             <div style="margin-bottom:0.75rem;"><strong>DEVOLUÇÃO:</strong> ${e.sem_data_definida ? 'SEM DATA' : (dataPrev ? dataPrev.toLocaleDateString('pt-BR') : '—')}</div>
                             <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
@@ -2123,6 +2125,42 @@
     // CAPA DO LIVRO — PRÉ-VISUALIZAÇÃO E UPLOAD
     // =====================================================================
 
+    // Abre seletor de origem da imagem (câmera ou galeria) — em desktop abre direto
+    window.abrirSeletorCapa = (inputId, imgId, btnsId, labelId, isEdit) => {
+        // Em desktop ou se o browser não suportar capture, abre direto
+        const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+        if (!isMobile) { document.getElementById(inputId).click(); return; }
+        // Criar modal de escolha
+        const existing = document.getElementById('_modalOrigemCapa');
+        if (existing) existing.remove();
+        const m = document.createElement('div');
+        m.id = '_modalOrigemCapa';
+        m.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;';
+        m.innerHTML = `
+            <div style="background:var(--card);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:480px;display:flex;flex-direction:column;gap:0.75rem;">
+                <p style="font-weight:700;text-align:center;margin-bottom:0.25rem;">ESCOLHER IMAGEM</p>
+                <button id="_btnCamara" class="btn-block btn-primary">📸 CÂMERA</button>
+                <button id="_btnGaleria" class="btn-block btn-outline">🖼️ GALERIA</button>
+                <button class="btn-block btn-outline" onclick="document.getElementById('_modalOrigemCapa').remove()">CANCELAR</button>
+            </div>`;
+        document.body.appendChild(m);
+        // Criar inputs separados com e sem capture
+        const mkInput = (capture) => {
+            const inp = document.createElement('input');
+            inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+            if (capture) inp.setAttribute('capture', 'environment');
+            inp.onchange = () => { preVisualizarCapa(inp, imgId, btnsId, labelId, isEdit); m.remove(); };
+            document.body.appendChild(inp);
+            return inp;
+        };
+        document.getElementById('_btnCamara').onclick = () => { m.remove(); mkInput(true).click(); };
+        document.getElementById('_btnGaleria').onclick = () => { m.remove(); mkInput(false).click(); };
+        m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+    };
+
+    // Atualizar renderBotoesCapa para também usar abrirSeletorCapa no botão TROCAR
+    const _origRenderBotoesCapa = window.renderBotoesCapa;
+
     // Base64 da capa selecionada no cadastro
     window._capaBase64 = null;
     // Base64 e flags para edição
@@ -2224,7 +2262,7 @@
         const imgId   = modo === 'edit' ? 'editCapaPreview' : 'capaPreview';
         document.getElementById(btnsId).innerHTML = `
             <button type="button" class="btn-block btn-outline" style="margin-bottom:0.4rem;"
-                onclick="document.getElementById('${inputId}').click()">🔄 TROCAR</button>
+                onclick="abrirSeletorCapa('${inputId}','${imgId}','${btnsId}','${modo === \'edit\' ? \'editCapaLabel\' : \'capaPreviewLabel\'}',${modo === 'edit'})">🔄 TROCAR</button>
             <button type="button" class="btn-block btn-danger"
                 onclick="removerCapa('${modo}','${imgId}','${btnsId}','${inputId}')">🗑️ EXCLUIR</button>
             <input type="file" id="${inputId}" accept="image/*" style="display:none;"

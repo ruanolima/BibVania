@@ -56,7 +56,9 @@
             height: 8px;
             border-radius: 50%;
             background: #2563eb;
+            opacity: 0.4;
             animation: _bv-bounce 1.2s ease-in-out infinite;
+            animation-fill-mode: both;
         }
         #_bv-transition-dots span:nth-child(2) { animation-delay: 0.2s; }
         #_bv-transition-dots span:nth-child(3) { animation-delay: 0.4s; }
