@@ -432,6 +432,22 @@ const DB = {
         }
     },
 
+    // Histórico completo de uma pessoa (ativos + devolvidos) com título do livro
+    async getHistoricoPessoa(nomeAluno) {
+        try {
+            const { data, error } = await supabase
+                .from("emprestimos")
+                .select("id, livro_id, status, data_emprestimo, data_devolucao, livros(titulo)")
+                .ilike("nome_aluno", nomeAluno)
+                .order("data_emprestimo", { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error("Erro ao buscar histórico:", error);
+            return [];
+        }
+    },
+
     // Busca empréstimos ativos com dados do livro (join via FK)
     async getEmprestimosAtivosComLivro() {
         try {

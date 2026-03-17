@@ -1571,68 +1571,77 @@
                 ? (p.sexo === 'M' ? 'Funcionário' : 'Funcionária')
                 : (p.sexo === 'M' ? 'Aluno' : 'Aluna');
             const extra = p.tipo === 'aluno' ? ` — ${p.ano_aluno}º ${p.turma_aluno}` : '';
-            const emps = empsAtivosNomeCache[p.nome.toUpperCase()] || [];
-            const totalEmps = emps.length;
-            const temAtrasado = emps.some(e => e.atrasado);
-
-            // Badge de empréstimos ativos
-            const badgeEmp = totalEmps > 0
-                ? `<span style="background:${temAtrasado ? 'var(--danger)' : 'var(--primary)'};color:#fff;border-radius:12px;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:700;margin-left:0.35rem;">${totalEmps} ${totalEmps === 1 ? 'LIVRO' : 'LIVROS'}</span>`
-                : '';
-
-            // Lista de empréstimos para o accordion
-            const empsHtml = totalEmps === 0
-                ? `<p style="font-size:0.75rem;color:var(--text-light);padding:0.5rem 0;">SEM EMPRÉSTIMOS ATIVOS.</p>`
-                : emps.map(e => {
-                    const titulo = e.livros?.titulo || `LIVRO #${e.livro_id}`;
-                    const devolucao = e.sem_data_definida
-                        ? 'SEM DATA DEFINIDA'
-                        : e.data_prevista_devolucao
-                            ? new Date(e.data_prevista_devolucao).toLocaleDateString('pt-BR')
-                            : '—';
-                    return `<div style="padding:0.45rem 0.6rem;border-radius:6px;background:var(--bg);margin-bottom:0.3rem;font-size:0.72rem;border:1px solid ${e.atrasado ? 'var(--danger)' : 'var(--border)'};">
-                        <strong>${titulo}</strong>
-                        <div style="color:var(--text-light);margin-top:0.15rem;">
-                            DEVOLUÇÃO: <span style="color:${e.atrasado ? 'var(--danger)' : 'inherit'};font-weight:${e.atrasado ? '700' : '400'};">${devolucao}${e.atrasado ? ' ⚠️ ATRASADO' : ''}</span>
-                        </div>
-                    </div>`;
-                }).join('');
-
             const uid = `pemp-${p.id}`;
+            const nomeEsc = p.nome.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.3rem;background:var(--card);overflow:hidden;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;gap:0.5rem;">
-                    <!-- Botão accordion (nome + badge) -->
-                    <button onclick="togglePessoaAccordion('${uid}')" style="background:none;border:none;cursor:pointer;flex:1;text-align:left;padding:0;display:flex;align-items:center;gap:0.3rem;min-width:0;" aria-expanded="false" aria-controls="${uid}">
+                    <button onclick="togglePessoaAccordion('${uid}','${nomeEsc}')"
+                        style="background:none;border:none;cursor:pointer;flex:1;text-align:left;padding:0;display:flex;align-items:center;gap:0.3rem;min-width:0;"
+                        aria-expanded="false" aria-controls="${uid}">
                         <span style="font-size:0.75rem;color:var(--text-light);transition:transform .2s;" id="${uid}-arrow">▶</span>
                         <span style="font-size:0.8rem;flex:1;min-width:0;">
                             <strong>${p.nome}</strong>
                             <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span>
-                            ${badgeEmp}
+                            <span id="${uid}-badge"></span>
                         </span>
                     </button>
-                    <!-- Botões de ação -->
                     <div style="display:flex;gap:0.35rem;flex-shrink:0;">
                         <button onclick="abrirEditPessoa(${p.id})" class="btn-small btn-primary" style="font-size:0.7rem;">EDITAR</button>
                         <button onclick="excluirPessoa(${p.id})" class="btn-small btn-danger" style="font-size:0.7rem;">EXCLUIR</button>
                     </div>
                 </div>
-                <!-- Painel retrátil de empréstimos -->
                 <div id="${uid}" style="display:none;padding:0 0.75rem 0.6rem;border-top:1px solid var(--border);">
-                    <div style="font-size:0.7rem;font-weight:700;color:var(--text-light);padding:0.4rem 0 0.3rem;letter-spacing:0.04em;">EMPRÉSTIMOS ATIVOS</div>
-                    ${empsHtml}
+                    <p id="${uid}-loading" style="font-size:0.75rem;color:var(--text-light);padding:0.4rem 0;">CARREGANDO...</p>
                 </div>
             </div>`;
         }
 
-        window.togglePessoaAccordion = (uid) => {
+        window.togglePessoaAccordion = async (uid, nome) => {
             const painel = document.getElementById(uid);
             const arrow = document.getElementById(uid + '-arrow');
             const btn = arrow?.closest('button');
             if (!painel) return;
+
             const aberto = painel.style.display === 'none' || painel.style.display === '';
             painel.style.display = aberto ? 'block' : 'none';
             if (arrow) arrow.style.transform = aberto ? 'rotate(90deg)' : '';
             if (btn) btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+
+            // Buscar histórico só na primeira abertura
+            if (!aberto || painel.dataset.carregado) return;
+            painel.dataset.carregado = '1';
+
+            const historico = await window.DB.getHistoricoPessoa(nome);
+            const badge = document.getElementById(uid + '-badge');
+            const loading = document.getElementById(uid + '-loading');
+            const total = historico.length;
+
+            if (badge && total > 0) {
+                badge.innerHTML = `<span style="background:var(--primary);color:#fff;border-radius:12px;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:700;margin-left:0.35rem;">${total} ${total === 1 ? 'LIVRO' : 'LIVROS'}</span>`;
+            }
+
+            if (!total) {
+                if (loading) loading.textContent = 'NENHUM EMPRÉSTIMO REGISTRADO.';
+                return;
+            }
+            if (loading) loading.remove();
+
+            const html = historico.map(e => {
+                const titulo = e.livros?.titulo || `LIVRO #${e.livro_id}`;
+                const dataEmp = e.data_emprestimo ? new Date(e.data_emprestimo).toLocaleDateString('pt-BR') : '—';
+                const dataDev = e.data_devolucao ? new Date(e.data_devolucao).toLocaleDateString('pt-BR') : null;
+                return `<div style="padding:0.45rem 0.6rem;border-radius:6px;background:var(--bg);margin-bottom:0.3rem;font-size:0.72rem;border:1px solid var(--border);">
+                    <strong>${titulo}</strong>
+                    <div style="color:var(--text-light);margin-top:0.15rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+                        <span>RETIRADA: ${dataEmp}</span>
+                        ${dataDev
+                            ? `<span>DEVOLVIDO: ${dataDev}</span>`
+                            : `<span style="color:var(--primary);font-weight:700;">EM MÃO</span>`}
+                    </div>
+                </div>`;
+            }).join('');
+
+            painel.insertAdjacentHTML('beforeend', html);
         };
 
         window.excluirPessoa = async (id) => {
