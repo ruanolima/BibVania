@@ -248,7 +248,7 @@
                         <div class="book-title">${isAtrasado?'<span aria-hidden="true">⚠️ </span>':''}${l.titulo}</div>
                         <div class="book-meta-box">
                             <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor||'NÃO INFORMADO'}</div>
-                            ${l.pub_independente?`<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>`:''}
+
                             <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn||'N/A'}</div>
                             ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
                             ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="filtrarPorTag('${p}')">#${p}</span>`).join(' ')}</div>` : ''}

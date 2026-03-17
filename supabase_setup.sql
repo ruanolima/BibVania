@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS livros (
     imagem_url TEXT,
     titulo TEXT NOT NULL,
     autor TEXT,
-    pub_independente BOOLEAN DEFAULT FALSE,
     prateleira TEXT,
     palavras_chave TEXT[] DEFAULT '{}',
     alt_text TEXT,
@@ -97,7 +96,6 @@ FOR EACH ROW EXECUTE FUNCTION recalcular_disponivel();
 -- 6. COLUNAS ADICIONAIS
 -- Seguro executar mesmo se o banco já existia — IF NOT EXISTS evita erros.
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS pub_independente BOOLEAN DEFAULT FALSE;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS alt_text TEXT;
 

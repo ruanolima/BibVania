@@ -100,7 +100,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, isbn, prateleira, quantidade_total, quantidade_disponivel, pub_independente, palavras_chave, data_cadastro, alt_text")
+                .select("id, titulo, autor, isbn, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
@@ -190,7 +190,6 @@ const DB = {
                         autor: livro.autor || existente.autor,
                         isbn: livro.isbn || existente.isbn,
                         prateleira: livro.prateleira || existente.prateleira,
-                        pub_independente: livro.pub_independente ?? existente.pub_independente,
                         palavras_chave: livro.palavras_chave?.length ? livro.palavras_chave : existente.palavras_chave,
                         alt_text: livro.alt_text || existente.alt_text,
                     })

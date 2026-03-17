@@ -110,20 +110,14 @@
                 <form id="formLivro">
                     <div class="form-group"><label>TÍTULO DO LIVRO *</label><input type="text" id="titulo" required></div>
                     <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="isbn"></div>
-                    <div class="form-group"><label>AUTOR (OPCIONAL)</label><input type="text" id="autor"></div>
-                    <div class="form-group">
-                        <label class="checkbox-container" id="labelPubIndependente" style="margin-top:0.25rem;">
-                            <input type="checkbox" id="pubIndependente">
-                            PUBLICAÇÃO INDEPENDENTE
-                        </label>
-                    </div>
+                    <div class="form-group"><label>AUTOR *</label><input type="text" id="autor" required></div>
                     <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
                         <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;" placeholder="Ex: C3/C4" required oninput="validarPrateleira(this)"></div>
                     </div>
                     <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="quantidade" min="1" required></div>
                     <div class="form-group full-width">
-                        <label for="palavrasChave">PALAVRAS-CHAVE (OPCIONAL)</label>
-                        <input type="text" id="palavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off">
+                        <label for="palavrasChave">PALAVRAS-CHAVE *</label>
+                        <input type="text" id="palavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off" required>
                         <small style="color:var(--text-light);font-size:0.7rem;">Separe por vírgula. Use #palavra-chave na busca.</small>
                     </div>
                     <!-- CAPA DO LIVRO -->
@@ -251,21 +245,15 @@
             <form id="formEdit">
                 <input type="hidden" id="editId">
                 <div class="form-group"><label>TÍTULO *</label><input type="text" id="editTitulo" required></div>
-                <div class="form-group"><label>ISBN</label><input type="text" id="editIsbn"></div>
-                <div class="form-group"><label>AUTOR</label><input type="text" id="editAutor"></div>
-                <div class="form-group">
-                    <label class="checkbox-container" id="labelEditPubIndependente" style="margin-top:0.25rem;">
-                        <input type="checkbox" id="editPubIndependente">
-                        PUBLICAÇÃO INDEPENDENTE
-                    </label>
-                </div>
+                <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="editIsbn"></div>
+                <div class="form-group"><label>AUTOR *</label><input type="text" id="editAutor" required></div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
                     <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;" placeholder="Ex: C3/C4" required oninput="validarPrateleira(this)"></div>
                 </div>
                 <div class="form-group"><label>QUANTIDADE TOTAL *</label><input type="number" id="editQtd" required></div>
                 <div class="form-group full-width">
-                    <label for="editPalavrasChave">PALAVRAS-CHAVE (OPCIONAL)</label>
-                    <input type="text" id="editPalavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off">
+                    <label for="editPalavrasChave">PALAVRAS-CHAVE *</label>
+                    <input type="text" id="editPalavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off" required>
                     <small style="color:var(--text-light);font-size:0.7rem;">Separe por vírgula. Use #palavra-chave na busca.</small>
                 </div>
                 <!-- CAPA DO LIVRO - EDIÇÃO -->
@@ -820,7 +808,6 @@
                             <div class="book-title">${isAtr ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
                             <div class="book-meta-box">
                                 <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
-                                ${l.pub_independente ? '<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>' : ''}
                                 <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
                                 ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
                                 ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="filtrarPorTag('${p}',true)">#${p}</span>`).join(' ')}</div>` : ''}
@@ -946,10 +933,6 @@
             const editAltGroup = document.getElementById('editAltTextGroup');
             if (editAltTa) editAltTa.value = l.alt_text || '';
             if (editAltGroup) editAltGroup.style.display = l.alt_text || l.imagem_url ? 'block' : 'none';
-            const editPubCb = document.getElementById('editPubIndependente');
-            editPubCb.checked = !!l.pub_independente;
-            editPubCb.dispatchEvent(new Event('change'));
-            document.getElementById('labelEditPubIndependente').classList.toggle('checked', !!l.pub_independente);
             // Carregar colaboradores existentes
 
             // Capa no modal de edição
@@ -993,7 +976,6 @@
                 titulo: document.getElementById('editTitulo').value,
                 autor: document.getElementById('editAutor').value,
                 palavras_chave: document.getElementById('editPalavrasChave').value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean),
-                pub_independente: document.getElementById('editPubIndependente').checked,
                 prateleira: document.getElementById('editPrateleira').value,
                 quantidade_total: parseInt(document.getElementById('editQtd').value),
 
@@ -1245,7 +1227,6 @@
                         <strong>AUTOR:</strong> ${livroExistente.autor || 'N/A'}<br>
                         <strong>ISBN:</strong> ${livroExistente.isbn || 'N/A'}<br>
                         <strong>PRATELEIRA:</strong> ${livroExistente.prateleira || 'N/A'}<br>
-                        <strong>EDITORA:</strong> ${livroExistente.editora || (livroExistente.pub_independente ? 'PUBLICAÇÃO INDEPENDENTE' : 'N/A')}<br>
                         <strong>QUANTIDADE ATUAL:</strong> ${livroExistente.quantidade_total} EXEMPLARES<br>
                         <strong>DISPONÍVEIS:</strong> ${livroExistente.quantidade_disponivel}
                     `;
@@ -1257,7 +1238,6 @@
                     isbn: document.getElementById('isbn').value,
                     titulo: document.getElementById('titulo').value,
                     autor: document.getElementById('autor').value,
-                    pub_independente: document.getElementById('pubIndependente').checked,
                     prateleira: document.getElementById('prateleira').value,
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
                     palavras_chave: document.getElementById('palavrasChave').value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean),
@@ -1289,7 +1269,6 @@
                 document.getElementById('acabamento').value = '';
                 document.getElementById('prateleira').value = '';
                 document.getElementById('palavrasChave').value = '';
-                const piCb = document.getElementById('pubIndependente');
                 if (piCb.checked) { piCb.checked = false; piCb.dispatchEvent(new Event('change')); }
                 document.getElementById('labelPubIndependente').classList.remove('checked');
                 load();
@@ -2087,14 +2066,6 @@
     // =====================================================================
     // PUBLICAÇÃO INDEPENDENTE
     // =====================================================================
-    window.togglePubIndependente = (cb, editoraId) => {
-        const label = cb.closest('.checkbox-container');
-        label.classList.toggle('checked', cb.checked);
-        const input = document.getElementById(editoraId);
-        input.disabled = cb.checked;
-        input.style.opacity = cb.checked ? '0.4' : '1';
-        if (cb.checked) input.value = '';
-    };
 
     // =====================================================================
     // MENSAGENS TEMPORÁRIAS
