@@ -747,47 +747,46 @@
 
             if (!_idsComCapaCache) _idsComCapaCache = new Set();
             pendentes.forEach(l => {
-                if (!_idsComCapaCache.has(l.id)) { l._capaResolvida = 'sem'; l.imagem_url = null; }
-            });
-            const comCapa = pendentes.filter(l => !l._capaResolvida);
-
-            pendentes.filter(l => l._capaResolvida === 'sem').forEach(l => {
-                const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
-                if (wrap) {
-                    wrap.classList.add('sem-capa', 'capa-carregada');
-                    const lbl = wrap.querySelector('.book-cover-label');
-                    if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
-                }
-            });
-
-            if (!comCapa.length) return;
-
-            // 1 única query para todas as capas pendentes
-            if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
-            try {
-                const mapa = await window.DB.getCapas(comCapa.map(l => l.id));
-                if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
-                comCapa.forEach(l => {
-                    const url = mapa[l.id] || null;
-                    l.imagem_url = url;
-                    l._capaResolvida = url ? 'tem' : 'sem';
+                if (!_idsComCapaCache.has(l.id)) {
+                    l._capaResolvida = 'sem'; l.imagem_url = null;
                     const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
-                    if (!wrap) return;
-                    if (url) {
-                        const img = wrap.querySelector('img.cover-img');
-                        if (img) img.src = url;
-                        wrap.classList.add('has-image', 'capa-carregada');
-                        const lbl = wrap.querySelector('.book-cover-label');
-                        if (lbl) lbl.style.display = 'none';
-                    } else {
+                    if (wrap) {
                         wrap.classList.add('sem-capa', 'capa-carregada');
                         const lbl = wrap.querySelector('.book-cover-label');
                         if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
                     }
-                });
-            } catch(e) {
-                comCapa.forEach(l => { l._capaResolvida = 'sem'; });
-            }
+                }
+            });
+            const comCapa = pendentes.filter(l => !l._capaResolvida);
+            if (!comCapa.length) return;
+
+            const injetar = (l, url) => {
+                l.imagem_url = url || null;
+                l._capaResolvida = url ? 'tem' : 'sem';
+                const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                if (!wrap) return;
+                if (url) {
+                    const img = wrap.querySelector('img.cover-img');
+                    if (img) img.src = url;
+                    wrap.classList.add('has-image', 'capa-carregada');
+                    const lbl = wrap.querySelector('.book-cover-label');
+                    if (lbl) lbl.style.display = 'none';
+                } else {
+                    wrap.classList.add('sem-capa', 'capa-carregada');
+                    const lbl = wrap.querySelector('.book-cover-label');
+                    if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                }
+            };
+
+            // 1 query por capa, todas simultâneas — cada uma injeta ao chegar
+            comCapa.forEach(l => {
+                window.DB.getCapaUnica(l.id)
+                    .then(url => {
+                        if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
+                        injetar(l, url);
+                    })
+                    .catch(() => { l._capaResolvida = 'sem'; });
+            });
         }
 
         function renderLivro(l, isAtr) {

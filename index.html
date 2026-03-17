@@ -351,7 +351,8 @@
             return h + str.length;
         }
 
-        // Injeta capas pendentes — 1 única query para todas de uma vez
+        // Injeta capas: 1 query por capa, todas disparadas em paralelo
+        // Cada capa aparece assim que chega, sem esperar as outras
         async function _buscarCapasRestantes(livros, renderToken) {
             const capaToken = ++_capaToken;
             const pendentes = livros.filter(l => !l._capaResolvida);
@@ -360,48 +361,46 @@
             // Marcar sem-capa instantaneamente (sem query)
             if (!_idsComCapaCache) _idsComCapaCache = new Set();
             pendentes.forEach(l => {
-                if (!_idsComCapaCache.has(l.id)) { l._capaResolvida = 'sem'; l.imagem_url = null; }
-            });
-            const comCapa = pendentes.filter(l => !l._capaResolvida);
-
-            // Marcar sem-capa no DOM
-            pendentes.filter(l => l._capaResolvida === 'sem').forEach(l => {
-                const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
-                if (wrap) {
-                    wrap.classList.add('sem-capa', 'capa-carregada');
-                    const lbl = wrap.querySelector('.book-cover-label');
-                    if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
-                }
-            });
-
-            if (!comCapa.length) return;
-
-            // Buscar TODAS as capas pendentes em 1 única query
-            if (capaToken !== _capaToken || renderToken !== _renderToken) return;
-            try {
-                const mapa = await window.DB.getCapas(comCapa.map(l => l.id));
-                if (capaToken !== _capaToken || renderToken !== _renderToken) return;
-                comCapa.forEach(l => {
-                    const url = mapa[l.id] || null;
-                    l.imagem_url = url;
-                    l._capaResolvida = url ? 'tem' : 'sem';
+                if (!_idsComCapaCache.has(l.id)) {
+                    l._capaResolvida = 'sem'; l.imagem_url = null;
                     const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
-                    if (!wrap) return;
-                    if (url) {
-                        const img = wrap.querySelector('img.cover-img');
-                        if (img) img.src = url;
-                        wrap.classList.add('has-image', 'capa-carregada');
-                        const lbl = wrap.querySelector('.book-cover-label');
-                        if (lbl) lbl.style.display = 'none';
-                    } else {
+                    if (wrap) {
                         wrap.classList.add('sem-capa', 'capa-carregada');
                         const lbl = wrap.querySelector('.book-cover-label');
                         if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
                     }
-                });
-            } catch(e) {
-                comCapa.forEach(l => { l._capaResolvida = 'sem'; });
-            }
+                }
+            });
+            const comCapa = pendentes.filter(l => !l._capaResolvida);
+            if (!comCapa.length) return;
+
+            // Disparar 1 query por capa — todas simultâneas, cada uma injeta ao chegar
+            const injetar = (l, url) => {
+                l.imagem_url = url || null;
+                l._capaResolvida = url ? 'tem' : 'sem';
+                const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
+                if (!wrap) return;
+                if (url) {
+                    const img = wrap.querySelector('img.cover-img');
+                    if (img) img.src = url;
+                    wrap.classList.add('has-image', 'capa-carregada');
+                    const lbl = wrap.querySelector('.book-cover-label');
+                    if (lbl) lbl.style.display = 'none';
+                } else {
+                    wrap.classList.add('sem-capa', 'capa-carregada');
+                    const lbl = wrap.querySelector('.book-cover-label');
+                    if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                }
+            };
+
+            comCapa.forEach(l => {
+                window.DB.getCapaUnica(l.id)
+                    .then(url => {
+                        if (capaToken !== _capaToken || renderToken !== _renderToken) return;
+                        injetar(l, url);
+                    })
+                    .catch(() => { l._capaResolvida = 'sem'; });
+            });
         }
 
         // Realtime/interval — preserva capas já resolvidas em memória
