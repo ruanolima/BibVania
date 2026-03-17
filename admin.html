@@ -289,10 +289,7 @@
                         <div style="display:flex; flex-direction:column; gap:0.5rem; justify-content:center; flex:1;">
                             <div id="editCapaBtns">
                                 <button type="button" class="btn-block btn-outline"
-                                    onclick="document.getElementById('editCapaInput').click()" aria-label="Escolher imagem para capa">📷 ESCOLHER IMAGEM</button>
-                                <input type="file" id="editCapaInput" accept="image/*" style="display:none;"
-                                    aria-label="Selecionar arquivo de imagem"
-                                    onchange="preVisualizarCapa(this,'editCapaPreview','editCapaBtns','editCapaLabel',true)">
+                                    onclick="abrirSeletorCapa(null,'editCapaPreview','editCapaBtns','editCapaLabel',true)" aria-label="Escolher imagem para capa">📷 ESCOLHER IMAGEM</button>
                             </div>
                             <div id="editAltTextGroup" style="display:none; margin-top:0.25rem;">
                                 <label for="editCapaAltText" style="margin-bottom:0.3rem;">DESCRIÇÃO DA CAPA (ACESSIBILIDADE)</label>
@@ -960,9 +957,7 @@
                 if (editWrap) { editWrap.classList.remove('capa-carregada'); editWrap.classList.add('sem-capa'); }
                 document.getElementById('editCapaBtns').innerHTML = `
                     <button type="button" class="btn-block btn-outline"
-                        onclick="document.getElementById('editCapaInput').click()">📷 ESCOLHER IMAGEM</button>
-                    <input type="file" id="editCapaInput" accept="image/*" style="display:none;"
-                        onchange="preVisualizarCapa(this,'editCapaPreview','editCapaBtns','editCapaLabel',true)">
+                        onclick="abrirSeletorCapa(null,'editCapaPreview','editCapaBtns','editCapaLabel',true)">📷 ESCOLHER IMAGEM</button>
                 `;
             }
             document.getElementById('modalEdit').classList.remove('hidden');
