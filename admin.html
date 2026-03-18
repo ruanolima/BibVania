@@ -768,15 +768,21 @@
                 }
             };
 
-            // 1 query por capa, todas simultâneas — cada uma injeta ao chegar
-            // Sequencial: 1 capa por vez, de cima para baixo
-            for (const l of comCapa) {
+            // Lote calculado pela viewport — sequencial entre lotes
+            const _primeiro = document.querySelector('#listaAdmin .book-item');
+            const _altCard = _primeiro ? _primeiro.getBoundingClientRect().height + 8 : 130;
+            const LOTE = Math.max(3, Math.ceil((window.innerHeight - 48) / _altCard));
+
+            for (let i = 0; i < comCapa.length; i += LOTE) {
                 if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
+                const lote = comCapa.slice(i, i + LOTE);
                 try {
-                    const url = await window.DB.getCapaUnica(l.id);
+                    const mapa = await window.DB.getCapas(lote.map(l => l.id));
                     if (capaToken !== _capaTokenAdmin || renderToken !== _renderToken) return;
-                    injetar(l, url);
-                } catch(e) { l._capaResolvida = 'sem'; }
+                    lote.forEach(l => injetar(l, mapa[l.id] || null));
+                } catch(e) {
+                    lote.forEach(l => { l._capaResolvida = 'sem'; });
+                }
             }
         }
 
@@ -810,7 +816,7 @@
                                 <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
                                 <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
                                 ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
-                                ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="filtrarPorTag('${p}',true)">#${p}</span>`).join(' ')}</div>` : ''}
+                                ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}',true)">#${p}</span>`).join(' ')}</div>` : ''}
                             </div>
                             <div class="book-status-row">
                                 <span></span>
