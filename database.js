@@ -3,7 +3,7 @@
  * Sistema de Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares
  *
  * @author  Ruan Oliveira Lima <https://github.com/ruanolima>
- * @version 1.1
+ * @version 1.2
  * @year    2026
  * @license CC-BY-4.0 <https://creativecommons.org/licenses/by/4.0/>
  * @source  https://github.com/ruanolima/BibVania
@@ -25,6 +25,14 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // CONSTANTES E CONFIGURAÇÕES
 // ============================================================================
 
+const CATEGORIAS_FIXAS = [
+    'EDUCAÇÃO INCLUSIVA', 'INFANTIL (1º AO 4º)', 'INFANTOJUVENIL (5º E 6º)',
+    'JUVENIL (7º AO 9º)', 'JOVEM ADULTO (ENSINO MÉDIO)',
+    'DIDÁTICO (1º)', 'DIDÁTICO (2º)', 'DIDÁTICO (3º)', 'DIDÁTICO (4º)',
+    'DIDÁTICO (5º)', 'DIDÁTICO (6º)', 'DIDÁTICO (7º)', 'DIDÁTICO (8º)',
+    'DIDÁTICO (9º)', 'DIDÁTICO (EM 1º)', 'DIDÁTICO (EM 2º)', 'DIDÁTICO (EM 3º)',
+    'DE REFERÊNCIA', 'CLÁSSICOS & REGIONAIS', 'POESIA'
+];
 
 // ============================================================================
 // UTILITÁRIOS
@@ -40,6 +48,12 @@ const padronizarObjeto = (obj) => {
         }
     }
 
+    if (Array.isArray(novoObj.colaboradores)) {
+        novoObj.colaboradores = novoObj.colaboradores.map(co => ({
+            funcao: toUpper(co.funcao) || 'COLABORADOR',
+            nome: toUpper(co.nome)
+        }));
+    }
     return novoObj;
 };
 
@@ -47,6 +61,7 @@ const padronizarObjeto = (obj) => {
 // OBJETO DB - Funções para gerenciar livros, empréstimos e autenticação
 // ============================================================================
 const DB = {
+    CATEGORIAS: CATEGORIAS_FIXAS,
     supabase: supabase,
 
     // ========================================================================
@@ -100,7 +115,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, isbn, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text")
+                .select("id, titulo, autor, isbn, editora, pub_independente, colaboradores, acabamento, sinopse, categoria, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
@@ -189,6 +204,12 @@ const DB = {
                         quantidade_disponivel: novaQuantidadeDisponivel,
                         autor: livro.autor || existente.autor,
                         isbn: livro.isbn || existente.isbn,
+                        editora: livro.editora || existente.editora,
+                        pub_independente: livro.pub_independente ?? existente.pub_independente,
+                        colaboradores: livro.colaboradores?.length ? livro.colaboradores : existente.colaboradores,
+                        acabamento: livro.acabamento || existente.acabamento,
+                        sinopse: livro.sinopse || existente.sinopse,
+                        categoria: livro.categoria || existente.categoria,
                         prateleira: livro.prateleira || existente.prateleira,
                         palavras_chave: livro.palavras_chave?.length ? livro.palavras_chave : existente.palavras_chave,
                         alt_text: livro.alt_text || existente.alt_text,

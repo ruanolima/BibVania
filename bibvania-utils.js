@@ -3,7 +3,7 @@
  * Utilitários de acessibilidade: busca por voz (Web Speech API)
  *
  * @author  Ruan Oliveira Lima <https://github.com/ruanolima>
- * @version 1.1
+ * @version 1.2
  * @year    2026
  * @license CC-BY-4.0 <https://creativecommons.org/licenses/by/4.0/>
  * @source  https://github.com/ruanolima/BibVania

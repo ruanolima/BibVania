@@ -462,6 +462,8 @@ input:disabled {
     margin-bottom: 0.75rem;
     overflow: hidden;
     transition: border-color 0.1s ease;
+    content-visibility: auto;
+    contain-intrinsic-size: 0 120px;
 }
 
 
@@ -573,20 +575,19 @@ input:disabled {
     color: white;
 }
 
-/* Detalhes do Livro */
+/* Detalhes do Livro — grid rows evita reflow em todos os cards */
 .book-details {
-    max-height: 0;
-    overflow: hidden;
-    padding: 0 1.25rem;
+    display: none;
     background: var(--bg);
-    border-top: 0px solid var(--border);
-    transition: max-height 0.22s ease, padding 0.22s ease, border-top-width 0.22s ease;
+    border-top: 1px solid var(--border);
+}
+
+.book-details > * {
+    padding: 1.25rem;
 }
 
 .book-details.active {
-    max-height: 600px;
-    padding: 1.25rem;
-    border-top: 1px solid var(--border);
+    display: block;
 }
 
 /* Seção de Atrasados */

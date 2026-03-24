@@ -10,34 +10,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Bibliotecário — BibVania</title>
-    <meta name="description" content="Painel do bibliotecário — cadastro de livros, empréstimos, devoluções e acervo. Sistema BibVania de gerenciamento de biblioteca escolar gratuito.">
-    <meta name="keywords" content="biblioteca escolar, sistema de biblioteca gratuito, gerenciamento de acervo, controle de empréstimos, bibliotecário, software biblioteca escolar">
     <meta name="author" content="Ruan Oliveira Lima">
-    <meta name="robots" content="noindex, nofollow">
     <meta name="license" content="CC-BY-4.0 https://creativecommons.org/licenses/by/4.0/">
     <meta name="source" content="https://github.com/ruanolima/BibVania">
     <meta name="version" content="1.2">
     <meta name="year" content="2026">
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <meta property="og:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
-    <meta property="og:url" content="https://ruanolima.github.io/BibVania/">
-    <meta property="og:image" content="https://ruanolima.github.io/BibVania/og-image.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <meta property="og:locale" content="pt_BR">
-    <meta property="og:site_name" content="BibVania">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <meta name="twitter:description" content="Gratuito, open source, sem instalação. Acervo, empréstimos e relatórios em tempo real.">
-    <meta name="twitter:image" content="https://ruanolima.github.io/BibVania/og-image.png">
-    <meta name="twitter:image:alt" content="BibVania — Sistema de Biblioteca Escolar Gratuito">
-    <script type="application/ld+json">
+    <!-- Twitter Card -->    <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
@@ -52,9 +30,7 @@
       "inLanguage": "pt-BR",
       "isAccessibleForFree": true
     }
-    </script>
-    <link rel="canonical" href="https://ruanolima.github.io/BibVania/admin.html">
-    <link rel="icon" type="image/png" href="favicon.png">
+    </script>    <link rel="icon" type="image/png" href="favicon.png">
 <style>
     /* CSS crítico — previne piscada de botões antes de style.css carregar */
     :root{--primary:#2563eb;--success:#10b981;--danger:#ef4444;--bg:#f1f5f9;--card:#ffffff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--radius:12px;--font-size:16px}
@@ -92,7 +68,8 @@
         <nav aria-label="Navegação do sistema" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
             <button onclick="navegarCom('index.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para a página de leitores"><span aria-hidden="true">👥</span> LEITORES</button>
             <button onclick="navegarCom('relatorios.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para relatórios"><span aria-hidden="true">📊</span> RELATÓRIOS</button>
-            <button onclick="window.DB.signOut()" class="btn-block btn-danger" style="grid-column: 1 / -1; min-width: auto;" aria-label="Sair do sistema">SAIR DO SISTEMA</button>
+            <button onclick="navegarCom('cadastro_rapido.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Cadastro rápido com IA"><span aria-hidden="true">✨</span> CADASTRO IA</button>
+            <button onclick="window.DB.signOut()" class="btn-block btn-danger" style="min-width: auto;" aria-label="Sair do sistema">🚪 SAIR</button>
         </nav>
 
         <div class="tabs-container" role="tablist" aria-label="Seções do painel">
@@ -111,6 +88,20 @@
                     <div class="form-group"><label>TÍTULO DO LIVRO *</label><input type="text" id="titulo" required></div>
                     <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="isbn"></div>
                     <div class="form-group"><label>AUTOR *</label><input type="text" id="autor" required></div>
+                    <div class="form-group"><label>EDITORA (OPCIONAL)</label><input type="text" id="editora"></div>
+                    <div class="form-group">
+                        <label class="checkbox-container" id="labelPubIndependente">
+                            <input type="checkbox" id="pubIndependente" onchange="togglePubIndependente(this,'editora')">
+                            PUBLICAÇÃO INDEPENDENTE
+                        </label>
+                    </div>
+                    <div class="form-group full-width" id="colaboradoresContainer">
+                        <label>COLABORADORES (OPCIONAL)</label>
+                        <div id="listaColaboradores"></div>
+                        <button type="button" onclick="adicionarColaborador()" class="btn-block btn-outline" style="margin-top:0.5rem;">+ ADICIONAR COLABORADOR</button>
+                    </div>
+                    <div class="form-group"><label>ACABAMENTO (OPCIONAL)</label><select id="acabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
+                    <div class="form-group full-width"><label>CATEGORIA *</label><select id="categoria" required></select></div>
                     <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
                         <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="prateleira" style="width:120px; text-align:center; text-transform:uppercase;" placeholder="Ex: C3/C4" required oninput="validarPrateleira(this)"></div>
                     </div>
@@ -120,6 +111,7 @@
                         <input type="text" id="palavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off" required>
                         <small style="color:var(--text-light);font-size:0.7rem;">Separe por vírgula. Use #palavra-chave na busca.</small>
                     </div>
+                    <div class="form-group full-width"><label>SINOPSE (OPCIONAL)</label><textarea id="sinopse" rows="3"></textarea></div>
                     <!-- CAPA DO LIVRO -->
                     <div class="form-group full-width">
                         <label for="capaInput">CAPA DO LIVRO (OPCIONAL)</label>
@@ -179,7 +171,13 @@
                                 <option value="F">ALUNA</option>
                             </select>
                         </div>
-                        <div class="form-group"><label>ANO *</label><input type="number" id="ano" min="1" max="9"></div>
+                        <div class="form-group full-width" id="grpEnsinoMedioEmp">
+                            <label class="checkbox-container" id="labelEnsinoMedioEmp">
+                                <input type="checkbox" id="ehEnsinoMedioEmp" onchange="toggleEnsinoMedioEmp()">
+                                ENSINO MÉDIO
+                            </label>
+                        </div>
+                        <div class="form-group"><label id="labelAnoEmp">ANO *</label><input type="number" id="ano" min="1" max="9"></div>
                         <div class="form-group"><label>TURMA *</label><input type="text" id="turma"></div>
                     </div>
 
@@ -247,6 +245,20 @@
                 <div class="form-group"><label>TÍTULO *</label><input type="text" id="editTitulo" required></div>
                 <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="editIsbn"></div>
                 <div class="form-group"><label>AUTOR *</label><input type="text" id="editAutor" required></div>
+                <div class="form-group"><label>EDITORA (OPCIONAL)</label><input type="text" id="editEditora"></div>
+                <div class="form-group">
+                    <label class="checkbox-container" id="labelEditPubIndependente">
+                        <input type="checkbox" id="editPubIndependente" onchange="togglePubIndependente(this,'editEditora')">
+                        PUBLICAÇÃO INDEPENDENTE
+                    </label>
+                </div>
+                <div class="form-group full-width" id="editColaboradoresContainer">
+                    <label>COLABORADORES (OPCIONAL)</label>
+                    <div id="editListaColaboradores"></div>
+                    <button type="button" onclick="adicionarColaboradorEdit()" class="btn-block btn-outline" style="margin-top:0.5rem;">+ ADICIONAR COLABORADOR</button>
+                </div>
+                <div class="form-group"><label>ACABAMENTO (OPCIONAL)</label><select id="editAcabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
+                <div class="form-group full-width"><label>CATEGORIA *</label><select id="editCategoria" required></select></div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:0.75rem; align-items:end;">
                     <div class="form-group" style="margin-bottom:0;"><label>PRATELEIRA *</label><input type="text" id="editPrateleira" style="width:120px; text-align:center; text-transform:uppercase;" placeholder="Ex: C3/C4" required oninput="validarPrateleira(this)"></div>
                 </div>
@@ -256,6 +268,7 @@
                     <input type="text" id="editPalavrasChave" placeholder="Ex: aventura, fantasia, amizade" autocomplete="off" required>
                     <small style="color:var(--text-light);font-size:0.7rem;">Separe por vírgula. Use #palavra-chave na busca.</small>
                 </div>
+                <div class="form-group full-width"><label>SINOPSE (OPCIONAL)</label><textarea id="editSinopse" rows="3"></textarea></div>
                 <!-- CAPA DO LIVRO - EDIÇÃO -->
                 <div class="form-group full-width" style="margin-top:0.5rem;">
                     <label>CAPA DO LIVRO</label>
@@ -308,7 +321,13 @@
                                 <option value="F">ALUNA</option>
                             </select>
                         </div>
-                        <div class="form-group" id="grpAnoPessoa"><label>ANO *</label><input type="number" id="anoPessoa" min="1" max="9" style="width:80px;" onkeydown="if(['0','e','+','-','.'].includes(event.key)||(this.value.length>=1&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)))event.preventDefault();" oninput="if(this.value<1||this.value>9)this.value='';"></div>
+                        <div class="form-group full-width" id="grpEnsinoMedioPessoa">
+                            <label class="checkbox-container" id="labelEnsinoMedio">
+                                <input type="checkbox" id="ehEnsinoMedio" onchange="toggleEnsinoMedio()">
+                                ENSINO MÉDIO
+                            </label>
+                        </div>
+                        <div class="form-group" id="grpAnoPessoa"><label id="labelAnoPessoa">ANO *</label><input type="number" id="anoPessoa" min="1" max="9" style="width:80px;" onkeydown="if(['0','e','+','-','.'].includes(event.key)||(this.value.length>=1&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)))event.preventDefault();" oninput="if(this.value<1||this.value>9)this.value='';"></div>
                         <div class="form-group" id="grpTurmaPessoa"><label>TURMA *</label><input type="text" id="turmaPessoa" maxlength="1" pattern="[A-Za-z]" style="text-transform:uppercase;width:80px;" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()"></div>
                     </div>
                     <button type="submit" class="btn-block btn-primary" style="margin-top:1rem;">CADASTRAR</button>
@@ -384,7 +403,13 @@
                         <option value="F">ALUNA</option>
                     </select>
                 </div>
-                <div class="form-group" id="editGrpAno"><label>ANO *</label><input type="number" id="editAnoPessoa" min="1" max="9" style="width:80px;" onkeydown="if(['0','e','+','-','.'].includes(event.key)||(this.value.length>=1&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)))event.preventDefault();" oninput="if(this.value<1||this.value>9)this.value='';"></div>
+                <div class="form-group" id="editGrpEnsinoMedio">
+                    <label class="checkbox-container" id="labelEditEnsinoMedio">
+                        <input type="checkbox" id="editEhEnsinoMedio" onchange="toggleEditEnsinoMedio()">
+                        ENSINO MÉDIO
+                    </label>
+                </div>
+                <div class="form-group" id="editGrpAno"><label id="labelEditAnoPessoa">ANO *</label><input type="number" id="editAnoPessoa" min="1" max="9" style="width:80px;" onkeydown="if(['0','e','+','-','.'].includes(event.key)||(this.value.length>=1&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)))event.preventDefault();" oninput="if(this.value<1||this.value>9)this.value='';"></div>
                 <div class="form-group" id="editGrpTurma"><label>TURMA *</label><input type="text" id="editTurmaPessoa" maxlength="1" pattern="[A-Za-z]" style="text-transform:uppercase;width:80px;" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()"></div>
                 <div style="display:flex;gap:0.5rem;margin-top:1rem;">
                     <button type="button" onclick="closeModalEditPessoa()" class="btn-block btn-outline">CANCELAR</button>
@@ -468,7 +493,10 @@
         </div>
     </div>
 
-    <script type="module">
+    <script>
+    if (!window.navegarCom) window.navegarCom = (url) => { window.location.href = url; };
+</script>
+<script type="module">
         import DB from './database.js';
         import { iniciarBuscaVoz } from './bibvania-utils.js';
         window.DB = DB;
@@ -481,6 +509,15 @@
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             localStorage.setItem('fontSize', fontSize);
         };
+
+        // Popular selects de categoria dos formulários
+        const _catsList = window.DB?.CATEGORIAS || [];
+        ['categoria','editCategoria'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            sel.innerHTML = '<option value="">SELECIONE</option>';
+            _catsList.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+        });
 
         window.filtrarPorTag = (tag, isAdmin) => {
             const inputId = isAdmin ? 'buscaAdmin' : 'buscaLivros';
@@ -584,11 +621,13 @@
             sessionStorage.setItem('bibvania_tab', id);
             // Renderiza ao entrar na aba de acervo sempre que houver dados em cache
             if (id === 'tab-registro') {
+                const listaAdm = document.getElementById('listaAdmin');
                 if (todosLivros.length > 0) {
-                    renderAcervo();
+                    // Mostrar loader antes de renderizar — evita travada
+                    listaAdm.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-light);font-size:0.8rem;">Carregando...</p>';
+                    requestAnimationFrame(() => requestAnimationFrame(() => renderAcervo()));
                 } else {
-                    // Dados ainda não carregados — aguarda o load() e renderiza ao completar
-                    document.getElementById('listaAdmin').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);" role="status">CARREGANDO...</p>';
+                    listaAdm.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);" role="status">CARREGANDO...</p>';
                 }
             }
             if (id === 'tab-listapessoas') carregarListaPessoas();
@@ -640,6 +679,9 @@
             // (não desperdiçar tempo no load() principal)
             empsComLivroCache = []; // será populado em carregarDevolucoes()
 
+            // Atualizar bolinha da aba Devoluções com dados do load (sem join)
+            _atualizarBolinhaDevolucoes(empsComLivro);
+
             // Atualizar cache por nome (para accordion da lista de pessoas)
             empsAtivosNomeCache = {};
             empsComLivro.forEach(e => {
@@ -681,12 +723,15 @@
             if (termo) {
                 const termoTag = termo.startsWith('#') ? termo.slice(1) : null;
                 filtrados = filtrados.filter(l =>
-                    normalizar(l.titulo).includes(termo) ||
-                    (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
-                    (l.autor && normalizar(l.autor).includes(termo)) ||
-                    (termoTag
+                    termoTag
                         ? (l.palavras_chave||[]).some(p => normalizar(p).includes(termoTag))
-                        : (l.palavras_chave||[]).some(p => normalizar(p).includes(termo)))
+                        : (normalizar(l.titulo).includes(termo) ||
+                           (l.isbn && l.isbn.toUpperCase().includes(termo)) ||
+                           (l.autor && normalizar(l.autor).includes(termo)) ||
+                           (l.editora && normalizar(l.editora).includes(termo)) ||
+                           (l.sinopse && normalizar(l.sinopse).includes(termo)) ||
+                           (l.colaboradores||[]).some(co => normalizar(co.nome).includes(termo)) ||
+                           (l.palavras_chave||[]).some(p => normalizar(p).includes(termo)))
                 );
             }
 
@@ -701,26 +746,46 @@
             const naoAtrasados = filtrados.filter(l => !idsAtrasadosCache.includes(l.id));
             const lista = document.getElementById('listaAdmin');
 
-            if (!naoAtrasados.length) {
-                lista.innerHTML = atrasados.length ? '' : '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM LIVRO ENCONTRADO.</p>';
-                aplicarCapasNoDOM();
-                return;
-            }
-
             const token = ++_renderToken;
             _renderEmAndamento = true;
 
-            // DOM-swap — só substitui se conteúdo mudou, preserva scroll
-            const novoHtml = naoAtrasados.map(l => renderLivro(l, false)).join('');
-            if (lista.dataset.lastHtmlHash !== _hashAdmin(novoHtml)) {
-                lista.dataset.lastHtmlHash = _hashAdmin(novoHtml);
-                lista.innerHTML = novoHtml;
+            if (!naoAtrasados.length) {
+                lista.innerHTML = atrasados.length ? '' : '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM LIVRO ENCONTRADO.</p>';
+                aplicarCapasNoDOM();
+                _renderEmAndamento = false;
+                return;
             }
-            if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
-            _jaCarregouUmaVez = true;
-            _renderEmAndamento = false;
 
-            _buscarCapasRestantesAdmin(naoAtrasados, token);
+            // Renderizar em lotes de 20 para não bloquear a thread no celular
+            const LOTE = 20;
+            const novoHtml = naoAtrasados.map(l => renderLivro(l, false)).join('');
+            if (lista.dataset.lastHtmlHash === _hashAdmin(novoHtml)) {
+                if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
+                _renderEmAndamento = false;
+                _buscarCapasRestantesAdmin(naoAtrasados, token);
+                return;
+            }
+            lista.dataset.lastHtmlHash = _hashAdmin(novoHtml);
+            lista.innerHTML = '';
+
+            const renderLote = (inicio) => {
+                if (token !== _renderToken) return;
+                const fim = Math.min(inicio + LOTE, naoAtrasados.length);
+                const frag = document.createDocumentFragment();
+                const tmp = document.createElement('div');
+                tmp.innerHTML = naoAtrasados.slice(inicio, fim).map(l => renderLivro(l, false)).join('');
+                while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+                lista.appendChild(frag);
+                if (fim < naoAtrasados.length) {
+                    setTimeout(() => renderLote(fim), 0);
+                } else {
+                    if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
+                    _jaCarregouUmaVez = true;
+                    _renderEmAndamento = false;
+                    _buscarCapasRestantesAdmin(naoAtrasados, token);
+                }
+            };
+            renderLote(0);
         }
 
         function _hashAdmin(str) {
@@ -814,9 +879,14 @@
                             <div class="book-title">${isAtr ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
                             <div class="book-meta-box">
                                 <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
+                                ${l.editora?`<div class="book-meta-item"><strong>EDITORA:</strong> ${l.editora}</div>`:l.pub_independente?`<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>`:''}
+                                ${(l.colaboradores||[]).map(co=>`<div class="book-meta-item"><strong>${co.funcao||'COLABORADOR'}:</strong> ${co.nome}</div>`).join('')}
                                 <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn || 'N/A'}</div>
+                                ${l.acabamento?`<div class="book-meta-item"><strong>ACABAMENTO:</strong> ${l.acabamento}</div>`:''}
+                                ${l.categoria?`<div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}</div>`:''}
                                 ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
                                 ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}',true)">#${p}</span>`).join(' ')}</div>` : ''}
+                                ${l.sinopse?`<div class="book-meta-item" style="margin-top:0.5rem;font-size:0.75rem;background:var(--bg);padding:0.5rem;border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>`:''}
                             </div>
                             <div class="book-status-row">
                                 <span></span>
@@ -842,19 +912,20 @@
             const content = document.getElementById(`${prefix}det-${id}`);
             if (!content) return;
             const indicator = el.querySelector('.accordion-indicator');
+            const isActive = content.classList.contains('active');
             content.classList.toggle('active');
             el.classList.toggle('active');
             if (indicator) indicator.classList.toggle('active');
-            if (content.classList.contains('active')) loadEmps(id, prefix);
+            if (!isActive) loadEmps(id, prefix);
         };
 
         function obterRotuloGenero(sexo, turmaAluno, anoAluno) {
-            // Verificar se é funcionário/professor
             if (turmaAluno === 'PROF/FUNC' || turmaAluno === 'PROFESSOR' || turmaAluno === 'FUNCIONARIO') {
                 return sexo === 'M' ? 'Funcionário' : 'Funcionária';
             } else {
                 const genero = sexo === 'M' ? 'Aluno' : 'Aluna';
-                return `${genero}, ${anoAluno}º ano, ${turmaAluno}`;
+                const anoLabel = anoAluno >= 10 ? `EM ${anoAluno - 9}º ano` : `${anoAluno}º ano`;
+                return `${genero}, ${anoLabel}, ${turmaAluno}`;
             }
         }
         
@@ -886,9 +957,10 @@
         window.obterRotuloGenero = obterRotuloGenero;
         
         window.devolver = async (id) => {
-            if (!confirm('CONFIRMAR DEVOLUÇÃO?')) return;
+            const data = await _modalDataDevolucao();
+            if (data === null) return;
             try {
-                await window.DB.registrarDevolucao(id, new Date().toISOString());
+                await window.DB.registrarDevolucao(id, data);
                 window.mostrarMsg('msgEmp', '✓ DEVOLUÇÃO REGISTRADA!', 'success');
                 load();
                 carregarDevolucoes();
@@ -931,9 +1003,17 @@
             document.getElementById('editIsbn').value = l.isbn || '';
             document.getElementById('editTitulo').value = l.titulo;
             document.getElementById('editAutor').value = l.autor || '';
+            document.getElementById('editEditora').value = l.editora || '';
+            const _ePub = document.getElementById('editPubIndependente');
+            if (_ePub) { _ePub.checked = !!l.pub_independente; document.getElementById('labelEditPubIndependente').classList.toggle('checked', !!l.pub_independente); }
+            document.getElementById('editAcabamento').value = l.acabamento || '';
+            document.getElementById('editSinopse').value = l.sinopse || '';
+            if (document.getElementById('editCategoria')) document.getElementById('editCategoria').value = l.categoria || '';
             document.getElementById('editQtd').value = l.quantidade_total;
             document.getElementById('editPalavrasChave').value = (l.palavras_chave || []).join(', ');
             document.getElementById('editPrateleira').value = l.prateleira || '';
+            const _editLista = document.getElementById('editListaColaboradores');
+            if (_editLista) { _editLista.innerHTML = ''; (l.colaboradores||[]).forEach(co => window.adicionarColaboradorEdit(co.funcao, co.nome)); }
             // Alt text existente
             const editAltTa = document.getElementById('editCapaAltText');
             const editAltGroup = document.getElementById('editAltTextGroup');
@@ -981,10 +1061,15 @@
                 isbn: document.getElementById('editIsbn').value,
                 titulo: document.getElementById('editTitulo').value,
                 autor: document.getElementById('editAutor').value,
+                editora: document.getElementById('editPubIndependente').checked ? '' : document.getElementById('editEditora').value,
+                pub_independente: document.getElementById('editPubIndependente').checked,
+                colaboradores: window.coletarColaboradoresEdit(),
+                acabamento: document.getElementById('editAcabamento').value,
+                sinopse: document.getElementById('editSinopse').value,
+                categoria: document.getElementById('editCategoria')?.value || '',
                 palavras_chave: document.getElementById('editPalavrasChave').value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean),
                 prateleira: document.getElementById('editPrateleira').value,
                 quantidade_total: parseInt(document.getElementById('editQtd').value),
-
                 alt_text: document.getElementById('editCapaAltText')?.value?.trim() || null
             };
             const capaBase64 = window._editCapaBase64 || null;
@@ -1202,7 +1287,6 @@
                     titulo: window.livroEmDuplicidade.titulo,
                     autor: document.getElementById('autor').value || window.livroEmDuplicidade.autor,
                     quantidade_total: novaQuantidadeTotal,
-                    sinopse: document.getElementById('sinopse').value || window.livroEmDuplicidade.sinopse
                 });
                 
                 window.mostrarMsg('msgLivro', '✓ QUANTIDADE ADICIONADA!', 'success');
@@ -1244,6 +1328,12 @@
                     isbn: document.getElementById('isbn').value,
                     titulo: document.getElementById('titulo').value,
                     autor: document.getElementById('autor').value,
+                    editora: document.getElementById('pubIndependente').checked ? '' : document.getElementById('editora').value,
+                    pub_independente: document.getElementById('pubIndependente').checked,
+                    colaboradores: window.coletarColaboradores(),
+                    acabamento: document.getElementById('acabamento').value,
+                    sinopse: document.getElementById('sinopse').value,
+                    categoria: document.getElementById('categoria').value,
                     prateleira: document.getElementById('prateleira').value,
                     quantidade_total: parseInt(document.getElementById('quantidade').value),
                     palavras_chave: document.getElementById('palavrasChave').value.split(',').map(p => p.trim().toLowerCase()).filter(Boolean),
@@ -1361,7 +1451,9 @@
                 else {
                     data.nome_aluno = document.getElementById('nomeAluno').value.trim();
                     data.sexo = document.getElementById('sexo').value;
-                    data.ano_aluno = document.getElementById('ano').value;
+                    const em = document.getElementById('ehEnsinoMedioEmp').checked;
+                    const anoRaw = parseInt(document.getElementById('ano').value) || 0;
+                    data.ano_aluno = em ? anoRaw + 9 : anoRaw; // 1→10, 2→11, 3→12
                     data.turma_aluno = document.getElementById('turma').value;
 
                     // Verificar se aluno está cadastrado
@@ -1412,11 +1504,44 @@
             document.getElementById('labelNomePessoa').textContent = func ? 'NOME DO FUNCIONÁRIO *' : 'NOME DO ALUNO *';
             document.getElementById('grpAnoPessoa').style.display = func ? 'none' : '';
             document.getElementById('grpTurmaPessoa').style.display = func ? 'none' : '';
+            document.getElementById('grpEnsinoMedioPessoa').style.display = func ? 'none' : '';
+            if (func) { document.getElementById('ehEnsinoMedio').checked = false; document.getElementById('labelEnsinoMedio').classList.remove('checked'); }
             const sel = document.getElementById('sexoPessoa');
             sel.innerHTML = func
                 ? '<option value="">SELECIONE</option><option value="M">FUNCIONÁRIO</option><option value="F">FUNCIONÁRIA</option>'
                 : '<option value="">SELECIONE</option><option value="M">ALUNO</option><option value="F">ALUNA</option>';
             document.getElementById('labelEhFuncionario').classList.toggle('checked', func);
+        };
+
+        window.toggleEnsinoMedioEmp = () => {
+            const em = document.getElementById('ehEnsinoMedioEmp').checked;
+            document.getElementById('labelEnsinoMedioEmp').classList.toggle('checked', em);
+            const inp = document.getElementById('ano');
+            document.getElementById('labelAnoEmp').textContent = em ? 'ANO (1, 2 ou 3) *' : 'ANO *';
+            inp.max = em ? '3' : '9';
+            inp.value = '';
+        };
+
+        window.toggleEnsinoMedio = () => {
+            const em = document.getElementById('ehEnsinoMedio').checked;
+            document.getElementById('labelEnsinoMedio').classList.toggle('checked', em);
+            const inp = document.getElementById('anoPessoa');
+            document.getElementById('labelAnoPessoa').textContent = em ? 'ANO (1, 2 ou 3) *' : 'ANO *';
+            inp.min = em ? '1' : '1';
+            inp.max = em ? '3' : '9';
+            inp.value = '';
+            inp.oninput = em
+                ? function(){ if(this.value<1||this.value>3)this.value=''; }
+                : function(){ if(this.value<1||this.value>9)this.value=''; };
+        };
+
+        window.toggleEditEnsinoMedio = () => {
+            const em = document.getElementById('editEhEnsinoMedio').checked;
+            document.getElementById('labelEditEnsinoMedio').classList.toggle('checked', em);
+            const inp = document.getElementById('editAnoPessoa');
+            document.getElementById('labelEditAnoPessoa').textContent = em ? 'ANO (1, 2 ou 3) *' : 'ANO *';
+            inp.max = em ? '3' : '9';
+            inp.value = '';
         };
 
         async function carregarPessoas() {
@@ -1536,7 +1661,9 @@
             const genero = p.tipo === 'funcionario'
                 ? (p.sexo === 'M' ? 'Funcionário' : 'Funcionária')
                 : (p.sexo === 'M' ? 'Aluno' : 'Aluna');
-            const extra = p.tipo === 'aluno' ? ` — ${p.ano_aluno}º ${p.turma_aluno}` : '';
+            const extra = p.tipo === 'aluno'
+                ? (p.ano_aluno >= 10 ? ` — EM ${p.ano_aluno - 9}º ${p.turma_aluno}` : ` — ${p.ano_aluno}º ${p.turma_aluno}`)
+                : '';
             const uid = `pemp-${p.id}`;
             const nomeEsc = p.nome.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.3rem;background:var(--card);overflow:hidden;">
@@ -1545,7 +1672,7 @@
                         style="background:none;border:none;cursor:pointer;flex:1;text-align:left;padding:0;display:flex;align-items:center;gap:0.3rem;min-width:0;"
                         aria-expanded="false" aria-controls="${uid}">
                         <span style="font-size:0.75rem;color:var(--text-light);transition:transform .2s;" id="${uid}-arrow">▶</span>
-                        <span style="font-size:0.8rem;flex:1;min-width:0;">
+                        <span style="font-size:0.8rem;flex:1;min-width:0;color:var(--text);">
                             <strong>${p.nome}</strong>
                             <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span>
                             <span id="${uid}-badge"></span>
@@ -1623,6 +1750,8 @@
             const p = todasPessoas.find(x => x.id === id);
             if (!p) return;
             const func = p.tipo === 'funcionario';
+            const em = !func && p.ano_aluno >= 10;
+            const anoExibir = em ? p.ano_aluno - 9 : p.ano_aluno; // 10→1, 11→2, 12→3
             document.getElementById('editPessoaId').value = p.id;
             document.getElementById('editEhFuncionario').checked = func;
             document.getElementById('labelEditEhFuncionario').classList.toggle('checked', func);
@@ -1634,8 +1763,13 @@
             document.getElementById('labelEditNomePessoa').textContent = func ? 'NOME DO FUNCIONÁRIO *' : 'NOME DO ALUNO *';
             document.getElementById('editGrpAno').style.display = func ? 'none' : '';
             document.getElementById('editGrpTurma').style.display = func ? 'none' : '';
+            document.getElementById('editGrpEnsinoMedio').style.display = func ? 'none' : '';
             if (!func) {
-                document.getElementById('editAnoPessoa').value = p.ano_aluno || '';
+                document.getElementById('editEhEnsinoMedio').checked = em;
+                document.getElementById('labelEditEnsinoMedio').classList.toggle('checked', em);
+                document.getElementById('labelEditAnoPessoa').textContent = em ? 'ANO (1, 2 ou 3) *' : 'ANO *';
+                document.getElementById('editAnoPessoa').max = em ? '3' : '9';
+                document.getElementById('editAnoPessoa').value = anoExibir || '';
                 document.getElementById('editTurmaPessoa').value = p.turma_aluno || '';
             }
             document.getElementById('modalEditPessoa').classList.remove('hidden');
@@ -1646,6 +1780,8 @@
             document.getElementById('labelEditNomePessoa').textContent = func ? 'NOME DO FUNCIONÁRIO *' : 'NOME DO ALUNO *';
             document.getElementById('editGrpAno').style.display = func ? 'none' : '';
             document.getElementById('editGrpTurma').style.display = func ? 'none' : '';
+            document.getElementById('editGrpEnsinoMedio').style.display = func ? 'none' : '';
+            if (func) { document.getElementById('editEhEnsinoMedio').checked = false; document.getElementById('labelEditEnsinoMedio').classList.remove('checked'); }
             document.getElementById('editSexoPessoa').innerHTML = func
                 ? '<option value="">SELECIONE</option><option value="M">FUNCIONÁRIO</option><option value="F">FUNCIONÁRIA</option>'
                 : '<option value="">SELECIONE</option><option value="M">ALUNO</option><option value="F">ALUNA</option>';
@@ -1663,7 +1799,9 @@
             const func = document.getElementById('editEhFuncionario').checked;
             const nome = document.getElementById('editNomePessoa').value.trim().toUpperCase();
             const sexo = document.getElementById('editSexoPessoa').value;
-            const ano = func ? null : parseInt(document.getElementById('editAnoPessoa').value);
+            const em = !func && document.getElementById('editEhEnsinoMedio').checked;
+            const anoRaw = func ? null : parseInt(document.getElementById('editAnoPessoa').value);
+            const ano = em ? anoRaw + 9 : anoRaw; // 1→10, 2→11, 3→12
             const turma = func ? null : document.getElementById('editTurmaPessoa').value.trim().toUpperCase();
             if (!nome || !sexo || (!func && (!ano || !turma))) {
                 btn.textContent = lbl; btn.disabled = false; return;
@@ -1699,7 +1837,9 @@
             const func = document.getElementById('ehFuncionario').checked;
             const nome = document.getElementById('nomePessoa').value.trim().toUpperCase();
             const sexo = document.getElementById('sexoPessoa').value;
-            const ano = func ? null : parseInt(document.getElementById('anoPessoa').value);
+            const em = !func && document.getElementById('ehEnsinoMedio').checked;
+            const anoRaw = func ? null : parseInt(document.getElementById('anoPessoa').value);
+            const ano = em ? anoRaw + 9 : anoRaw; // 1→10, 2→11, 3→12
             const turma = func ? null : document.getElementById('turmaPessoa').value.trim().toUpperCase();
 
             if (!nome || !sexo || (!func && (!ano || !turma))) {
@@ -1758,7 +1898,7 @@
                     candidatos = candidatos.slice(0, 6);
                     if (!candidatos.length) { sug.style.display = 'none'; return; }
                     sug.innerHTML = candidatos.map(p => {
-                        const info = tipo === 'aluno' ? ` (${p.ano_aluno}º ${p.turma_aluno})` : '';
+                        const info = tipo === 'aluno' ? ` (${p.ano_aluno >= 10 ? 'EM ' + (p.ano_aluno - 9) + 'º' : p.ano_aluno + 'º'} ${p.turma_aluno})` : '';
                         return `<div data-nome="${p.nome}" data-ano="${p.ano_aluno||''}" data-turma="${p.turma_aluno||''}" data-sexo="${p.sexo}"
                             style="padding:0.7rem;border-bottom:1px solid var(--border);cursor:pointer;font-size:0.8rem;">
                             ${p.nome}<span style="color:var(--text-light);">${info}</span></div>`;
@@ -1770,7 +1910,17 @@
                     if (!item) return;
                     input.value = item.dataset.nome;
                     if (tipo === 'aluno') {
-                        if (item.dataset.ano) anoInput.value = item.dataset.ano;
+                        const anoVal = parseInt(item.dataset.ano) || 0;
+                        const em = anoVal >= 10;
+                        const cbEm = document.getElementById('ehEnsinoMedioEmp');
+                        const lblEm = document.getElementById('labelEnsinoMedioEmp');
+                        if (cbEm) { cbEm.checked = em; lblEm.classList.toggle('checked', em); }
+                        const anoInput = document.getElementById('ano');
+                        if (anoInput) {
+                            anoInput.max = em ? '3' : '9';
+                            document.getElementById('labelAnoEmp').textContent = em ? 'ANO (1, 2 ou 3) *' : 'ANO *';
+                            anoInput.value = em ? anoVal - 9 : anoVal;
+                        }
                         if (item.dataset.turma) turmaInput.value = item.dataset.turma;
                         const sel = document.getElementById('sexo');
                         if (item.dataset.sexo) sel.value = item.dataset.sexo;
@@ -1833,6 +1983,7 @@
 
             if (!emps.length) {
                 container.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">NENHUM EMPRÉSTIMO ATIVO.</p>';
+                _atualizarBolinhaDevolucoes([]);
                 return;
             }
 
@@ -1875,6 +2026,37 @@
 
             container.innerHTML = html;
             requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
+            _atualizarBolinhaDevolucoes(emps);
+        }
+
+        function _atualizarBolinhaDevolucoes(emps) {
+            const btn = document.getElementById('tab-btn-devolucoes');
+            if (!btn) return;
+            let bolinha = '⚫'; // sem empréstimos
+            if (emps && emps.length > 0) {
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const temAtrasado = emps.some(e => {
+                    if (e.sem_data_definida || !e.data_prevista_devolucao) return false;
+                    const d = new Date(e.data_prevista_devolucao); d.setHours(0,0,0,0);
+                    return d < hoje;
+                });
+                const temHoje = emps.some(e => {
+                    if (e.sem_data_definida || !e.data_prevista_devolucao) return false;
+                    const d = new Date(e.data_prevista_devolucao); d.setHours(0,0,0,0);
+                    return d.getTime() === hoje.getTime();
+                });
+                const temAberto = emps.some(e => {
+                    if (e.sem_data_definida || !e.data_prevista_devolucao) return false;
+                    const d = new Date(e.data_prevista_devolucao); d.setHours(0,0,0,0);
+                    return d > hoje;
+                });
+                const temSemPrazo = emps.some(e => e.sem_data_definida);
+                if (temAtrasado)      bolinha = '🔴';
+                else if (temHoje)     bolinha = '🟡';
+                else if (temAberto)   bolinha = '🟢';
+                else if (temSemPrazo) bolinha = '⚪';
+            }
+            btn.textContent = `DEVOLUÇÕES ${bolinha}`;
         }
 
         // carregarDevolucoes(): mantido por compatibilidade — renderiza do cache e atualiza em segundo plano
@@ -1916,8 +2098,11 @@
                     return d < hoje;
                 });
 
-                const badgeHoje   = temHoje    ? '<span style="background:#f59e0b;color:#fff;font-size:0.65rem;font-weight:800;padding:0.2rem 0.5rem;border-radius:6px;margin-left:0.4rem;">DEVOLVER HOJE!</span>' : '';
-                const badgeAtraso = temAtrasado ? '<span class="atrasado-label" style="margin-left:0.4rem;">⚠️ ATRASADO</span>' : '';
+                const badgeHoje   = temHoje    ? '<span style="font-size:0.85rem;margin-left:0.3rem;">🟡</span><span style="font-size:0.65rem;font-weight:800;background:#f59e0b;color:#fff;padding:0.15rem 0.45rem;border-radius:5px;margin-left:0.2rem;">DEVOLVER HOJE</span>' : '';
+                const badgeAtraso = temAtrasado ? '<span style="font-size:0.85rem;margin-left:0.3rem;">🔴</span><span style="font-size:0.65rem;font-weight:800;background:#ef4444;color:#fff;padding:0.15rem 0.45rem;border-radius:5px;margin-left:0.2rem;">ATRASADO</span>' : '';
+                const semPrazo    = emprestimos.every(e => e.sem_data_definida);
+                const badgeSemPrazo = (!temAtrasado && !temHoje && semPrazo) ? '<span style="font-size:0.85rem;margin-left:0.3rem;">⚪</span><span style="font-size:0.65rem;font-weight:800;background:#64748b;color:#fff;padding:0.15rem 0.45rem;border-radius:5px;margin-left:0.2rem;">SEM PRAZO</span>' : '';
+                const badgeAberto = (!temAtrasado && !temHoje && !semPrazo) ? '<span style="font-size:0.85rem;margin-left:0.3rem;">🟢</span><span style="font-size:0.65rem;font-weight:800;background:#10b981;color:#fff;padding:0.15rem 0.45rem;border-radius:5px;margin-left:0.2rem;">EM ABERTO</span>' : '';
                 const contLivros  = emprestimos.length > 1 ? `<span style="font-size:0.7rem;font-weight:400;color:var(--text-light);margin-left:0.4rem;">(${emprestimos.length} livros)</span>` : '';
 
                 // Renderizar cada livro dentro do acordeão
@@ -1945,8 +2130,8 @@
                 return `
                 <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">
                     <div onclick="toggleDevAcc('${pessoaId}')" style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;cursor:pointer;background:var(--card);">
-                        <div style="font-size:0.82rem;font-weight:700;flex:1;">
-                            ${nome}${contLivros}${badgeHoje}${badgeAtraso}
+                        <div style="font-size:0.82rem;font-weight:700;flex:1;color:var(--text);">
+                            ${nome}${contLivros}${badgeAtraso}${badgeHoje}${badgeAberto}${badgeSemPrazo}
                         </div>
                         <span id="${pessoaId}-ind" style="font-size:0.75rem;color:var(--text-light);transition:transform 0.2s;">▼</span>
                     </div>
@@ -1968,19 +2153,46 @@
         window.toggleDevAcc = (id) => {
             const el  = document.getElementById(id);
             const ind = document.getElementById(id + '-ind');
+            if (!el) return;
             el.classList.toggle('active');
             if (ind) ind.style.transform = el.classList.contains('active') ? 'rotate(180deg)' : '';
         };
 
         // Devolver e recarregar a aba de devoluções
         window.devolverEAtualizar = async (id) => {
-            if (!confirm('CONFIRMAR DEVOLUÇÃO?')) return;
+            const data = await _modalDataDevolucao();
+            if (data === null) return;
             try {
-                await window.DB.registrarDevolucao(id, new Date().toISOString());
+                await window.DB.registrarDevolucao(id, data);
                 load();
                 carregarDevolucoes();
             } catch(err) { window.mostrarMsg('msgEmp', '❌ ERRO: ' + err.message, 'danger'); }
         };
+
+        // Modal de data de devolução
+        function _modalDataDevolucao() {
+            return new Promise(resolve => {
+                const hoje = new Date().toISOString().split('T')[0];
+                const m = document.createElement('div');
+                m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+                m.innerHTML = `<div style="background:var(--card);border-radius:14px;padding:1.5rem;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+                    <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:1rem;color:var(--primary);">📅 DATA DA DEVOLUÇÃO</h3>
+                    <input type="date" id="_devDataInput" value="${hoje}" style="width:100%;padding:0.65rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:0.9rem;margin-bottom:1rem;">
+                    <div style="display:flex;gap:0.5rem;">
+                        <button id="_devBtnOk" style="flex:1;padding:0.75rem;background:var(--success);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-family:inherit;font-size:0.85rem;text-transform:uppercase;">✓ CONFIRMAR</button>
+                        <button id="_devBtnCan" style="flex:1;padding:0.75rem;background:var(--card);border:1.5px solid var(--border);color:var(--text);border-radius:8px;font-weight:800;cursor:pointer;font-family:inherit;font-size:0.85rem;text-transform:uppercase;">✕ CANCELAR</button>
+                    </div>
+                </div>`;
+                document.body.appendChild(m);
+                m.querySelector('#_devBtnOk').onclick = () => {
+                    const val = m.querySelector('#_devDataInput').value;
+                    m.remove();
+                    resolve(val ? new Date(val + 'T12:00:00').toISOString() : new Date().toISOString());
+                };
+                m.querySelector('#_devBtnCan').onclick = () => { m.remove(); resolve(null); };
+                m.addEventListener('click', e => { if (e.target === m) { m.remove(); resolve(null); } });
+            });
+        }
 
         window.delEmpEAtualizar = async (id) => {
             if (!confirm('EXCLUIR REGISTRO DE EMPRÉSTIMO?')) return;
@@ -2072,6 +2284,39 @@
     // =====================================================================
     // PUBLICAÇÃO INDEPENDENTE
     // =====================================================================
+
+    // =====================================================================
+    // COLABORADORES, CATEGORIAS, PUB. INDEPENDENTE
+    // =====================================================================
+    window.togglePubIndependente = (cb, editoraId) => {
+        const label = cb.closest('.checkbox-container');
+        if (label) label.classList.toggle('checked', cb.checked);
+        const input = document.getElementById(editoraId);
+        if (input) { input.disabled = cb.checked; input.style.opacity = cb.checked ? '0.4' : '1'; if (cb.checked) input.value = ''; }
+    };
+
+    const _TIPOS_COLAB = ['TRADUTOR','TRADUTORA','ILUSTRADOR','ILUSTRADORA','ORGANIZADOR','ORGANIZADORA','ADAPTADOR','COLABORADOR'];
+    const _opcoesColab = () => '<option value=""></option>' + _TIPOS_COLAB.map(t => `<option value="${t}">${t}</option>`).join('');
+    const _criarColabDiv = (funcao, nome) => {
+        const div = document.createElement('div');
+        div.className = 'colaborador-item';
+        div.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.4rem;align-items:center;';
+        div.innerHTML = `<select style="flex:0 0 140px;padding:0.5rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:0.85rem;text-transform:uppercase;">${_opcoesColab()}</select><input type="text" placeholder="NOME" style="flex:1;padding:0.5rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:0.85rem;text-transform:uppercase;" value="${(nome||'').toUpperCase()}"><button type="button" onclick="this.closest('.colaborador-item').remove()" style="background:var(--danger);border:none;color:#fff;border-radius:8px;padding:0.4rem 0.6rem;cursor:pointer;font-size:0.85rem;">✕</button>`;
+        div.querySelector('select').value = funcao || '';
+        return div;
+    };
+    window.adicionarColaborador = (funcao='', nome='') => document.getElementById('listaColaboradores').appendChild(_criarColabDiv(funcao, nome));
+    window.coletarColaboradores = () => [...document.querySelectorAll('#listaColaboradores .colaborador-item')].map(d => ({ funcao: d.querySelector('select').value || 'COLABORADOR', nome: d.querySelector('input').value.trim() })).filter(c => c.nome);
+    window.adicionarColaboradorEdit = (funcao='', nome='') => document.getElementById('editListaColaboradores').appendChild(_criarColabDiv(funcao, nome));
+    window.coletarColaboradoresEdit = () => [...document.querySelectorAll('#editListaColaboradores .colaborador-item')].map(d => ({ funcao: d.querySelector('select').value || 'COLABORADOR', nome: d.querySelector('input').value.trim() })).filter(c => c.nome);
+
+    // Popular selects de categoria
+    const _cats = window.DB.CATEGORIAS || [];
+    ['categoria','editCategoria'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '<option value="">SELECIONE</option>' + _cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    });
 
     // =====================================================================
     // MENSAGENS TEMPORÁRIAS
