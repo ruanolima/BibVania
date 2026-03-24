@@ -2400,16 +2400,15 @@
     window._editCapaBase64 = null;
     window._editCapaExcluir = false;
 
-    // Comprime imagem para capa de livro com boa qualidade ampliada
-    // 1200px / JPEG 88% — nítido na lista e no lightbox ampliado
-    // Reduz progressivamente só se necessário para caber no Supabase (~700KB base64)
+    // Comprime imagem para capa de livro — max 400px / JPEG 60% / 150KB
+    // Suficiente para exibição em cards e lightbox; reduz egress do Supabase drasticamente
     function comprimirImagem(imageSrc) {
         return new Promise((resolve) => {
             const original = new Image();
             original.onload = () => {
-                const LIMITE = 700000;
-                let maxPx = 1440;
-                let qualidade = 0.88;
+                const LIMITE = 150000;
+                let maxPx = 400;
+                let qualidade = 0.60;
                 let base64;
 
                 do {
@@ -2420,16 +2419,15 @@
                     canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
                     base64 = canvas.toDataURL('image/jpeg', qualidade);
 
-                    // Reduz qualidade primeiro (preserva tamanho), depois reduz dimensão
                     if (base64.length > LIMITE) {
-                        if (qualidade > 0.55) {
-                            qualidade = Math.max(0.55, qualidade - 0.08);
+                        if (qualidade > 0.40) {
+                            qualidade = Math.max(0.40, qualidade - 0.08);
                         } else {
                             maxPx = Math.round(maxPx * 0.82);
-                            qualidade = 0.80;
+                            qualidade = 0.55;
                         }
                     }
-                } while (base64.length > LIMITE && maxPx > 300);
+                } while (base64.length > LIMITE && maxPx > 150);
 
                 resolve(base64);
             };

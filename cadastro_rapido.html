@@ -376,7 +376,7 @@ function comprimirImagem(src) {
     return new Promise(function(resolve) {
         var img = new Image();
         img.onload = function() {
-            var MAX=900, Q=0.82, w=img.width, h=img.height;
+            var MAX=400, Q=0.60, w=img.width, h=img.height;
             if (w>MAX||h>MAX){ var r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
             var c=document.createElement('canvas'); c.width=w; c.height=h;
             c.getContext('2d').drawImage(img,0,0,w,h);
@@ -665,7 +665,7 @@ async function editarComIA() {
             var thumbDataUrl = await _baixarThumbnail(web.thumbnail);
             if (thumbDataUrl) {
                 var thumbComprimida = await comprimirImagem(thumbDataUrl);
-                if (thumbComprimida && thumbComprimida.length <= 900000) {
+                if (thumbComprimida && thumbComprimida.length <= 200000) {
                     d._capaDownload = thumbComprimida;
                     var ce = document.getElementById('capaEncontrada');
                     if (ce) { ce.src = thumbComprimida; ce.style.display = 'block'; }
@@ -743,7 +743,7 @@ async function salvarEdicao() {
             prateleira:prat,quantidade_total:qtd,quantidade_disponivel:Math.max(0,novaDisp)};
         if(_fotoBase64){
             var capa=await comprimirImagem('data:'+_fotoMime+';base64,'+_fotoBase64);
-            if(capa.length<=900000)payload.imagem_url=capa;
+            if(capa.length<=200000)payload.imagem_url=capa;
         } else if(window._dadosIA&&window._dadosIA._capaDownload) {
             payload.imagem_url = window._dadosIA._capaDownload;
         }
@@ -787,7 +787,7 @@ async function cadastrarLivro() {
             categoria:document.getElementById('campoCategoria').value||null,
             palavras_chave:pcs,alt_text:document.getElementById('campoAltText').value.trim()||null,
             prateleira:prat,quantidade_total:qtd,quantidade_disponivel:qtd};
-        if(_fotoBase64){var capa=await comprimirImagem('data:'+_fotoMime+';base64,'+_fotoBase64);if(capa.length<=900000)payload.imagem_url=capa;}
+        if(_fotoBase64){var capa=await comprimirImagem('data:'+_fotoMime+';base64,'+_fotoBase64);if(capa.length<=200000)payload.imagem_url=capa;}
         var er=(await supabase.from('livros').insert(payload)).error;
         if(er) throw er;
         mostrarStatus('✅ CADASTRADO!','ok');
