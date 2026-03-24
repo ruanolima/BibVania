@@ -788,6 +788,8 @@ async function cadastrarLivro() {
             palavras_chave:pcs,alt_text:document.getElementById('campoAltText').value.trim()||null,
             prateleira:prat,quantidade_total:qtd,quantidade_disponivel:qtd};
         if(_fotoBase64){var capa=await comprimirImagem('data:'+_fotoMime+';base64,'+_fotoBase64);if(capa.length<=200000)payload.imagem_url=capa;}
+        var idRes=await supabase.from('livros').select('id').order('id',{ascending:false}).limit(1);
+        payload.id = (idRes.data&&idRes.data.length>0) ? idRes.data[0].id+1 : 1;
         var er=(await supabase.from('livros').insert(payload)).error;
         if(er) throw er;
         mostrarStatus('✅ CADASTRADO!','ok');
