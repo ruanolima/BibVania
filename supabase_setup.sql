@@ -12,15 +12,11 @@ CREATE TABLE IF NOT EXISTS livros (
     id BIGINT PRIMARY KEY,
     isbn TEXT,
     imagem_url TEXT,
+    pdf_url TEXT,
     titulo TEXT NOT NULL,
     autor TEXT,
     prateleira TEXT,
-    editora TEXT,
-    pub_independente BOOLEAN DEFAULT FALSE,
-    colaboradores JSONB DEFAULT '[]',
-    acabamento TEXT,
     categoria TEXT,
-    sinopse TEXT,
     palavras_chave TEXT[] DEFAULT '{}',
     alt_text TEXT,
     quantidade_total INTEGER NOT NULL DEFAULT 1,
@@ -102,6 +98,7 @@ FOR EACH ROW EXECUTE FUNCTION recalcular_disponivel();
 -- 6. COLUNAS ADICIONAIS
 -- Seguro executar mesmo se o banco já existia — IF NOT EXISTS evita erros.
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
+ALTER TABLE livros ADD COLUMN IF NOT EXISTS pdf_url TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS alt_text TEXT;
 
@@ -124,8 +121,6 @@ CREATE POLICY "Escrita autenticada de pessoas" ON pessoas FOR ALL USING (auth.ro
 
 -- 8. REALTIME
 -- Habilita atualizações em tempo real para todas as tabelas.
--- Necessário para que o acervo, relatórios e painel atualizem automaticamente.
--- Usa DO block para evitar erro se a tabela já estiver habilitada.
 DO $$
 BEGIN
     IF NOT EXISTS (

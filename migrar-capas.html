@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BibVania — Migrar Capas para o Internet Archive</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; background: #0f172a; color: #e2e8f0; padding: 1.5rem; min-height: 100vh; }
+    h1 { color: #60a5fa; font-size: 1.1rem; margin-bottom: 0.2rem; }
+    .sub { color: #64748b; font-size: 0.75rem; margin-bottom: 1.5rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    label { display: block; color: #94a3b8; font-size: 0.72rem; margin-bottom: 0.35rem; }
+    input { width: 100%; padding: 0.55rem 0.7rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-family: monospace; font-size: 0.82rem; margin-bottom: 0.9rem; }
+    input:focus { outline: none; border-color: #60a5fa; }
+    button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-family: monospace; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #btnIniciar { background: #2563eb; color: #fff; width: 100%; }
+    #log { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; height: 300px; overflow-y: auto; font-size: 0.72rem; line-height: 1.8; }
+    .ok  { color: #4ade80; }
+    .err { color: #f87171; }
+    .inf { color: #60a5fa; }
+    .warn{ color: #fbbf24; }
+    #barra-wrap { margin-top: 1rem; display: none; }
+    #barra-bg { background: #1e293b; border-radius: 999px; height: 10px; overflow: hidden; }
+    #barra { background: #2563eb; height: 100%; width: 0; border-radius: 999px; transition: width .3s; }
+    #status { margin-top: 0.5rem; font-size: 0.72rem; color: #94a3b8; text-align: center; }
+    .resumo { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin-top: 1rem; display: none; font-size: 0.78rem; line-height: 1.8; }
+    .resumo h3 { color: #4ade80; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<h1>📦 BibVania — Migração de Capas</h1>
+<p class="sub">Transfere capas base64 do Supabase direto para o Internet Archive.</p>
+
+<div class="card">
+    <label>URL DO SUPABASE</label>
+    <input id="inpUrl" value="https://skiqzvtbogtaygvvhswk.supabase.co">
+
+    <label>SUPABASE ANON KEY</label>
+    <input id="inpAnonKey" placeholder="eyJ...">
+
+    <label>EMAIL DO ADMIN</label>
+    <input id="inpEmail" type="email">
+
+    <label>SENHA DO ADMIN</label>
+    <input id="inpSenha" type="password">
+
+    <label>IA ACCESS KEY (archive.org/account/s3.php)</label>
+    <input id="inpIaAccess" placeholder="Access Key do Internet Archive">
+
+    <label>IA SECRET KEY</label>
+    <input id="inpIaSecret" type="password" placeholder="Secret Key do Internet Archive">
+
+    <label>IDENTIFIER (ex: bibvania-files)</label>
+    <input id="inpIdentifier" value="bibvania-files">
+
+    <button id="btnIniciar" onclick="iniciar()">▶ INICIAR MIGRAÇÃO</button>
+</div>
+
+<div class="card">
+    <div id="log"><span class="inf">Aguardando início...</span></div>
+    <div id="barra-wrap">
+        <div id="barra-bg"><div id="barra"></div></div>
+        <div id="status"></div>
+    </div>
+    <div class="resumo" id="resumo">
+        <h3>✅ MIGRAÇÃO CONCLUÍDA</h3>
+        <p id="resumo-texto"></p>
+    </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const log = (msg, cls='inf') => {
+    const div = document.getElementById('log');
+    div.innerHTML += `<div class="${cls}">${msg}</div>`;
+    div.scrollTop = div.scrollHeight;
+};
+const setProgresso = (a, t) => {
+    const pct = t ? Math.round(a/t*100) : 0;
+    document.getElementById('barra').style.width = pct+'%';
+    document.getElementById('status').textContent = `${a} / ${t} (${pct}%)`;
+};
+
+window.iniciar = async () => {
+    const url        = document.getElementById('inpUrl').value.trim();
+    const anonKey    = document.getElementById('inpAnonKey').value.trim();
+    const email      = document.getElementById('inpEmail').value.trim();
+    const senha      = document.getElementById('inpSenha').value;
+    const iaAccess   = document.getElementById('inpIaAccess').value.trim();
+    const iaSecret   = document.getElementById('inpIaSecret').value.trim();
+    const identifier = document.getElementById('inpIdentifier').value.trim();
+
+    if (!url||!anonKey||!email||!senha||!iaAccess||!iaSecret||!identifier) {
+        alert('Preencha todos os campos.'); return;
+    }
+
+    const btn = document.getElementById('btnIniciar');
+    btn.disabled = true;
+    document.getElementById('log').innerHTML = '';
+    document.getElementById('barra-wrap').style.display = 'block';
+    document.getElementById('resumo').style.display = 'none';
+
+    // ── Login Supabase ───────────────────────────────────────────
+    log('🔐 Autenticando no Supabase...');
+    const supabase = createClient(url, anonKey);
+    const { error: authErr } = await supabase.auth.signInWithPassword({ email, password: senha });
+    if (authErr) { log('❌ Falha no login: '+authErr.message, 'err'); btn.disabled=false; return; }
+    log('✓ Autenticado!', 'ok');
+
+    // ── Buscar capas base64 ──────────────────────────────────────
+    log('📋 Buscando livros com capa base64...');
+    const { data: livros, error: listErr } = await supabase
+        .from('livros').select('id, titulo, imagem_url')
+        .not('imagem_url','is',null)
+        .not('imagem_url','like','https://%');
+
+    if (listErr) { log('❌ '+listErr.message,'err'); btn.disabled=false; return; }
+    const total = livros?.length||0;
+    if (!total) { log('ℹ️ Nenhuma capa base64 encontrada — talvez já estejam migradas!','warn'); btn.disabled=false; return; }
+    log(`📚 ${total} capa(s) encontrada(s).`);
+    setProgresso(0, total);
+
+    // ── Migrar ───────────────────────────────────────────────────
+    let ok=0, erros=0;
+
+    for (let i=0; i<livros.length; i++) {
+        const { id, titulo, imagem_url } = livros[i];
+        log(`[${i+1}/${total}] ID ${id}: ${titulo}...`);
+
+        try {
+            // Decodifica base64 para bytes
+            const base64 = imagem_url.includes(',') ? imagem_url.split(',')[1] : imagem_url;
+            const bytes  = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+            const filename = `capa-${id}.jpg`;
+            const iaUrl    = `https://s3.us.archive.org/${identifier}/${filename}`;
+
+            // Upload direto para o Internet Archive
+            const res = await fetch(iaUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization':            `LOW ${iaAccess}:${iaSecret}`,
+                    'Content-Type':             'image/jpeg',
+                    'x-amz-auto-make-bucket':   '1',
+                    'x-archive-meta-mediatype': 'image',
+                },
+                body: bytes,
+            });
+
+            if (!res.ok) throw new Error(`IA retornou ${res.status}`);
+
+            const novaUrl = `https://archive.org/download/${identifier}/${filename}`;
+
+            // Atualiza Supabase com URL do IA
+            const { error: upErr } = await supabase
+                .from('livros').update({ imagem_url: novaUrl }).eq('id', id);
+            if (upErr) throw new Error(upErr.message);
+
+            log(`  ✓ → ${novaUrl}`, 'ok');
+            ok++;
+        } catch(e) {
+            log(`  ✗ ${e.message}`, 'err');
+            erros++;
+        }
+
+        setProgresso(i+1, total);
+        await new Promise(r => setTimeout(r, 600));
+    }
+
+    // ── Resumo ───────────────────────────────────────────────────
+    log('─────────────────────────────');
+    log(`Concluído: ${ok} migradas, ${erros} com erro.`, ok===total?'ok':'warn');
+    const resumo = document.getElementById('resumo');
+    resumo.style.display = 'block';
+    document.getElementById('resumo-texto').innerHTML =
+        `✅ ${ok} capa(s) migradas para o Internet Archive.<br>`+
+        (erros?`⚠️ ${erros} com erro — veja o log acima.<br>`:'')+
+        `<br>Acervo: <strong>archive.org/details/${identifier}</strong>`;
+
+    btn.disabled = false;
+};
+</script>
+</body>
+</html>
+

@@ -348,37 +348,36 @@ input:disabled {
 
 /* ── CAPA DO LIVRO ─────────────────────────────────── */
 .book-cover-wrap {
-    width: 72px !important;
-    min-width: 72px !important;
-    max-width: 72px !important;
-    height: 96px;
+    width: 96px !important;
+    min-width: 96px !important;
+    max-width: 96px !important;
+    height: 148px;
+    align-self: flex-start;
     border-radius: 6px;
     overflow: hidden;
     border: 1px solid var(--border);
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
     position: relative;
-    background: var(--bg);
+    /* Fundo cinza com logo desde o início — igual em todos os estados sem imagem */
+    background: #8b9aaa url('logo.png') center 35%/60% no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px; /* isola do A+/A- do usuário */
 }
 
-/* Fundo cinza com logo — mesmo nos dois estados (carregando e sem capa) */
-.book-cover-wrap:not(.capa-carregada):not(.sem-capa) {
-    background: #8b9aaa url('logo.png') center 35%/60% no-repeat;
+[data-theme="dark"] .book-cover-wrap {
+    background: #3a4a5a url('logo.png') center 35%/60% no-repeat;
 }
 
-/* Sem capa: cinza médio + logo suave + sem overlay escuro */
-.book-cover-wrap.sem-capa {
-    background: #8b9aaa url('logo.png') center 35%/60% no-repeat !important;
+/* has-image: fundo some quando a imagem aparece */
+.book-cover-wrap.has-image {
+    background: #8b9aaa;
 }
-[data-theme="dark"] .book-cover-wrap.sem-capa {
-    background: #3a4a5a url('logo.png') center 35%/60% no-repeat !important;
-}
-[data-theme="dark"] .book-cover-wrap:not(.capa-carregada):not(.sem-capa) {
-    background: #3a4a5a url('logo.png') center 35%/60% no-repeat;
+
+[data-theme="dark"] .book-cover-wrap.has-image {
+    background: #3a4a5a;
 }
 
 /* capa real — ocupa tudo quando visível */
@@ -390,15 +389,27 @@ input:disabled {
     object-fit: cover;
     display: none;
     z-index: 2;
+    transition: opacity 0.25s ease;
 }
 
 .book-cover-wrap.capa-carregada img.cover-img {
     display: block;
+    opacity: 0;
+}
+
+.book-cover-wrap.has-image img.cover-img {
+    opacity: 1;
+}
+
+/* Fallback: se capa-carregada mas não has-image (sem capa), garante display:none */
+.book-cover-wrap.sem-capa img.cover-img {
+    display: none !important;
 }
 
 /* overlay removido — fundo cinza já é suficiente nos dois estados */
 
 /* texto centralizado */
+/* Label: idêntico nos dois estados — carregando e sem capa */
 .book-cover-label {
     position: absolute;
     inset: 0;
@@ -406,27 +417,16 @@ input:disabled {
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     text-align: center;
-    font-size: 8px !important;
+    font-size: 9px !important;
     font-weight: 800;
-    color: #e2e8f0;
+    color: #fff;
     letter-spacing: 0.05em;
     line-height: 1.5;
     z-index: 1;
     pointer-events: none;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-}
-
-/* sem capa: texto escuro sobre o fundo cinza (sem text-shadow) */
-.book-cover-wrap.sem-capa .book-cover-label {
-    color: #fff !important;
-    font-size: 9px !important;
-    font-weight: 800 !important;
     text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 10px;
 }
 
 /* quando capa carregou: esconde overlay */
@@ -448,10 +448,10 @@ input:disabled {
 .book-header-inner {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.4rem;
     flex: 1 1 0 !important;
     min-width: 0;
-    padding-bottom: 2.5rem;
+    min-height: 148px;
     overflow: hidden;
 }
 
@@ -462,12 +462,46 @@ input:disabled {
     margin-bottom: 0.75rem;
     overflow: hidden;
     transition: border-color 0.1s ease;
-    content-visibility: auto;
-    contain-intrinsic-size: 0 120px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
 }
 
 
-/* Fade-in suave ao adicionar livro no render incremental */
+/* ── Admin: book-item tem estrutura vertical (header + actions + details) ── */
+#tab-registro .book-item,
+#secaoAtrasadosAdmin .book-item {
+    flex-direction: column;
+    padding: 0;
+    overflow: visible;
+    align-items: stretch;
+}
+
+/* No admin, o header ocupa largura total */
+#tab-registro .book-header,
+#secaoAtrasadosAdmin .book-header {
+    width: 100%;
+}
+
+/* No admin, o inner não precisa de altura fixa mas mantém badge embaixo */
+#tab-registro .book-header-inner,
+#secaoAtrasadosAdmin .book-header-inner {
+    min-height: 148px;
+    height: auto;
+    overflow: visible;
+    justify-content: space-between;
+}
+
+/* No admin, reservar espaço à direita do título para a setinha */
+#tab-registro .book-title,
+#secaoAtrasadosAdmin .book-title {
+    padding-right: 2.5rem;
+}
+
+/* No admin, a capa fica tamanho padrão alinhada ao topo */
+
 @keyframes bookFadeIn {
     from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -488,25 +522,36 @@ input:disabled {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    border-bottom: 1px solid var(--border);
 }
 
 .book-title {
     font-weight: 800;
     font-size: 1.1rem;
     color: var(--primary);
-    padding-right: 30px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .book-meta-box {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    overflow: hidden;
 }
 
 .book-meta-item {
     font-size: 0.8rem;
     color: var(--text-light);
     font-weight: 600;
+}
+
+.book-meta-single {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .book-meta-item strong {
@@ -516,28 +561,49 @@ input:disabled {
 .book-status-row {
     display: flex;
     align-items: center;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--border);
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+/* Variante usada no index.html: tags + badge em linhas separadas */
+.book-status-row.stacked {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.book-status-badge-row {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.book-tags-inline {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    gap: 0.2rem;
+    min-width: 0;
 }
 
 
 /* ── Barra de ações do card (admin) — FORA do accordion para evitar conflito de clique ── */
 .book-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 0.5rem;
-    padding: 0 1.25rem 0.75rem;
-    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 1.25rem 0.75rem;
 }
 
 .book-actions .btn-small {
-    flex: 1;
+    width: 100%;
+    text-align: center;
 }
 
 .book-status-row .badge {
-    position: absolute;
-    bottom: 1.25rem;
-    right: 1.25rem;
+    /* posição estática — flui dentro do book-header-inner */
 }
 
 .badge {
@@ -575,7 +641,7 @@ input:disabled {
     color: white;
 }
 
-/* Detalhes do Livro — grid rows evita reflow em todos os cards */
+/* Detalhes do Livro */
 .book-details {
     display: none;
     background: var(--bg);
@@ -588,6 +654,23 @@ input:disabled {
 
 .book-details.active {
     display: block;
+}
+
+/* ── Bordas arredondadas no card admin (overflow:visible exige arredondar os filhos) ── */
+#tab-registro .book-actions,
+#secaoAtrasadosAdmin .book-actions {
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* Quando details está aberto, actions perde o arredondamento e details ganha */
+#tab-registro .book-actions:has(+ .book-details.active),
+#secaoAtrasadosAdmin .book-actions:has(+ .book-details.active) {
+    border-radius: 0;
+}
+
+#tab-registro .book-details.active,
+#secaoAtrasadosAdmin .book-details.active {
+    border-radius: 0 0 var(--radius) var(--radius);
 }
 
 /* Seção de Atrasados */
@@ -750,6 +833,8 @@ footer {
 .book-cover-wrap img.cover-img[src=""] {
     display: none !important;
 }
+
+
 
 /* ══════════════════════════════════════════════════════════════
    ACESSIBILIDADE W3C / WCAG 2.1 AA

@@ -159,17 +159,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
             <div class="form-group"><label>TÍTULO *</label><input type="text" id="editTitulo"></div>
             <div class="form-group"><label>AUTOR *</label><input type="text" id="editAutor"></div>
             <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="editIsbn"></div>
-            <div class="form-group"><label>EDITORA (OPCIONAL)</label><input type="text" id="editEditora2"></div>
-                        <div class="form-group"><div class="cb-wrap" id="wrapEditPubIndep" onclick="toggleCb(this,'editPubIndep','editEditora2')"><input type="checkbox" id="editPubIndep"><div class="cb-box"></div><span class="cb-label">PUBLICAÇÃO INDEPENDENTE</span></div></div>
+
             <div class="form-group">
-                <label>COLABORADORES (OPCIONAL)</label>
-                <div id="editColaboradoresRapido"></div>
-                <button type="button" onclick="_adicionarColabEdit()" class="btn btn-outline" style="margin-top:0.4rem;padding:0.5rem;font-size:0.8rem;">+ ADICIONAR COLABORADOR</button>
+
             </div>
-            <div class="form-group"><label>ACABAMENTO (OPCIONAL)</label><select id="editAcabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
+
             <div class="form-group"><label>CATEGORIA *</label><select id="editCategoria2"></select></div>
             <div class="form-group"><label>PALAVRAS-CHAVE *</label><input type="text" id="editPalavras" placeholder="Ex: aventura"><small style="color:var(--text-light);font-size:0.68rem;">Separe por vírgula</small></div>
-            <div class="form-group"><label>SINOPSE (OPCIONAL)</label><textarea id="editSinopse2" rows="2" style="resize:vertical;"></textarea></div>
+
             <div class="form-group"><label>DESCRIÇÃO DA CAPA (ACESSIBILIDADE)</label><input type="text" id="editAltText" maxlength="150"></div>
             <div class="form-group"><label>PRATELEIRA *</label><input type="text" id="editPrateleira"></div>
             <div class="form-group"><label>QUANTIDADE TOTAL</label><input type="number" id="editQtd" min="1"></div>
@@ -191,17 +188,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
                 <div class="form-group"><label>TÍTULO *</label><input type="text" id="campoTitulo"></div>
                 <div class="form-group"><label>AUTOR *</label><input type="text" id="campoAutor"></div>
                 <div class="form-group"><label>ISBN (OPCIONAL)</label><input type="text" id="campoIsbn"></div>
-                <div class="form-group"><label>EDITORA (OPCIONAL)</label><input type="text" id="campoEditora"></div>
-                <div class="form-group"><div class="cb-wrap" id="wrapPubIndep" onclick="toggleCb(this,'campoPubIndep','campoEditora')"><input type="checkbox" id="campoPubIndep"><div class="cb-box"></div><span class="cb-label">PUBLICAÇÃO INDEPENDENTE</span></div></div>
+
                 <div class="form-group">
-                    <label>COLABORADORES (OPCIONAL)</label>
-                    <div id="campoColaboradores"></div>
-                    <button type="button" onclick="_adicionarColabRapido()" class="btn btn-outline" style="margin-top:0.4rem;padding:0.5rem;font-size:0.8rem;">+ ADICIONAR COLABORADOR</button>
+
                 </div>
-                <div class="form-group"><label>ACABAMENTO (OPCIONAL)</label><select id="campoAcabamento"><option value=""></option><option value="GRAMPEADO">GRAMPEADO</option><option value="ESPIRAL">ESPIRAL</option><option value="BROCHURA">BROCHURA</option><option value="CAPA DURA">CAPA DURA</option></select></div>
+
                 <div class="form-group"><label>CATEGORIA *</label><select id="campoCategoria"></select></div>
                 <div class="form-group"><label>PALAVRAS-CHAVE *</label><input type="text" id="campoPalavrasChave" placeholder="Ex: aventura"><small style="color:var(--text-light);font-size:0.68rem;">Separe por vírgula</small></div>
-                <div class="form-group"><label>SINOPSE (OPCIONAL)</label><textarea id="campoSinopse" rows="2" style="resize:vertical;"></textarea></div>
+
                 <div class="form-group"><label>DESCRIÇÃO DA CAPA (ACESSIBILIDADE)</label><input type="text" id="campoAltText" maxlength="150"></div>
                 <div class="form-group"><label>PRATELEIRA *</label><input type="text" id="campoPrateleira" placeholder="Ex: C3"></div>
                 <div class="form-group"><label>QUANTIDADE</label><input type="number" id="campoQtd" value="1" min="1"></div>
@@ -558,8 +552,6 @@ function _criarColab(funcao, nome, cid) {
     div.querySelector('select').value = funcao||'';
     lista.appendChild(div);
 }
-function _adicionarColabRapido(f,n){ _criarColab(f,n,'campoColaboradores'); }
-function _adicionarColabEdit(f,n){ _criarColab(f,n,'editColaboradoresRapido'); }
 function _coletarColabs(cid) {
     return Array.from(document.querySelectorAll('#'+cid+' div')).map(function(d){
         return {funcao:d.querySelector('select').value.trim(), nome:d.querySelector('input').value.trim()};
@@ -577,9 +569,7 @@ function setCb(cbId, val) {
     var cb=document.getElementById(cbId); if(!cb) return;
     cb.checked=!!val;
     var wrap=cb.closest('.cb-wrap'); if(wrap) wrap.classList.toggle('checked',!!val);
-    // Sincronizar campo editora associado
-    var editId = cbId==='campoPubIndep' ? 'campoEditora' : cbId==='editPubIndep' ? 'editEditora2' : null;
-    if (editId) { var ef=document.getElementById(editId); if(ef){ef.disabled=!!val;ef.style.opacity=val?'0.4':'1';} }
+
 }
 function _s(id, v) { var el=document.getElementById(id); if(el) el.value=v||''; }
 
@@ -597,13 +587,9 @@ async function analisarComIA() {
         var web = { isbn: gbWeb&&gbWeb.isbn||null, sinopse: gbWeb&&gbWeb.sinopse||null, editora: gbWeb&&gbWeb.editora||null, autor: gbWeb&&gbWeb.autor||null, titulo: gbWeb&&gbWeb.titulo||null };
         var d = _mesclar(img, web);
         _s('campoTitulo', d.titulo); _s('campoAutor', d.autor); _s('campoIsbn', d.isbn);
-        _s('campoEditora', d.editora); _s('campoAcabamento', d.acabamento);
-        _s('campoSinopse', d.sinopse); _s('campoPalavrasChave', (d.palavras_chave||[]).join(', '));
+        _s('campoPalavrasChave', (d.palavras_chave||[]).join(', '));
         _s('campoAltText', d.alt_text);
-        setCb('campoPubIndep', d.pub_independente);
         var cat = document.getElementById('campoCategoria'); if (cat && d.categoria) cat.value = d.categoria;
-        var lc = document.getElementById('campoColaboradores');
-        if (lc) { lc.innerHTML=''; (d.colaboradores||[]).filter(function(c){return c.nome&&c.funcao&&TIPOS_COLAB.indexOf(c.funcao.toUpperCase())>=0;}).forEach(function(c){_adicionarColabRapido(c.funcao,c.nome);}); }
         document.getElementById('capaResultado').src = 'data:'+_fotoMime+';base64,'+_fotoBase64;
         document.getElementById('resultadoLivro').classList.add('visivel');
         document.getElementById('infoTitulo').textContent = d.titulo||'—';
@@ -685,18 +671,12 @@ async function editarComIA() {
 function _preencherFormEdicao(d) {
     var livro = _livroEncontrado||{};
     _s('editTitulo', d.titulo||livro.titulo); _s('editAutor', d.autor||livro.autor);
-    _s('editIsbn', d.isbn||livro.isbn); _s('editEditora2', d.editora||livro.editora);
-    _s('editSinopse2', d.sinopse||livro.sinopse);
-    var ea=document.getElementById('editAcabamento'); if(ea) ea.value=d.acabamento||livro.acabamento||'';
+    _s('editIsbn', d.isbn||livro.isbn);
     _s('editPalavras', (d.palavras_chave&&d.palavras_chave.length?d.palavras_chave:(livro.palavras_chave||[])).join(', '));
     _s('editAltText', d.alt_text||livro.alt_text); _s('editPrateleira', livro.prateleira);
     var qtdRapida=document.getElementById('qtdRapida');
     _s('editQtd', qtdRapida&&parseInt(qtdRapida.value)>0?qtdRapida.value:(livro.quantidade_total||1));
-    setCb('editPubIndep', d.pub_independente!==undefined?d.pub_independente:livro.pub_independente);
-    var epi=document.getElementById('editPubIndep'); if(epi){var ee=document.getElementById('editEditora2');if(ee){ee.disabled=epi.checked;ee.style.opacity=epi.checked?'0.4':'1';}}
     var ec2=document.getElementById('editCategoria2'); if(ec2) ec2.value=d.categoria||livro.categoria||'';
-    var ecl=document.getElementById('editColaboradoresRapido');
-    if(ecl){ecl.innerHTML='';(d.colaboradores&&d.colaboradores.length?d.colaboradores:(livro.colaboradores||[])).filter(function(c){return c.nome&&c.funcao&&TIPOS_COLAB.indexOf(c.funcao.toUpperCase())>=0;}).forEach(function(c){_adicionarColabEdit(c.funcao,c.nome);});}
     // Mostrar capa no formulário
     var livro = _livroEncontrado||{};
     var capaUrl = (window._dadosIA&&window._dadosIA._capaDownload) || (_fotoBase64?('data:'+_fotoMime+';base64,'+_fotoBase64):null) || livro.imagem_url || null;
@@ -732,12 +712,7 @@ async function salvarEdicao() {
         var pcs=document.getElementById('editPalavras').value.split(',').map(function(x){return x.trim().toLowerCase();}).filter(Boolean);
         var qtd=parseInt(document.getElementById('editQtd').value)||livro.quantidade_total;
         var novaDisp=livro.quantidade_disponivel+(qtd-livro.quantidade_total);
-        var epi=document.getElementById('editPubIndep');
-        var payload={titulo:titulo,autor:autor,isbn:document.getElementById('editIsbn').value.trim()||null,pub_independente:epi?epi.checked:false,
-            editora:document.getElementById('editEditora2').value.trim()||null,
-            colaboradores:_coletarColabs('editColaboradoresRapido'),
-            acabamento:document.getElementById('editAcabamento').value||null,
-            sinopse:document.getElementById('editSinopse2').value.trim()||null,
+        var payload={titulo:titulo,autor:autor,isbn:document.getElementById('editIsbn').value.trim()||null,
             categoria:document.getElementById('editCategoria2').value||null,
             palavras_chave:pcs,alt_text:document.getElementById('editAltText').value.trim()||null,
             prateleira:prat,quantidade_total:qtd,quantidade_disponivel:Math.max(0,novaDisp)};
@@ -779,11 +754,6 @@ async function cadastrarLivro() {
     mostrarStatus('💾 SALVANDO...', 'info');
     try {
         var payload={titulo:titulo,autor:autor,isbn:document.getElementById('campoIsbn').value.trim()||null,
-            editora:document.getElementById('campoEditora').value.trim()||null,
-            pub_independente:document.getElementById('campoPubIndep').checked,
-            colaboradores:_coletarColabs('campoColaboradores'),
-            acabamento:document.getElementById('campoAcabamento').value||null,
-            sinopse:document.getElementById('campoSinopse').value.trim()||null,
             categoria:document.getElementById('campoCategoria').value||null,
             palavras_chave:pcs,alt_text:document.getElementById('campoAltText').value.trim()||null,
             prateleira:prat,quantidade_total:qtd,quantidade_disponivel:qtd};
@@ -829,12 +799,9 @@ function novoLivro() {
     var qtdR=document.getElementById('qtdRapida'); if(qtdR) qtdR.value='1';
     var btnQtd=document.getElementById('btnSalvarQtd'); if(btnQtd) btnQtd.disabled=true;
     document.getElementById('resultadoLivro').classList.remove('visivel');
-    ['campoTitulo','campoAutor','campoIsbn','campoPalavrasChave','campoPrateleira','campoAltText','campoEditora','campoSinopse'].forEach(function(id){_s(id,'');});
+    ['campoTitulo','campoAutor','campoIsbn','campoPalavrasChave','campoPrateleira','campoAltText'].forEach(function(id){_s(id,'');});
     _s('campoQtd','1');
-    var pub=document.getElementById('campoPubIndep'); if(pub) pub.checked=false;
     var cat=document.getElementById('campoCategoria'); if(cat) cat.value='';
-    var acab=document.getElementById('campoAcabamento'); if(acab) acab.value='';
-    var lc=document.getElementById('campoColaboradores'); if(lc) lc.innerHTML='';
     mostrarStatus('','');
     window.scrollTo({top:0,behavior:'smooth'});
 }

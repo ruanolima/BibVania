@@ -42,17 +42,13 @@ const toUpper = (val) => (val && typeof val === 'string') ? val.toUpperCase().tr
 const padronizarObjeto = (obj) => {
     const novoObj = { ...obj };
     for (let key in novoObj) {
-        // Não transformar arrays (ex: colaboradores) nem null/undefined
         if (typeof novoObj[key] === 'string') {
             novoObj[key] = toUpper(novoObj[key]);
         }
     }
 
-    if (Array.isArray(novoObj.colaboradores)) {
-        novoObj.colaboradores = novoObj.colaboradores.map(co => ({
-            funcao: toUpper(co.funcao) || 'COLABORADOR',
-            nome: toUpper(co.nome)
-        }));
+    if (Array.isArray(novoObj.palavras_chave)) {
+        novoObj.palavras_chave = novoObj.palavras_chave.map(p => typeof p === 'string' ? p.toLowerCase().trim() : p);
     }
     return novoObj;
 };
@@ -115,7 +111,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, isbn, editora, pub_independente, colaboradores, acabamento, sinopse, categoria, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text")
+                .select("id, titulo, autor, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text, imagem_url, pdf_url")
                 .order("titulo", { ascending: true });
             if (error) throw error;
             if (!data) {
@@ -204,11 +200,6 @@ const DB = {
                         quantidade_disponivel: novaQuantidadeDisponivel,
                         autor: livro.autor || existente.autor,
                         isbn: livro.isbn || existente.isbn,
-                        editora: livro.editora || existente.editora,
-                        pub_independente: livro.pub_independente ?? existente.pub_independente,
-                        colaboradores: livro.colaboradores?.length ? livro.colaboradores : existente.colaboradores,
-                        acabamento: livro.acabamento || existente.acabamento,
-                        sinopse: livro.sinopse || existente.sinopse,
                         categoria: livro.categoria || existente.categoria,
                         prateleira: livro.prateleira || existente.prateleira,
                         palavras_chave: livro.palavras_chave?.length ? livro.palavras_chave : existente.palavras_chave,
@@ -256,8 +247,8 @@ const DB = {
             
             livro.quantidade_disponivel = livro.quantidade_total - (count || 0);
 
-            // Nunca sobrescrever imagem_url via atualizarLivro (gerenciada por uploadCapa/removerCapa)
-            const { imagem_url, ...livroSemImagem } = livro;
+            // Nunca sobrescrever imagem_url nem pdf_url via atualizarLivro (gerenciadas por upload/remover)
+            const { imagem_url, pdf_url, ...livroSemImagem } = livro;
 
             const { data, error } = await supabase
                 .from("livros")
@@ -526,8 +517,44 @@ const DB = {
     },
 
 
+    // ── Utilitário interno: chama a Edge Function ia-upload ──────────────────
+    async _iaRequest(payload) {
+        const session = await this.getSession();
+        if (!session) throw new Error("Sessão expirada. Faça login novamente.");
+
+        const res = await supabase.functions.invoke("ia-upload", {
+            body: payload,
+            headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+
+        if (res.error) throw new Error(res.error.message || "Erro na Edge Function");
+        if (res.data?.error) throw new Error(res.data.error);
+        return res.data;
+    },
+
+    // ── CAPAS ─────────────────────────────────────────────────────────────────
+    async uploadCapa(livroId, base64url) {
+        try {
+            const result = await this._iaRequest({
+                acao: "upload", tipo: "capa", livroId, arquivo: base64url,
+            });
+            // Salva a URL pública do IA no banco (substitui o base64 antigo)
+            const { error } = await supabase
+                .from("livros")
+                .update({ imagem_url: result.url })
+                .eq("id", livroId);
+            if (error) throw error;
+            return result.url;
+        } catch (error) {
+            console.error("Erro ao salvar capa:", error);
+            throw error;
+        }
+    },
+
     async removerCapa(livroId) {
         try {
+            // Tenta excluir do IA (ignora erro se já não existia)
+            await this._iaRequest({ acao: "excluir", tipo: "capa", livroId }).catch(() => {});
             await supabase.from("livros").update({ imagem_url: null }).eq("id", livroId);
         } catch (error) {
             console.error("Erro ao remover capa:", error);
@@ -535,21 +562,30 @@ const DB = {
         }
     },
 
-    async uploadCapa(livroId, base64url) {
+    // ── PDFs ──────────────────────────────────────────────────────────────────
+    async uploadPdf(livroId, base64url) {
         try {
-            // Verificar tamanho — Supabase tem limite ~1MB por campo de texto
-            const sizeKB = Math.round(base64url.length / 1024);
-            if (base64url.length > 900000) {
-                throw new Error(`Imagem muito grande após compressão (${sizeKB}KB). Tente uma imagem menor.`);
-            }
+            const result = await this._iaRequest({
+                acao: "upload", tipo: "pdf", livroId, arquivo: base64url,
+            });
             const { error } = await supabase
-                .from('livros')
-                .update({ imagem_url: base64url })
-                .eq('id', livroId);
+                .from("livros")
+                .update({ pdf_url: result.url })
+                .eq("id", livroId);
             if (error) throw error;
-            return base64url;
+            return result.url;
         } catch (error) {
-            console.error('Erro ao salvar capa:', error);
+            console.error("Erro ao salvar PDF:", error);
+            throw error;
+        }
+    },
+
+    async removerPdf(livroId) {
+        try {
+            await this._iaRequest({ acao: "excluir", tipo: "pdf", livroId }).catch(() => {});
+            await supabase.from("livros").update({ pdf_url: null }).eq("id", livroId);
+        } catch (error) {
+            console.error("Erro ao remover PDF:", error);
             throw error;
         }
     },

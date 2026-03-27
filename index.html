@@ -163,8 +163,17 @@
 
             let wrapClasses, labelHtml, temCapa;
             if (!l._capaResolvida) {
-                wrapClasses = 'book-cover-wrap';
-                labelHtml = '<span class="book-cover-label" aria-hidden="true">CARREGANDO<br>CAPA</span>';
+                if (_idsComCapaCache && !_idsComCapaCache.has(l.id)) {
+                    // Confirmado sem capa: mostrar direto
+                    l._capaResolvida = 'sem';
+                    l.imagem_url = null;
+                    wrapClasses = 'book-cover-wrap sem-capa capa-carregada';
+                    labelHtml = '<span class="book-cover-label" aria-hidden="true" style="font-size:9px !important;">SEM<br>CAPA</span>';
+                } else {
+                    // Tem capa (ou cache ainda não chegou): mostrar "carregando"
+                    wrapClasses = 'book-cover-wrap';
+                    labelHtml = '<span class="book-cover-label" aria-hidden="true" style="font-size:9px !important;">CARREGANDO<br>CAPA</span>';
+                }
                 temCapa = false;
             } else if (l._capaResolvida === 'tem') {
                 wrapClasses = 'book-cover-wrap has-image capa-carregada';
@@ -172,18 +181,12 @@
                 temCapa = true;
             } else {
                 wrapClasses = 'book-cover-wrap sem-capa capa-carregada';
-                labelHtml = '<span class="book-cover-label" aria-hidden="true">SEM<br>CAPA</span>';
+                labelHtml = '<span class="book-cover-label" aria-hidden="true" style="font-size:9px !important;">SEM<br>CAPA</span>';
                 temCapa = false;
             }
 
             return `
             <article class="book-item" ${borderStyle}>
-                <div class="book-header"
-                    onclick="toggleAccordion(this,'${prefix}')"
-                    role="button" tabindex="0"
-                    aria-expanded="false"
-                    aria-controls="${prefix}details-${l.id}"
-                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAccordion(this,'${prefix}');}">
                     <div class="${wrapClasses}"
                         data-lightbox-id="${l.id}"
                         data-lightbox-titulo="${l.titulo.replace(/"/g,'&quot;')}"
@@ -193,29 +196,25 @@
                         <img class="cover-img" src="${temCapa ? l.imagem_url || '' : ''}" alt="Capa: ${l.titulo.replace(/"/g,'&quot;')}">
                     </div>
                     <div class="book-header-inner">
-                        <div class="accordion-indicator" style="position:absolute;top:1rem;right:1rem;" aria-hidden="true">▼</div>
                         <div class="book-title">${isAtrasado?'<span aria-hidden="true">⚠️ </span>':''}${l.titulo}</div>
                         <div class="book-meta-box">
-                            <div class="book-meta-item"><strong>AUTOR:</strong> ${l.autor||'NÃO INFORMADO'}</div>
-                            ${l.editora?`<div class="book-meta-item"><strong>EDITORA:</strong> ${l.editora}</div>`:l.pub_independente?`<div class="book-meta-item"><strong>PUBLICAÇÃO INDEPENDENTE</strong></div>`:''}
-                            ${(l.colaboradores||[]).map(co=>`<div class="book-meta-item"><strong>${co.funcao||'COLABORADOR'}:</strong> ${co.nome}</div>`).join('')}
-                            <div class="book-meta-item"><strong>ISBN:</strong> ${l.isbn||'N/A'}</div>
-                            ${l.acabamento?`<div class="book-meta-item"><strong>ACABAMENTO:</strong> ${l.acabamento}</div>`:''}
-                            ${l.categoria?`<div class="book-meta-item"><strong>CATEGORIA:</strong> ${l.categoria}</div>`:''}
-                            ${l.prateleira ? `<div class="book-meta-item"><strong>PRATELEIRA:</strong> ${l.prateleira}</div>` : ''}
-                            ${l.palavras_chave && l.palavras_chave.length ? `<div class="book-meta-item" style="margin-top:0.4rem;">${l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}')";>#${p}</span>`).join(' ')}</div>` : ''}
-                            ${l.sinopse?`<div class="book-meta-item" style="margin-top:0.5rem;font-size:0.75rem;background:var(--bg);padding:0.5rem;border-radius:6px;"><strong>SINOPSE:</strong> ${l.sinopse}</div>`:''}
+                            <div class="book-meta-item book-meta-single"><strong>AUTOR:</strong> ${l.autor||'NÃO INFORMADO'}</div>
+                            <div class="book-meta-item book-meta-single"><strong>ISBN:</strong> ${l.isbn||'N/A'}</div>
+                            ${l.categoria?`<div class="book-meta-item book-meta-single"><strong>CAT.:</strong> ${l.categoria}</div>`:''}
+                            ${l.prateleira ? `<div class="book-meta-item book-meta-single"><strong>PRAT.:</strong> ${l.prateleira}</div>` : ''}
                         </div>
-                        <div class="book-status-row">
-                            ${isAtrasado?'<span class="atrasado-label" role="alert">⚠️ ATRASO</span>':'<span></span>'}
-                            <span class="badge ${l.quantidade_disponivel>0?'badge-disponivel':'badge-indisponivel'}">
-                                ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
-                            </span>
+                        <div class="book-status-row stacked">
+                            <div class="book-tags-inline">
+                                ${isAtrasado?'<span class="atrasado-label" role="alert">⚠️ ATRASO</span>':''}
+                                ${l.palavras_chave && l.palavras_chave.length ? l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}')";>#${p}</span>`).join(' ') : ''}
+                            </div>
+                            <div class="book-status-badge-row">
+                                <span class="badge ${l.quantidade_disponivel>0?'badge-disponivel':'badge-indisponivel'}" style="flex-shrink:0;">
+                                    ${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="book-details" id="${prefix}details-${l.id}" role="region">
-                    <div id="${prefix}loans-${l.id}">${renderizarEmprestimos(l.id)}</div>
                 </div>
             </article>`;
         }
@@ -236,21 +235,39 @@
                 (mapa[l.id] || []).forEach(wrap => {
                     if (l._capaResolvida === 'tem' && l.imagem_url) {
                         const img = wrap.querySelector('img.cover-img');
-                        if (img && img.src !== l.imagem_url) img.src = l.imagem_url;
-                        wrap.className = 'book-cover-wrap has-image capa-carregada';
-                        const lbl = wrap.querySelector('.book-cover-label');
-                        if (lbl) lbl.style.display = 'none';
+                        if (img && img.src !== l.imagem_url) {
+                            wrap.classList.remove('has-image');
+                            img.onload = () => wrap.classList.add('has-image');
+                            img.onerror = () => {
+                                wrap.classList.remove('has-image');
+                                wrap.classList.add('sem-capa', 'capa-carregada');
+                                _setLabelSemCapa(wrap);
+                            };
+                            img.src = l.imagem_url;
+                        }
+                        wrap.className = 'book-cover-wrap capa-carregada'; // CSS esconde label via has-image no onload
                     } else if (l._capaResolvida === 'sem') {
                         if (!wrap.classList.contains('sem-capa')) {
                             wrap.classList.add('sem-capa', 'capa-carregada');
                         }
-                        const lbl = wrap.querySelector('.book-cover-label');
-                        if (lbl && lbl.textContent.includes('CARREGANDO')) lbl.innerHTML = 'SEM<br>CAPA';
+                        _setLabelSemCapa(wrap);
                     }
                 });
             });
         }
 
+
+        function _setLabelSemCapa(wrap) {
+            let lbl = wrap.querySelector('.book-cover-label');
+            if (!lbl) {
+                lbl = document.createElement('span');
+                lbl.className = 'book-cover-label';
+                lbl.setAttribute('aria-hidden', 'true');
+                wrap.insertBefore(lbl, wrap.firstChild);
+            }
+            lbl.innerHTML = 'SEM<br>CAPA';
+            lbl.style.fontSize = '9px';
+        }
         // Token de renderização
         let _renderToken = 0;
         let _capaToken = 0; // cancela busca de capas anterior ao re-renderizar
@@ -258,6 +275,21 @@
         // Primeiro: busca quais IDs têm capa (1 query leve, sem base64)
         // Depois: busca as capas em lotes, injetando no DOM sem re-render
         let _idsComCapaCache = null;
+
+        // Resolve _capaResolvida de todos os livros com base no cache de IDs
+        function _resolverCapas(livros) {
+            if (!_idsComCapaCache) return;
+            livros.forEach(l => {
+                if (!l._capaResolvida) {
+                    if (_idsComCapaCache.has(l.id)) {
+                        // tem capa — vai ser carregada depois
+                    } else {
+                        l._capaResolvida = 'sem';
+                        l.imagem_url = null;
+                    }
+                }
+            });
+        }
 
         async function _renderAcervoInterno() {
             const termo = normalizar(document.getElementById('buscaLivros').value);
@@ -270,9 +302,6 @@
                         : (normalizar(l.titulo).includes(termo) ||
                            (l.isbn && normalizar(l.isbn).includes(termo)) ||
                            (l.autor && normalizar(l.autor).includes(termo)) ||
-                           (l.editora && normalizar(l.editora).includes(termo)) ||
-                           (l.sinopse && normalizar(l.sinopse).includes(termo)) ||
-                           (l.colaboradores||[]).some(co => normalizar(co.nome).includes(termo)) ||
                            (l.palavras_chave||[]).some(p => normalizar(p).includes(termo)))
                 );
             }
@@ -295,6 +324,7 @@
             const novoHtml = normais.map(l => renderizarLivro(l, false)).join('');
             if (lista.dataset.lastHtmlHash === _hash(novoHtml)) return;
             lista.dataset.lastHtmlHash = _hash(novoHtml);
+
             lista.innerHTML = '';
 
             // Renderizar em lotes de 20 — não bloqueia a thread
@@ -340,8 +370,7 @@
                     const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
                     if (wrap) {
                         wrap.classList.add('sem-capa', 'capa-carregada');
-                        const lbl = wrap.querySelector('.book-cover-label');
-                        if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                        _setLabelSemCapa(wrap);
                     }
                 }
             });
@@ -356,14 +385,19 @@
                 if (!wrap) return;
                 if (url) {
                     const img = wrap.querySelector('img.cover-img');
-                    if (img) img.src = url;
-                    wrap.classList.add('has-image', 'capa-carregada');
-                    const lbl = wrap.querySelector('.book-cover-label');
-                    if (lbl) lbl.style.display = 'none';
+                    if (img) {
+                        img.onload = () => wrap.classList.add('has-image'); // CSS esconde label ao receber has-image
+                        img.onerror = () => {
+                            wrap.classList.remove('has-image');
+                            wrap.classList.add('sem-capa', 'capa-carregada');
+                            _setLabelSemCapa(wrap);
+                        };
+                        img.src = url;
+                    }
+                    wrap.classList.add('capa-carregada');
                 } else {
                     wrap.classList.add('sem-capa', 'capa-carregada');
-                    const lbl = wrap.querySelector('.book-cover-label');
-                    if (lbl) lbl.innerHTML = 'SEM<br>CAPA';
+                    _setLabelSemCapa(wrap);
                 }
             };
 
@@ -404,14 +438,21 @@
                 const capaCache = {};
                 todosLivros.forEach(l => { if (l._capaResolvida) capaCache[l.id] = { url: l.imagem_url, res: l._capaResolvida }; });
 
-                const queries = [window.DB.getLivros(), window.DB.getEmprestimosAtivos()];
-                if (!_idsComCapaCache) queries.push(window.DB.getIdsComCapa());
-                const [livros, emps, idsCapas] = await Promise.all(queries);
-                if (idsCapas) _idsComCapaCache = idsCapas;
+                // Sempre busca IDs com capa para detectar remoções
+                const [livros, emps, idsCapas] = await Promise.all([
+                    window.DB.getLivros(),
+                    window.DB.getEmprestimosAtivos(),
+                    window.DB.getIdsComCapa()
+                ]);
+                _idsComCapaCache = idsCapas;
                 todosLivros = livros;
                 todosLivros.forEach(l => {
-                    if (capaCache[l.id]) { l.imagem_url = capaCache[l.id].url; l._capaResolvida = capaCache[l.id].res; }
+                    // Só restaura cache se o banco confirma que ainda tem capa
+                    if (capaCache[l.id] && _idsComCapaCache && _idsComCapaCache.has(l.id)) {
+                        l.imagem_url = capaCache[l.id].url; l._capaResolvida = capaCache[l.id].res;
+                    }
                 });
+                _resolverCapas(todosLivros);
                 _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
                 idsAtrasadosCache = [...new Set(emps.filter(e=>e.atrasado).map(e=>e.livro_id))];
                 empsAtivosCache = {};
@@ -430,6 +471,7 @@
                 ]);
                 todosLivros = livros;
                 _idsComCapaCache = idsCapas;
+                _resolverCapas(todosLivros);
                 _livrosOrdenados = [...todosLivros].sort((a, b) => _collator.compare(a.titulo, b.titulo));
                 idsAtrasadosCache = [...new Set(emps.filter(e=>e.atrasado).map(e=>e.livro_id))];
                 empsAtivosCache = {};
