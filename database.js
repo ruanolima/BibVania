@@ -27,10 +27,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const CATEGORIAS_FIXAS = [
     'EDUCAÇÃO INCLUSIVA', 'INFANTIL (1º AO 4º)', 'INFANTOJUVENIL (5º E 6º)',
-    'JUVENIL (7º AO 9º)', 'JOVEM ADULTO (ENSINO MÉDIO)',
+    'JUVENIL (7º AO 9º)', 'JOVEM ADULTO (ENSINO MÉDIO)', 'EJA (FUNDAMENTAL)', 'EJA (MÉDIO)',
     'DIDÁTICO (1º)', 'DIDÁTICO (2º)', 'DIDÁTICO (3º)', 'DIDÁTICO (4º)',
     'DIDÁTICO (5º)', 'DIDÁTICO (6º)', 'DIDÁTICO (7º)', 'DIDÁTICO (8º)',
     'DIDÁTICO (9º)', 'DIDÁTICO (EM 1º)', 'DIDÁTICO (EM 2º)', 'DIDÁTICO (EM 3º)',
+    'DIDÁTICO (EJAF)', 'DIDÁTICO (EJAM)',
     'DE REFERÊNCIA', 'CLÁSSICOS & REGIONAIS', 'POESIA'
 ];
 
@@ -112,7 +113,7 @@ const DB = {
             const { data, error } = await supabase
                 .from("livros")
                 .select("id, titulo, autor, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text, imagem_url, pdf_url")
-                .order("titulo", { ascending: true });
+                .order("data_cadastro", { ascending: false });
             if (error) throw error;
             if (!data) {
                 console.error("Nenhum dado retornado do Supabase");
@@ -143,7 +144,8 @@ const DB = {
         const { data } = await supabase
             .from("livros")
             .select("id")
-            .not("imagem_url", "is", null);
+            .not("imagem_url", "is", null)
+            .neq("imagem_url", "");
         return new Set((data || []).map(l => l.id));
     },
 
@@ -154,7 +156,8 @@ const DB = {
             .from("livros")
             .select("id, imagem_url")
             .in("id", ids)
-            .not("imagem_url", "is", null);
+            .not("imagem_url", "is", null)
+            .neq("imagem_url", "");
         if (error || !data) return {};
         const map = {};
         data.forEach(l => { if (l.imagem_url) map[l.id] = l.imagem_url; });
@@ -172,10 +175,14 @@ const DB = {
     },
 
     async getProximoIdDisponivel() {
-        // Busca apenas o maior ID existente — muito mais eficiente que carregar todos os IDs
-        const { data, error } = await supabase.from("livros").select("id").order("id", { ascending: false }).limit(1);
+        // Busca todos os IDs existentes e retorna o menor inteiro >= 1 que não esteja em uso
+        const { data, error } = await supabase.from("livros").select("id").order("id", { ascending: true });
         if (error) throw error;
-        return data && data.length > 0 ? data[0].id + 1 : 1;
+        if (!data || data.length === 0) return 1;
+        const ids = new Set(data.map(r => r.id));
+        let candidato = 1;
+        while (ids.has(candidato)) candidato++;
+        return candidato;
     },
 
     async salvarLivro(livro) {
@@ -267,19 +274,51 @@ const DB = {
 
     async excluirLivro(id) {
         try {
-            // Verificar se existem empréstimos ativos para este livro
-            const { data: emprestimos, error: empError } = await supabase
+            // Bloquear se há empréstimos ativos — devem ser excluídos primeiro
+            const { data: ativos, error: empError } = await supabase
                 .from("emprestimos")
-                .select("*")
+                .select("id, nome_aluno, data_emprestimo")
                 .eq("livro_id", id)
                 .eq("status", "emprestado");
-            
+
             if (empError) throw empError;
-            
-            if (emprestimos && emprestimos.length > 0) {
-                throw new Error("IMPOSSÍVEL EXCLUIR: EXISTEM EMPRÉSTIMOS ATIVOS PARA ESTE LIVRO");
+
+            if (ativos && ativos.length > 0) {
+                const lista = ativos.map(e => {
+                    const data = e.data_emprestimo
+                        ? new Date(e.data_emprestimo).toLocaleDateString("pt-BR")
+                        : "—";
+                    return `• ${e.nome_aluno} (desde ${data})`;
+                }).join("
+");
+                throw new Error(
+                    `IMPOSSÍVEL EXCLUIR: EXISTEM ${ativos.length} EMPRÉSTIMO(S) ATIVO(S):
+${lista}
+
+Exclua o(s) empréstimo(s) primeiro.`
+                );
             }
-            
+
+            // Buscar livro para saber se tem capa/PDF no IA
+            const { data: livro } = await supabase
+                .from("livros")
+                .select("imagem_url, pdf_url")
+                .eq("id", id)
+                .single();
+
+            // Excluir histórico de empréstimos (devolvidos) do livro
+            await supabase.from("emprestimos").delete().eq("livro_id", id);
+
+            // Excluir capa do IA se existir
+            if (livro && livro.imagem_url) {
+                await this._iaRequest({ acao: "excluir", tipo: "capa", livroId: id }).catch(() => {});
+            }
+
+            // Excluir PDF do IA se existir
+            if (livro && livro.pdf_url) {
+                await this._iaRequest({ acao: "excluir", tipo: "pdf", livroId: id }).catch(() => {});
+            }
+
             const { error } = await supabase.from("livros").delete().eq("id", id);
             if (error) throw error;
             return true;
@@ -312,7 +351,11 @@ const DB = {
                 emprestimo.data_prevista_devolucao = null;
                 emprestimo.dias_emprestimo = 0;
             } else {
-                const dataPrevista = new Date();
+                // Usa a data do empréstimo como base (suporta registros retroativos)
+                const baseDate = emprestimo.data_emprestimo
+                    ? new Date(emprestimo.data_emprestimo)
+                    : new Date();
+                const dataPrevista = new Date(baseDate);
                 dataPrevista.setDate(dataPrevista.getDate() + parseInt(emprestimo.dias_emprestimo));
                 emprestimo.data_prevista_devolucao = dataPrevista.toISOString();
             }
@@ -347,6 +390,9 @@ const DB = {
             
             if (emprestimo.sem_data_definida) {
                 updateData.data_prevista_devolucao = null;
+            } else if (emprestimo.data_prevista_devolucao) {
+                // Data já calculada pelo caller (ex: renovar)
+                updateData.data_prevista_devolucao = emprestimo.data_prevista_devolucao;
             } else if (emprestimo.dias_emprestimo) {
                 const dataCalc = new Date();
                 dataCalc.setDate(dataCalc.getDate() + parseInt(emprestimo.dias_emprestimo));
@@ -517,12 +563,12 @@ const DB = {
     },
 
 
-    // ── Utilitário interno: chama a Edge Function ia-upload ──────────────────
+    // ── Utilitário interno: chama a Edge Function bibvania ───────────────────
     async _iaRequest(payload) {
         const session = await this.getSession();
         if (!session) throw new Error("Sessão expirada. Faça login novamente.");
 
-        const res = await supabase.functions.invoke("ia-upload", {
+        const res = await supabase.functions.invoke("bibvania", {
             body: payload,
             headers: { Authorization: `Bearer ${session.access_token}` },
         });
@@ -625,6 +671,13 @@ const DB = {
     },
 
     async excluirPessoa(id) {
+        // Buscar nome da pessoa para deletar empréstimos associados
+        const { data: pessoa } = await supabase
+            .from('pessoas').select('nome').eq('id', id).single();
+        if (pessoa && pessoa.nome) {
+            await supabase.from('emprestimos')
+                .delete().ilike('nome_aluno', pessoa.nome.trim());
+        }
         const { error } = await supabase.from('pessoas').delete().eq('id', id);
         if (error) throw error;
     },

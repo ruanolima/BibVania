@@ -258,12 +258,7 @@ input:disabled {
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-.checkbox-container.checked::before {
-    content: '';
-    margin-right: 0;
-    font-size: 0;
-    order: -1;
-}
+
 
 .checkbox-container input[type="checkbox"] {
     width: 20px;
@@ -275,6 +270,15 @@ input:disabled {
 
 .checkbox-container input[type="checkbox"]:checked {
     accent-color: var(--success);
+}
+
+/* Radio buttons estilizados igual checkbox */
+.checkbox-container input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--success);
+    cursor: pointer;
+    appearance: auto;
 }
 
 /* Botões de Ação */
@@ -1173,3 +1177,126 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     user-select: none;
 }
 .tag-keyword:hover { opacity: 0.82; transform: scale(1.07); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   ACERVO — cards horizontais em escala ~50%
+   Uma coluna (como sempre), tudo proporcional ao original.
+
+   Original → Escalado
+   Capa:    96×148px → 48×74px
+   Padding: 1.25rem  → 0.6rem
+   Gap:     1rem     → 0.5rem
+   Título:  1.1rem   → 0.62rem
+   Meta:    0.8rem   → 0.6rem
+   Badge:   0.75rem  → 0.58rem
+   ══════════════════════════════════════════════════════════════ */
+
+#listaLivros .book-item,
+#listaAdmin .book-item,
+#listaAtrasadosAdmin .book-item {
+    padding: 0.4rem;
+    gap: 0.4rem;
+    margin-bottom: 0.3rem;
+}
+
+#listaLivros .book-cover-wrap,
+#listaAdmin .book-cover-wrap,
+#listaAtrasadosAdmin .book-cover-wrap {
+    height: 116px !important;
+    width: calc(116px * 4 / 5) !important;   /* = 93px */
+    min-width: unset !important;
+    max-width: unset !important;
+    aspect-ratio: 4 / 5;
+    align-self: flex-start;
+    flex-shrink: 0 !important;
+}
+
+#listaLivros .book-header-inner,
+#listaAdmin .book-header-inner,
+#listaAtrasadosAdmin .book-header-inner {
+    min-height: 116px;
+    height: 116px;
+    gap: 0.15rem;
+    justify-content: flex-start;
+}
+
+#listaLivros .book-title,
+#listaAdmin .book-title,
+#listaAtrasadosAdmin .book-title {
+    font-size: 0.75rem;
+    line-height: 1.35;
+    min-height: calc(0.75rem * 1.35 * 2); /* sempre reserva 2 linhas */
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-right: 0.75rem;
+}
+
+#listaLivros .book-meta-item,
+#listaAdmin .book-meta-item,
+#listaAtrasadosAdmin .book-meta-item {
+    font-size: 0.68rem;
+}
+
+#listaLivros .badge,
+#listaAdmin .badge,
+#listaAtrasadosAdmin .badge {
+    font-size: 0.64rem;
+    padding: 0.1rem 0.3rem;
+}
+
+#listaLivros .tag-keyword,
+#listaAdmin .tag-keyword,
+#listaAtrasadosAdmin .tag-keyword {
+    font-size: 0.64rem;
+    padding: 0.08rem 0.25rem;
+}
+
+#listaLivros .accordion-indicator,
+#listaAdmin .accordion-indicator,
+#listaAtrasadosAdmin .accordion-indicator {
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
+    top: 0.4rem;
+    right: 0.4rem;
+}
+
+#listaAdmin .book-actions,
+#listaAtrasadosAdmin .book-actions {
+    padding: 0.35rem 0.6rem 0.4rem;
+    gap: 0.25rem;
+}
+
+#listaAdmin .book-actions .btn-small,
+#listaAtrasadosAdmin .book-actions .btn-small {
+    font-size: 0.58rem;
+    padding: 0.3rem 0.2rem;
+}
+
+#listaLivros .book-details > *,
+#listaAdmin .book-details > *,
+#listaAtrasadosAdmin .book-details > * {
+    padding: 0.75rem 0.6rem;
+}
+
+/* ── Status row: tags + badge na mesma linha ─────────────────── */
+#listaLivros .book-status-row.stacked,
+#listaAdmin .book-status-row.stacked,
+#listaAtrasadosAdmin .book-status-row.stacked {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    margin-top: auto; /* gruda sempre no pé do book-header-inner */
+}
+
+#listaLivros .book-status-badge-row,
+#listaAdmin .book-status-badge-row,
+#listaAtrasadosAdmin .book-status-badge-row {
+    width: auto;
+    flex-shrink: 0;
+}

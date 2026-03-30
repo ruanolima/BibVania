@@ -110,10 +110,12 @@ CREATE TABLE IF NOT EXISTS pessoas (
     tipo TEXT NOT NULL CHECK (tipo IN ('aluno', 'funcionario')),
     ano_aluno INTEGER,
     turma_aluno TEXT,
+    pcd BOOLEAN DEFAULT FALSE,
     data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE pessoas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pessoas ADD COLUMN IF NOT EXISTS pcd BOOLEAN DEFAULT FALSE;
 DROP POLICY IF EXISTS "Leitura pública de pessoas" ON pessoas;
 DROP POLICY IF EXISTS "Escrita autenticada de pessoas" ON pessoas;
 CREATE POLICY "Leitura pública de pessoas" ON pessoas FOR SELECT USING (true);

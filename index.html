@@ -200,8 +200,8 @@
                         <div class="book-meta-box">
                             <div class="book-meta-item book-meta-single"><strong>AUTOR:</strong> ${l.autor||'NÃO INFORMADO'}</div>
                             <div class="book-meta-item book-meta-single"><strong>ISBN:</strong> ${l.isbn||'N/A'}</div>
-                            ${l.categoria?`<div class="book-meta-item book-meta-single"><strong>CAT.:</strong> ${l.categoria}</div>`:''}
-                            ${l.prateleira ? `<div class="book-meta-item book-meta-single"><strong>PRAT.:</strong> ${l.prateleira}</div>` : ''}
+                            <div class="book-meta-item book-meta-single"><strong>CAT.:</strong> ${l.categoria||''}</div>
+                            <div class="book-meta-item book-meta-single"><strong>DOWNLOAD:</strong> ${l.pdf_url ? `<a href="${l.pdf_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--primary);font-weight:700;text-decoration:none;">BAIXAR PDF</a>` : ''}</div>
                         </div>
                         <div class="book-status-row stacked">
                             <div class="book-tags-inline">
@@ -239,6 +239,9 @@
                             wrap.classList.remove('has-image');
                             img.onload = () => wrap.classList.add('has-image');
                             img.onerror = () => {
+                                l._capaResolvida = 'sem';
+                                l.imagem_url = null;
+                                if (_idsComCapaCache) _idsComCapaCache.delete(l.id);
                                 wrap.classList.remove('has-image');
                                 wrap.classList.add('sem-capa', 'capa-carregada');
                                 _setLabelSemCapa(wrap);
@@ -381,17 +384,25 @@
             const injetar = (l, url) => {
                 l.imagem_url = url || null;
                 l._capaResolvida = url ? 'tem' : 'sem';
+                if (!url && _idsComCapaCache) _idsComCapaCache.delete(l.id);
                 const wrap = document.querySelector(`[data-livro-id="${l.id}"]`);
                 if (!wrap) return;
                 if (url) {
                     const img = wrap.querySelector('img.cover-img');
                     if (img) {
-                        img.onload = () => wrap.classList.add('has-image'); // CSS esconde label ao receber has-image
-                        img.onerror = () => {
+                        const _falharCapa = () => {
+                            l._capaResolvida = 'sem';
+                            l.imagem_url = null;
+                            if (_idsComCapaCache) _idsComCapaCache.delete(l.id);
+                            img.onload = null; img.onerror = null;
+                            img.src = '';
                             wrap.classList.remove('has-image');
                             wrap.classList.add('sem-capa', 'capa-carregada');
                             _setLabelSemCapa(wrap);
                         };
+                        const _tmCapa = setTimeout(_falharCapa, 12000);
+                        img.onload = () => { clearTimeout(_tmCapa); wrap.classList.add('has-image'); };
+                        img.onerror = () => { clearTimeout(_tmCapa); _falharCapa(); };
                         img.src = url;
                     }
                     wrap.classList.add('capa-carregada');
