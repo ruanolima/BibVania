@@ -274,6 +274,27 @@ const DB = {
 
     async excluirLivro(id) {
         try {
+            // Bloquear se há empréstimos ativos — devem ser excluídos primeiro
+            const { data: ativos, error: empError } = await supabase
+                .from("emprestimos")
+                .select("id, nome_aluno, data_emprestimo")
+                .eq("livro_id", id)
+                .eq("status", "emprestado");
+
+            if (empError) throw empError;
+
+            if (ativos && ativos.length > 0) {
+                const lista = ativos.map(e => {
+                    const data = e.data_emprestimo
+                        ? new Date(e.data_emprestimo).toLocaleDateString("pt-BR")
+                        : "\u2014";
+                    return "\u2022 " + e.nome_aluno + " (desde " + data + ")";
+                }).join("\n");
+                throw new Error(
+                    "IMPOSSÍVEL EXCLUIR: EXISTEM " + ativos.length + " EMPRÉSTIMO(S) ATIVO(S):\n" + lista + "\n\nExclua o(s) empréstimo(s) primeiro."
+                );
+            }
+
             // Buscar livro para saber se tem capa/PDF no IA
             const { data: livro } = await supabase
                 .from("livros")
@@ -281,7 +302,7 @@ const DB = {
                 .eq("id", id)
                 .single();
 
-            // Excluir todos os empréstimos do livro (ativos e histórico)
+            // Excluir histórico de empréstimos (devolvidos) do livro
             await supabase.from("emprestimos").delete().eq("livro_id", id);
 
             // Excluir capa do IA se existir
