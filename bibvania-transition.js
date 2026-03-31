@@ -36,7 +36,7 @@
             gap: 1.5rem;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.1s ease;
         }
         #_bv-transition.ativo {
             opacity: 1;
@@ -45,7 +45,7 @@
         #_bv-transition-logo {
             width: 80px;
             height: auto;
-            animation: _bv-pulse 1.2s ease-in-out infinite;
+            animation: _bv-pulse 0.6s ease-in-out infinite;
         }
         #_bv-transition-dots {
             display: flex;
@@ -57,11 +57,11 @@
             border-radius: 50%;
             background: #2563eb;
             opacity: 0.3;
-            animation: _bv-bounce 1.8s ease-in-out infinite;
+            animation: _bv-bounce 0.9s ease-in-out infinite;
         }
-        /* 1/3 do ciclo de 1.8s = 0.6s entre cada bolinha */
-        #_bv-transition-dots span:nth-child(1) { animation-delay: -1.2s; }
-        #_bv-transition-dots span:nth-child(2) { animation-delay: -0.6s; }
+        /* 1/3 do ciclo de 0.9s = 0.3s entre cada bolinha */
+        #_bv-transition-dots span:nth-child(1) { animation-delay: -0.6s; }
+        #_bv-transition-dots span:nth-child(2) { animation-delay: -0.3s; }
         #_bv-transition-dots span:nth-child(3) { animation-delay:    0s; }
         @keyframes _bv-pulse {
             0%, 100% { transform: scale(1);   opacity: 1; }
@@ -78,7 +78,7 @@
     function mostrar(cb) {
         overlay.classList.add('ativo');
         // Pequeno delay para garantir que a animação seja visível
-        setTimeout(cb, 280);
+        setTimeout(cb, 140);
     }
 
     // ── Navegar com transição ─────────────────────────────────────

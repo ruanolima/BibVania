@@ -67,14 +67,27 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return respJson({ error: "Não autenticado" }, 401);
 
-    const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-    );
+    // Aceita tanto session token (Bearer <jwt>) quanto anon key direta
+    const token = authHeader.replace("Bearer ", "").trim();
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return respJson({ error: "Sessão inválida" }, 401);
+    let authenticated = false;
+
+    // Se o token for a própria anon key, é uma requisição autenticada do sistema
+    if (token === anonKey) {
+        authenticated = true;
+    } else {
+        // Tenta validar como sessão de usuário
+        const supabase = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            anonKey,
+            { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) authenticated = true;
+    }
+
+    if (!authenticated) return respJson({ error: "Sessão inválida" }, 401);
 
     // ── 2. Leitura do payload ────────────────────────────────────────────────
     let payload: Payload;

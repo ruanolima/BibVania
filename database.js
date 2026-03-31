@@ -223,6 +223,7 @@ const DB = {
                 const novoId = await this.getProximoIdDisponivel();
                 livro.id = novoId;
                 livro.quantidade_disponivel = livro.quantidade_total;
+                livro.data_cadastro = new Date().toISOString();
 
                 const { data, error } = await supabase
                     .from("livros")
@@ -254,12 +255,16 @@ const DB = {
             
             livro.quantidade_disponivel = livro.quantidade_total - (count || 0);
 
-            // Nunca sobrescrever imagem_url nem pdf_url via atualizarLivro (gerenciadas por upload/remover)
+            // imagem_url: atualiza SOMENTE se fornecida explicitamente no payload (null limpa, string salva)
+            // pdf_url: URL de texto simples — atualiza se fornecida no payload
             const { imagem_url, pdf_url, ...livroSemImagem } = livro;
+            const updatePayload = { ...livroSemImagem };
+            if (imagem_url !== undefined) updatePayload.imagem_url = imagem_url; // null limpa, string salva
+            if (pdf_url !== undefined) updatePayload.pdf_url = pdf_url; // null limpa, string salva
 
             const { data, error } = await supabase
                 .from("livros")
-                .update(livroSemImagem)
+                .update(updatePayload)
                 .eq("id", livro.id)
                 .select()
                 .single();
@@ -307,12 +312,12 @@ const DB = {
 
             // Excluir capa do IA se existir
             if (livro && livro.imagem_url) {
-                await this._iaRequest({ acao: "excluir", tipo: "capa", livroId: id }).catch(() => {});
+                await this._iaDelete(`capa-${id}.jpg`);
             }
 
             // Excluir PDF do IA se existir
             if (livro && livro.pdf_url) {
-                await this._iaRequest({ acao: "excluir", tipo: "pdf", livroId: id }).catch(() => {});
+                await this._iaDelete(`pdf-${id}.pdf`);
             }
 
             const { error } = await supabase.from("livros").delete().eq("id", id);
@@ -559,34 +564,54 @@ const DB = {
     },
 
 
-    // ── Utilitário interno: chama a Edge Function bibvania ───────────────────
-    async _iaRequest(payload) {
-        const session = await this.getSession();
-        if (!session) throw new Error("Sessão expirada. Faça login novamente.");
-
-        const res = await supabase.functions.invoke("bibvania", {
-            body: payload,
-            headers: { Authorization: `Bearer ${session.access_token}` },
+    // ── Internet Archive — via Edge Function bibvania (chaves seguras no servidor) ──
+    async _iaEdgeFunction(payload) {
+        const session = await supabase.auth.getSession();
+        const token   = session?.data?.session?.access_token ?? supabaseKey;
+        const res = await fetch(`${supabaseUrl}/functions/v1/bibvania`, {
+            method: 'POST',
+            headers: {
+                'Content-Type':  'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
         });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? `Edge Function erro ${res.status}`);
+        return json;
+    },
 
-        if (res.error) throw new Error(res.error.message || "Erro na Edge Function");
-        if (res.data?.error) throw new Error(res.data.error);
-        return res.data;
+    async _iaUpload(filename, bytes, contentType) {
+        // Converte bytes para base64 em chunks para evitar stack overflow com imagens grandes
+        const tipo    = contentType.startsWith('image') ? 'capa' : 'pdf';
+        const livroId = parseInt(filename.replace(/\D+/g, ''), 10);
+        let b64 = '';
+        const chunk = 8192;
+        for (let i = 0; i < bytes.length; i += chunk) {
+            b64 += btoa(String.fromCharCode.apply(null, bytes.subarray(i, i + chunk)));
+        }
+        const json = await this._iaEdgeFunction({ acao: 'upload', tipo, livroId, arquivo: b64 });
+        return json.url;
+    },
+
+    async _iaDelete(filename) {
+        const tipo    = filename.startsWith('capa') ? 'capa' : 'pdf';
+        const livroId = parseInt(filename.replace(/\D+/g, ''), 10);
+        await this._iaEdgeFunction({ acao: 'excluir', tipo, livroId }).catch(() => {});
     },
 
     // ── CAPAS ─────────────────────────────────────────────────────────────────
     async uploadCapa(livroId, base64url) {
         try {
-            const result = await this._iaRequest({
-                acao: "upload", tipo: "capa", livroId, arquivo: base64url,
-            });
-            // Salva a URL pública do IA no banco (substitui o base64 antigo)
+            const base64 = base64url.includes(',') ? base64url.split(',')[1] : base64url;
+            const bytes  = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const url    = await this._iaUpload(`capa-${livroId}.jpg`, bytes, 'image/jpeg');
             const { error } = await supabase
                 .from("livros")
-                .update({ imagem_url: result.url })
+                .update({ imagem_url: url })
                 .eq("id", livroId);
             if (error) throw error;
-            return result.url;
+            return url;
         } catch (error) {
             console.error("Erro ao salvar capa:", error);
             throw error;
@@ -595,8 +620,7 @@ const DB = {
 
     async removerCapa(livroId) {
         try {
-            // Tenta excluir do IA (ignora erro se já não existia)
-            await this._iaRequest({ acao: "excluir", tipo: "capa", livroId }).catch(() => {});
+            await this._iaDelete(`capa-${livroId}.jpg`);
             await supabase.from("livros").update({ imagem_url: null }).eq("id", livroId);
         } catch (error) {
             console.error("Erro ao remover capa:", error);
@@ -607,15 +631,15 @@ const DB = {
     // ── PDFs ──────────────────────────────────────────────────────────────────
     async uploadPdf(livroId, base64url) {
         try {
-            const result = await this._iaRequest({
-                acao: "upload", tipo: "pdf", livroId, arquivo: base64url,
-            });
+            const base64 = base64url.includes(',') ? base64url.split(',')[1] : base64url;
+            const bytes  = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            const url    = await this._iaUpload(`pdf-${livroId}.pdf`, bytes, 'application/pdf');
             const { error } = await supabase
                 .from("livros")
-                .update({ pdf_url: result.url })
+                .update({ pdf_url: url })
                 .eq("id", livroId);
             if (error) throw error;
-            return result.url;
+            return url;
         } catch (error) {
             console.error("Erro ao salvar PDF:", error);
             throw error;
@@ -624,7 +648,7 @@ const DB = {
 
     async removerPdf(livroId) {
         try {
-            await this._iaRequest({ acao: "excluir", tipo: "pdf", livroId }).catch(() => {});
+            await this._iaDelete(`pdf-${livroId}.pdf`);
             await supabase.from("livros").update({ pdf_url: null }).eq("id", livroId);
         } catch (error) {
             console.error("Erro ao remover PDF:", error);
