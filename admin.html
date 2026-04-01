@@ -4937,11 +4937,7 @@ window._iaPreAquecerDB = function() {};
       });
 
       renderAcervoFiltrado();
-      var _debBuscaAdmin = null;
-      document.getElementById('buscaAdmin').oninput = function() {
-        clearTimeout(_debBuscaAdmin);
-        _debBuscaAdmin = setTimeout(renderAcervoFiltrado, 80);
-      };
+      // oninput gerenciado pelo sistema principal (buscaAdmin listener com debounce)
     } catch (err) {
       setHTML('listaAdmin', '<p style="text-align:center;padding:2rem;color:var(--danger)">❌ ERRO: ' + err.message + '</p>');
     }
@@ -5802,7 +5798,7 @@ window._iaPreAquecerDB = function() {};
     e.currentTarget.setAttribute('aria-selected', 'true');
     sessionStorage.setItem('bibvania_tab', id);
 
-    if (id === 'tab-registro')     window.carregarAcervo();
+    if (id === 'tab-registro')     { if (window._renderAcervoOnTab) window._renderAcervoOnTab(); }
     if (id === 'tab-devolucoes')   window.carregarDevolucoes();
     if (id === 'tab-listapessoas') window.carregarListaPessoas();
     if (id === 'tab-cadastro-ia')  { if (window.iaInitOnce) window.iaInitOnce(); }
@@ -5831,7 +5827,7 @@ window._iaPreAquecerDB = function() {};
   (function() {
     function _onReady() {
       var tab = sessionStorage.getItem('bibvania_tab') || 'tab-cadastro';
-      if (tab === 'tab-registro')     window.carregarAcervo();
+      if (tab === 'tab-registro')     { if (window._renderAcervoOnTab) window._renderAcervoOnTab(); }
       if (tab === 'tab-devolucoes')   window.carregarDevolucoes();
       if (tab === 'tab-listapessoas') window.carregarListaPessoas();
       if (tab === 'tab-cadastro-ia')  { if (window.iaInitOnce) window.iaInitOnce(); }
@@ -5850,7 +5846,7 @@ window._iaPreAquecerDB = function() {};
     try {
       await getSB().from('emprestimos').update({ status: 'devolvido', data_devolucao: data }).eq('id', id);
       window.carregarDevolucoes();
-      window.carregarAcervo();
+      if (window.load) window.load();
     } catch (e) { alert('Erro: ' + e.message); }
   };
 
@@ -5859,7 +5855,7 @@ window._iaPreAquecerDB = function() {};
     try {
       await getSB().from('emprestimos').delete().eq('id', id);
       window.carregarDevolucoes();
-      window.carregarAcervo();
+      if (window.load) window.load();
       if (typeof window.carregarListaPessoas === 'function') window.carregarListaPessoas();
     } catch (e) { alert('Erro: ' + e.message); }
   };
