@@ -1347,6 +1347,9 @@
                 const lista = document.getElementById('listaAdmin');
                 if (lista) delete lista.dataset.lastHtmlHash;
                 requestAnimationFrame(() => requestAnimationFrame(() => renderAcervo()));
+            } else {
+                // Dados ainda não carregados — força busca
+                if (window.load) window.load();
             }
         };
 
@@ -2281,10 +2284,7 @@
             // Badge: histórico total (ativos + devolvidos) por nome
             empsAtivosNomeCache = {};
             try {
-                const sb = window._sb13 || (window._sb13 = window.supabase.createClient(
-                    'https://skiqzvtbogtaygvvhswk.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNraXF6dnRib2d0YXlndnZoc3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNzAwMjMsImV4cCI6MjA4NzY0NjAyM30.VPHf3Wj0IKotbtC4JauebzOH5Ln2JexDYFabANF2n1k'
-                ));
+                const sb = window.DB.supabase;
                 const { data: hist } = await sb.from('emprestimos').select('nome_aluno');
                 (hist || []).forEach(e => {
                     const key = (e.nome_aluno || '').toUpperCase();
@@ -4337,7 +4337,7 @@ function _iaGetSupabase() {
     if (window._iaSupabaseClient) return window._iaSupabaseClient;
     var SUPA_URL = 'https://skiqzvtbogtaygvvhswk.supabase.co';
     var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNraXF6dnRib2d0YXlndnZoc3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNzAwMjMsImV4cCI6MjA4NzY0NjAyM30.VPHf3Wj0IKotbtC4JauebzOH5Ln2JexDYFabANF2n1k';
-    window._iaSupabaseClient = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    window._iaSupabaseClient = window.DB.supabase;
     return window._iaSupabaseClient;
 }
 
@@ -4431,8 +4431,7 @@ window._iaPreAquecerDB = function() {};
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNraXF6dnRib2d0YXlndnZoc3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNzAwMjMsImV4cCI6MjA4NzY0NjAyM30.VPHf3Wj0IKotbtC4JauebzOH5Ln2JexDYFabANF2n1k';
 
   function getSB() {
-    if (!window._sb13) window._sb13 = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-    return window._sb13;
+    return window.DB.supabase;
   }
 
 
