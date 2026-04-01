@@ -138,12 +138,40 @@
     </header>
 
     <main class="container" id="conteudo-admin">
-        <nav aria-label="Navegação do sistema" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+        <nav aria-label="Navegação do sistema" id="navAdmin" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
             <button onclick="navegarCom('index.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para a página de leitores"><span aria-hidden="true">👥</span> LEITORES</button>
-            <button onclick="navegarCom('relatorios.html')" class="btn-block btn-outline" style="min-width: auto;" aria-label="Ir para relatórios"><span aria-hidden="true">📊</span> RELATÓRIOS</button>
-            
-            <button onclick="window.DB.signOut()" class="btn-block btn-danger" style="min-width: auto; grid-column: 1 / -1;" aria-label="Sair do sistema">🚪 SAIR</button>
+            <button onclick="window.DB.signOut()" class="btn-block btn-danger" id="btnSairPrincipal" style="min-width: auto;display:none;" aria-label="Sair do sistema">🚪 SAIR</button>
+            <button onclick="abrirModalPerfil()" id="btnPerfil" style="display:none;min-width:auto;grid-column:2;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:0.1rem;" aria-label="Perfil do administrador">
+                <span style="font-size:0.6rem;color:var(--text-light);font-weight:600;text-transform:uppercase;line-height:1;">BEM-VINDO(A),</span>
+                <span id="btnPerfilNome" style="font-size:0.85rem;font-weight:700;color:var(--text);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;line-height:1.3;"></span>
+            </button>
         </nav>
+
+        <!-- Modal perfil admin secundário -->
+        <div id="modalPerfil" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;" onclick="if(event.target===this)fecharModalPerfil()">
+            <div style="background:var(--card);border-radius:16px;padding:1.5rem;width:90%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.3);">
+                <!-- Linha 1: foto + nome/email -->
+                <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
+                    <div id="perfilFotoCirculo" onclick="abrirFotoPerfil()" style="width:56px;height:56px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff;cursor:pointer;overflow:hidden;border:3px solid var(--border);flex-shrink:0;">
+                        <span id="perfilInicialLetra"></span>
+                        <img id="perfilFotoImg" src="" alt="Foto de perfil" style="display:none;width:100%;height:100%;object-fit:cover;">
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div id="perfilNomeTexto" style="font-weight:700;font-size:1rem;color:var(--text);word-break:break-word;"></div>
+                        <div id="perfilEmailTexto" style="font-size:0.72rem;color:var(--text-light);margin-top:0.2rem;word-break:break-word;"></div>
+                    </div>
+                </div>
+                <!-- Linha 2: enviar foto + excluir foto (se tiver) + sair -->
+                <div style="display:flex;gap:0.5rem;justify-content:space-between;flex-wrap:wrap;">
+                    <div style="display:flex;gap:0.5rem;">
+                        <button onclick="abrirFotoPerfil()" style="font-size:0.7rem;font-weight:700;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;cursor:pointer;color:var(--text);">ENVIAR FOTO</button>
+                        <button id="btnExcluirFotoPerfil" onclick="excluirFotoPerfil()" style="display:none;font-size:0.7rem;font-weight:700;background:var(--card);border:1px solid var(--danger);border-radius:8px;padding:0.4rem 0.75rem;cursor:pointer;color:var(--danger);">EXCLUIR FOTO</button>
+                    </div>
+                    <input type="file" id="inputFotoPerfil" accept="image/*" style="display:none;" onchange="processarFotoPerfil(event)">
+                    <button onclick="window.DB.signOut()" class="btn-block btn-danger" style="width:auto;padding:0.4rem 1rem;font-size:0.8rem;">🚪 SAIR</button>
+                </div>
+            </div>
+        </div>
 
         <div class="tabs-container" role="tablist" aria-label="Seções do painel">
             <button class="tab-btn" onclick="switchTab(event, 'tab-cadastro')" role="tab" aria-selected="false" aria-controls="tab-cadastro" id="tab-btn-cadastro">CADASTRO</button>
@@ -153,6 +181,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'tab-devolucoes')" role="tab" aria-selected="false" aria-controls="tab-devolucoes" id="tab-btn-devolucoes">DEVOLUÇÕES</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-pessoas')" role="tab" aria-selected="false" aria-controls="tab-pessoas" id="tab-btn-pessoas">CADASTRAR PESSOAS</button>
             <button class="tab-btn" onclick="switchTab(event, 'tab-listapessoas')" role="tab" aria-selected="false" aria-controls="tab-listapessoas" id="tab-btn-listapessoas">LISTA DE PESSOAS</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-relatorio')" role="tab" aria-selected="false" aria-controls="tab-relatorio" id="tab-btn-relatorio">📊 RELATÓRIO</button>
         </div>
         <!-- TAB: CADASTRO -->
         <div id="tab-cadastro" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-cadastro" class="tab-content">
@@ -237,7 +266,10 @@
                         <div class="info-resultado">
                             <div class="titulo-livro" id="iaTituloEncontrado">—</div>
                             <div class="meta" id="iaAutorEncontrado">—</div>
-                            <div class="meta" id="iaTagEncontrada"></div>
+                            <!-- Todos os dados do livro encontrado -->
+                            <div class="meta" id="iaIsbnEncontrado"><strong>ISBN:</strong> <span id="iaIsbnEncontradoVal">—</span></div>
+                            <div class="meta" id="iaCategoriaEncontrada"><strong>CAT.:</strong> <span id="iaCategoriaEncontradaVal">—</span></div>
+                            <div class="meta" id="iaTagEncontrada" style="margin-top:0.3rem;"></div>
                             <span class="badge-qtd" id="iaQtdEncontrada">—</span>
                         </div>
                     </div>
@@ -324,6 +356,9 @@
                         <div class="info-resultado">
                             <div class="titulo-livro" id="iaResultadoNome">—</div>
                             <div class="meta" id="iaResultadoAutorFinal">—</div>
+                            <div class="meta" id="iaResultadoCategoria" style="display:none;"><strong>CAT.:</strong> <span id="iaResultadoCategoriaVal">—</span></div>
+                            <div class="meta" id="iaResultadoIsbn" style="display:none;"><strong>ISBN:</strong> <span id="iaResultadoIsbnVal">—</span></div>
+                            <div class="meta" id="iaResultadoTags"></div>
                             <span class="badge-qtd" id="iaResultadoQtd">1 EXEMPLAR</span>
                         </div>
                     </div>
@@ -332,7 +367,7 @@
 
                 <!-- HISTÓRICO (sempre visível ao abrir a aba) -->
                 <div class="card" id="iaCardHistorico" style="display:none;">
-                    <h2>🕓 ÚLTIMOS CADASTRADOS COM IA</h2>
+                    <h2>🕓 ÚLTIMOS CADASTRADOS</h2>
                     <div id="iaListaHistorico"></div>
                 </div>
 
@@ -349,7 +384,7 @@
                 <div class="form-group full-width">
                     <label class="checkbox-container" id="emp-labelFuncionario">
                         <input type="checkbox" id="emp-chkFuncionario">
-                        PROFESSOR / FUNCIONÁRIO
+                        FUNCIONÁRIO
                     </label>
                 </div>
 
@@ -406,6 +441,12 @@
         <!-- TAB: ACERVO -->
         <div id="tab-registro" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-registro" class="tab-content">
             <div class="card">
+                <div class="form-group">
+                    <label for="filtroCategoriaAdmin">CATEGORIA</label>
+                    <select id="filtroCategoriaAdmin" aria-label="Filtrar por categoria" style="width:100%;padding:0.5rem;font-size:0.95rem;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text);cursor:pointer;">
+                        <option value="">TODOS (0)</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="buscaAdmin">FILTRAR ACERVO</label>
                     <div class="search-voice-wrap">
@@ -492,7 +533,7 @@
                     <div class="form-group full-width">
                         <label class="checkbox-container" id="labelEhFuncionario">
                             <input type="checkbox" id="ehFuncionario" onchange="toggleTipoCadastro()">
-                            FUNCIONÁRIO / PROFESSOR
+                            FUNCIONÁRIO
                         </label>
                     </div>
                     <div id="campoCadastroPessoa" style="display:contents;">
@@ -555,7 +596,7 @@
                 <h2><span>📋</span> LISTA DE ALUNOS E FUNCIONÁRIOS</h2>
                 <div class="form-group" style="margin-bottom:1rem;">
                     <div class="search-voice-wrap">
-                        <input type="search" id="buscaPessoas" placeholder="BUSCAR POR NOME, ANO, TURMA OU PROF/FUNC..." autocomplete="off" style="width:100%;">
+                        <input type="search" id="buscaPessoas" placeholder="BUSCAR POR NOME, ANO, TURMA OU FUNCIONÁRIO..." autocomplete="off" style="width:100%;">
                     </div>
                 </div>
                 <div id="listaPessoas"><p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p></div>
@@ -573,6 +614,31 @@
                 </div>
             </div>
             <div id="listaDevolucoes"></div>
+        </div>
+        <div id="tab-relatorio" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-relatorio" class="tab-content">
+            <div class="card">
+                <h2>CONFIGURAR RELATÓRIO</h2>
+                <div class="form-group">
+                    <label>TIPO</label>
+                    <select id="tipoRelatorio" onchange="relAlternarTipo()">
+                        <option value="anual">ANUAL</option>
+                        <option value="mensal">MENSAL</option>
+                    </select>
+                </div>
+                <div id="containerAno" class="form-group">
+                    <label>ANO</label>
+                    <input type="number" id="filtroAno" min="2020" max="2099" style="width:130px;" onchange="relGerar()">
+                </div>
+                <div id="containerMes" class="form-group hidden">
+                    <label>MÊS / ANO</label>
+                    <input type="month" id="filtroMes" onchange="relGerar()">
+                </div>
+                <button onclick="relBaixar()" class="btn-block btn-primary" style="margin-top:1rem;" id="btnBaixar" disabled>📥 BAIXAR RELATÓRIO EM TXT</button>
+            </div>
+            <div class="card">
+                <h2>PRÉ-VISUALIZAÇÃO</h2>
+                <div id="previewRelatorio" aria-live="polite" aria-atomic="true" aria-label="Pré-visualização do relatório" style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;overflow-x:hidden;max-width:100%;font-family:monospace;font-size:0.82rem;line-height:1.5;">CARREGANDO RELATÓRIO...</div>
+            </div>
         </div>
         <script>
             // Restaura a aba salva depois que todos os elementos existem,
@@ -601,7 +667,7 @@
                 <div class="form-group full-width">
                     <label class="checkbox-container" id="labelEditEhFuncionario">
                         <input type="checkbox" id="editEhFuncionario" onchange="window.toggleEditTipoPessoa()">
-                        FUNCIONÁRIO / PROFESSOR
+                        FUNCIONÁRIO
                     </label>
                 </div>
                 <div class="form-group">
@@ -735,9 +801,9 @@
             <form id="formEditEmp">
                 <input type="hidden" id="editEmpId">
                 <div class="form-group full-width">
-                    <label class="checkbox-container" id="labelEditProfessor">
-                        <input type="checkbox" id="editEmpEhProfessor" onchange="toggleEditTipoPessoa()">
-                        PROFESSOR / FUNCIONÁRIO
+                    <label class="checkbox-container" id="labelEditFuncionario">
+                        <input type="checkbox" id="editEmpFuncionario" onchange="toggleEditTipoPessoa()">
+                        FUNCIONÁRIO
                     </label>
                 </div>
                 <div id="camposEditAluno" style="display:contents;">
@@ -746,11 +812,11 @@
                     <div class="form-group"><label>ANO</label><input type="number" id="editEmpAno"></div>
                     <div class="form-group"><label>TURMA</label><input type="text" id="editEmpTurma"></div>
                 </div>
-                <div id="camposEditProfessor" style="display:none;">
-                    <div class="form-group"><label>NOME DO PROFESSOR/FUNCIONÁRIO *</label><input type="text" id="editEmpNomeProfessor"></div>
+                <div id="camposEditFuncionario" style="display:none;">
+                    <div class="form-group"><label>NOME DO FUNCIONÁRIO *</label><input type="text" id="editEmpNomeFuncionario"></div>
                     <div class="form-group">
                         <label>SEXO *</label>
-                        <select id="editEmpSexoProfessor">
+                        <select id="editEmpSexoFuncionario">
                             <option value="">SELECIONE</option>
                             <option value="M">FUNCIONÁRIO</option>
                             <option value="F">FUNCIONÁRIA</option>
@@ -939,8 +1005,258 @@
             if (el) el.innerHTML = '<span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span>';
         }
 
+        // ── Carrega chaves privadas do banco (só funciona autenticado) ──
+        async function _carregarChavesPrivadas() {
+            try {
+                const sb = window.DB.supabase;
+                const { data, error } = await sb
+                    .from('config_privada')
+                    .select('chave, valor');
+                if (error || !data) return;
+                data.forEach(row => {
+                    if (row.chave === 'groq_api_key')  window._GROQ_KEY  = row.valor;
+                    if (row.chave === 'imgbb_api_key') window.IMGBB_KEY   = row.valor;
+                });
+            } catch(e) {
+                console.warn('Não foi possível carregar config_privada:', e.message);
+            }
+        }
+
+
+        // ── PERFIL DO ADMIN SECUNDÁRIO ────────────────────────────────────────
+        let _adminPerfil = null; // { id, nome, foto_url } ou null se admin principal
+
+        // Exibe botão perfil instantaneamente se nome estiver em cache
+        (function() {
+            const nomeCache = localStorage.getItem('bibvania_admin_nome');
+            if (nomeCache) {
+                const btnPerfil = document.getElementById('btnPerfil');
+                const btnNome = document.getElementById('btnPerfilNome');
+                const btnSair = document.getElementById('btnSairPrincipal');
+                if (btnPerfil) btnPerfil.style.display = 'flex';
+                if (btnNome) btnNome.textContent = nomeCache.split(' ')[0];
+                if (btnSair) btnSair.style.display = 'none';
+            }
+        })();
+
+        async function _carregarAdminPerfil() {
+            try {
+                const sb = window.DB.supabase;
+                const { data: { user } } = await sb.auth.getUser();
+                if (!user) return;
+
+                const { data } = await sb
+                    .from('admins')
+                    .select('nome, foto_url')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (!data) {
+                    // Admin principal — sem entrada na tabela admins
+                    _adminPerfil = null;
+                    localStorage.removeItem('bibvania_admin_nome');
+                    _aplicarUIAdminPrincipal();
+                    return;
+                }
+
+                _adminPerfil = { id: user.id, nome: data.nome, foto_url: data.foto_url || '', email: user.email };
+                localStorage.setItem('bibvania_admin_nome', data.nome);
+                _aplicarUIAdminSecundario();
+            } catch(e) {
+                console.warn('Perfil admin não carregado:', e.message);
+            }
+        }
+
+        function _aplicarUIAdminPrincipal() {
+            // Botão SAIR visível, botão perfil oculto
+            const btnSair = document.getElementById('btnSairPrincipal');
+            const btnPerfil = document.getElementById('btnPerfil');
+            if (btnSair) btnSair.style.display = '';
+            if (btnPerfil) btnPerfil.style.display = 'none';
+        }
+
+        function _aplicarUIAdminSecundario() {
+            const p = _adminPerfil;
+            if (!p) return;
+            // Oculta botão SAIR standalone, mostra botão perfil
+            const btnSair = document.getElementById('btnSairPrincipal');
+            const btnPerfil = document.getElementById('btnPerfil');
+            if (btnSair) btnSair.style.display = 'none';
+            if (btnPerfil) btnPerfil.style.display = 'flex';
+
+            // Preenche nome no botão
+            const btnNome = document.getElementById('btnPerfilNome');
+            if (btnNome) btnNome.textContent = p.nome.split(' ')[0]; // primeiro nome
+        }
+
+        window.abrirModalPerfil = function() {
+            const p = _adminPerfil;
+            if (!p) return;
+            const modal = document.getElementById('modalPerfil');
+            if (!modal) return;
+
+            // Preenche dados
+            document.getElementById('perfilNomeTexto').textContent = p.nome;
+            document.getElementById('perfilEmailTexto').textContent = '(' + p.email + ')';
+
+            // Foto ou inicial
+            const img = document.getElementById('perfilFotoImg');
+            const letra = document.getElementById('perfilInicialLetra');
+            const btnExcluir = document.getElementById('btnExcluirFotoPerfil');
+            if (p.foto_url) {
+                img.src = p.foto_url;
+                img.style.display = 'block';
+                letra.style.display = 'none';
+                if (btnExcluir) btnExcluir.style.display = '';
+            } else {
+                img.style.display = 'none';
+                letra.style.display = '';
+                letra.textContent = p.nome.charAt(0).toUpperCase();
+                if (btnExcluir) btnExcluir.style.display = 'none';
+            }
+
+            modal.style.display = 'flex';
+            // Esconde VLibras enquanto modal está aberto
+            const vw = document.querySelector('[vw]');
+            if (vw) vw.style.display = 'none';
+        };
+
+        window.fecharModalPerfil = function() {
+            const modal = document.getElementById('modalPerfil');
+            if (modal) modal.style.display = 'none';
+            // Restaura VLibras
+            const vw = document.querySelector('[vw]');
+            if (vw) vw.style.display = '';
+        };
+
+        window.excluirFotoPerfil = async function() {
+            if (!_adminPerfil) return;
+            if (!confirm('Remover foto de perfil?')) return;
+            try {
+                const sb = window.DB.supabase;
+                const { error } = await sb.from('admins').update({ foto_url: '' }).eq('id', _adminPerfil.id);
+                if (error) throw new Error(error.message);
+                _adminPerfil.foto_url = '';
+                // Atualiza UI
+                const img = document.getElementById('perfilFotoImg');
+                const letra = document.getElementById('perfilInicialLetra');
+                const btnExcluir = document.getElementById('btnExcluirFotoPerfil');
+                img.style.display = 'none';
+                letra.style.display = '';
+                letra.textContent = _adminPerfil.nome.charAt(0).toUpperCase();
+                if (btnExcluir) btnExcluir.style.display = 'none';
+                // Atualiza círculo do botão no nav
+                const btnPerfilCirculo = document.getElementById('btnPerfilFotoCirculo');
+                if (btnPerfilCirculo) btnPerfilCirculo.style.backgroundImage = '';
+            } catch(e) {
+                alert('Erro ao excluir foto: ' + e.message);
+            }
+        };
+
+        window.abrirFotoPerfil = function() {
+            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+            const inp = document.getElementById('inputFotoPerfil');
+
+            if (!isMobile) {
+                inp.removeAttribute('capture');
+                inp.click();
+                return;
+            }
+
+            // Mobile: modal câmera/galeria — padrão do projeto
+            const existing = document.getElementById('_modalOrigemFotoPerfil');
+            if (existing) existing.remove();
+            const m = document.createElement('div');
+            m.id = '_modalOrigemFotoPerfil';
+            m.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;';
+            m.innerHTML = `
+                <div style="background:var(--card);border-radius:16px 16px 0 0;padding:1.5rem;width:100%;max-width:480px;display:flex;flex-direction:column;gap:0.75rem;">
+                    <p style="font-weight:700;text-align:center;margin-bottom:0.25rem;">FOTO DE PERFIL</p>
+                    <button id="_btnPerfilCamara" class="btn-block btn-primary">📸 CÂMERA</button>
+                    <button id="_btnPerfilGaleria" class="btn-block btn-outline">🖼️ GALERIA</button>
+                    <button class="btn-block btn-outline" onclick="document.getElementById('_modalOrigemFotoPerfil').remove()">CANCELAR</button>
+                </div>`;
+            document.body.appendChild(m);
+            document.getElementById('_btnPerfilCamara').addEventListener('click', () => {
+                m.remove();
+                inp.setAttribute('capture', 'environment');
+                inp.click();
+            });
+            document.getElementById('_btnPerfilGaleria').addEventListener('click', () => {
+                m.remove();
+                inp.removeAttribute('capture');
+                inp.click();
+            });
+            m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+        };
+
+        window.processarFotoPerfil = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            await _processarBlobFotoPerfil(file);
+            event.target.value = '';
+        };
+
+        async function _processarBlobFotoPerfil(blob) {
+            if (!_adminPerfil) return;
+            try {
+                // Comprime para base64
+                const base64 = await new Promise((res, rej) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const max = 256;
+                            let w = img.width, h = img.height;
+                            if (w > max || h > max) {
+                                if (w > h) { h = Math.round(h * max / w); w = max; }
+                                else { w = Math.round(w * max / h); h = max; }
+                            }
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            res(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+                        };
+                        img.onerror = rej;
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = rej;
+                    reader.readAsDataURL(blob);
+                });
+
+                // Upload para ImgBB
+                const form = new FormData();
+                form.append('image', base64);
+                const resp = await fetch('https://api.imgbb.com/1/upload?key=' + window.IMGBB_KEY, { method: 'POST', body: form });
+                const json = await resp.json();
+                if (!json.success) throw new Error('ImgBB: ' + JSON.stringify(json.error));
+                const url = json.data?.display_url || json.data?.url;
+                if (!url) throw new Error('ImgBB retornou URL inválida');
+
+                // Salva URL na tabela admins
+                const sb = window.DB.supabase;
+                const { error } = await sb.from('admins').update({ foto_url: url }).eq('id', _adminPerfil.id);
+                if (error) throw new Error(error.message);
+
+                // Atualiza local
+                _adminPerfil.foto_url = url;
+
+                // Atualiza UI do modal
+                const img = document.getElementById('perfilFotoImg');
+                const letra = document.getElementById('perfilInicialLetra');
+                img.src = url;
+                img.style.display = 'block';
+                letra.style.display = 'none';
+
+            } catch(e) {
+                alert('Erro ao enviar foto: ' + e.message);
+            }
+        }
+
         async function init() {
             await DB.checkAuth();
+            await _carregarChavesPrivadas();
+            await _carregarAdminPerfil();
             
             atualizarNomesEscola();
 
@@ -948,8 +1264,6 @@
             document.documentElement.setAttribute('data-theme', savedTheme);
             document.getElementById('darkModeBtn').innerText = savedTheme === 'dark' ? '☀️' : '🌙';
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
-
-
 
             window.DB.onLivrosChange(() => load());
             window.DB.onEmprestimosChange(() => {
@@ -1030,14 +1344,10 @@
         // Hook chamado pelo switchTab (definido fora do módulo) ao entrar na aba acervo
         window._renderAcervoOnTab = () => {
             if (todosLivros.length > 0) {
-                // Limpar hash para forçar re-render (conteúdo pode estar desatualizado)
                 const lista = document.getElementById('listaAdmin');
                 if (lista) delete lista.dataset.lastHtmlHash;
                 requestAnimationFrame(() => requestAnimationFrame(() => renderAcervo()));
             }
-            // Se todosLivros ainda vazio, load() ainda não terminou — o texto
-            // "CARREGANDO..." já está no DOM; renderAcervo será chamado por load()
-            // quando terminar (via check abaAtiva).
         };
 
         // Hooks para as abas que dependem de fetch próprio
@@ -1072,6 +1382,8 @@
 
         // load(): busca livros e empréstimos em paralelo (mais rápido)
         async function load() {
+            const _selCat = document.getElementById('filtroCategoriaAdmin');
+            if (_selCat) _selCat.innerHTML = '<option value="">TODOS (0)</option>';
             let livros, empsComLivro;
             try {
                 const [_livros, _emps, _idsCapas] = await Promise.all([
@@ -1122,6 +1434,7 @@
             });
 
             const abaAtiva = document.getElementById('tab-registro').classList.contains('active');
+            _popularCategoriasAdmin();
             if (abaAtiva && _suprimirRenderAcervo === 0) {
                 _renderToken++;
                 clearTimeout(_renderTimer);
@@ -1145,12 +1458,28 @@
         let _renderToken = 0;
         let _renderEmAndamento = false;
 
+        // Popular select de categorias no acervo admin
+        function _popularCategoriasAdmin() {
+            const sel = document.getElementById('filtroCategoriaAdmin');
+            if (!sel) return;
+            const cats = window.DB?.CATEGORIAS || [];
+            const livros = todosLivros.length ? todosLivros : (window._todosLivros || []);
+            const contagem = {};
+            livros.forEach(l => { if (l.categoria) contagem[l.categoria] = (contagem[l.categoria]||0)+1; });
+            const total = livros.length;
+            const catAtual = sel.value;
+            sel.innerHTML = `<option value="">TODOS (${total})</option>` +
+                cats.filter(c => contagem[c]).map(c => `<option value="${c}"${catAtual===c?' selected':''}>${c} (${contagem[c]})</option>`).join('');
+        }
+        window._popularCategoriasAdmin = _popularCategoriasAdmin;
+
         // renderAcervo(): filtra e exibe sem ir ao Supabase — incremental
         async function renderAcervo() {
             const _scrollY = _scrollProtegido !== null ? _scrollProtegido : null;
             const termo = normalizar(document.getElementById('buscaAdmin').value);
+            const catFiltro = document.getElementById('filtroCategoriaAdmin')?.value || '';
 
-            let filtrados = todosLivros;
+            let filtrados = catFiltro ? todosLivros.filter(l => (l.categoria||'') === catFiltro) : todosLivros;
             if (termo) {
                 const termoTag = termo.startsWith('#') ? termo.slice(1) : null;
                 filtrados = filtrados.filter(l =>
@@ -1184,16 +1513,19 @@
                 return;
             }
 
-            // Renderizar em lotes de 20 para não bloquear a thread no celular
-            const LOTE = 20;
-            const novoHtml = naoAtrasados.map(l => renderLivro(l, false)).join('');
-            if (lista.dataset.lastHtmlHash === _hashAdmin(novoHtml)) {
+            // Renderizar em lotes calculados pela viewport (quantos cards cabem na tela)
+            const _altEstimadaAdmin = 130; // altura aproximada de um card no admin (px)
+            const LOTE = Math.max(3, Math.ceil(window.innerHeight / _altEstimadaAdmin));
+
+            // Comparar só IDs concatenados — não gera HTML só para hash
+            const novoHash = naoAtrasados.map(l => l.id).join(',') + '|' + naoAtrasados.length;
+            if (lista.dataset.lastHtmlHash === novoHash) {
                 if (_scrollY !== null) requestAnimationFrame(() => window.scrollTo({ top: _scrollY, behavior: 'instant' }));
                 _renderEmAndamento = false;
                 _buscarCapasRestantesAdmin(naoAtrasados, token);
                 return;
             }
-            lista.dataset.lastHtmlHash = _hashAdmin(novoHtml);
+            lista.dataset.lastHtmlHash = novoHash;
 
             lista.innerHTML = '';
 
@@ -1575,12 +1907,12 @@
                 window.openEditEmp = (e) => {
             document.getElementById('editEmpId').value = e.id;
             
-            const ehProfessor = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
-            document.getElementById('editEmpEhProfessor').checked = ehProfessor;
+            const ehFuncionario2 = e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
+            document.getElementById('editEmpFuncionario').checked = ehProfessor;
             
-            if (ehProfessor) {
-                document.getElementById('editEmpNomeProfessor').value = e.nome_aluno || '';
-                document.getElementById('editEmpSexoProfessor').value = e.sexo || 'F';
+            if (ehFuncionario2) {
+                document.getElementById('editEmpNomeFuncionario').value = e.nome_aluno || '';
+                document.getElementById('editEmpSexoFuncionario').value = e.sexo || 'F';
             } else {
                 document.getElementById('editEmpNome').value = e.nome_aluno || '';
                 document.getElementById('editEmpSexo').value = e.sexo || 'M';
@@ -1650,12 +1982,12 @@
         });
         
         window.toggleEditTipoPessoa = () => {
-            const cb = document.getElementById('editEmpEhProfessor');
-            const label = document.getElementById('labelEditProfessor');
+            const cb = document.getElementById('editEmpFuncionario');
+            const label = document.getElementById('labelEditFuncionario');
             label.classList.toggle('checked', cb.checked);
             const isP = cb.checked;
             document.getElementById('camposEditAluno').style.display = isP ? 'none' : 'contents';
-            document.getElementById('camposEditProfessor').style.display = isP ? 'block' : 'none';
+            document.getElementById('camposEditFuncionario').style.display = isP ? 'block' : 'none';
             
             // Disparar evento de mudança para atualizar UI
             cb.dispatchEvent(new Event('change'));
@@ -1674,15 +2006,15 @@
         document.getElementById('formEditEmp').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const isP = document.getElementById('editEmpEhProfessor').checked;
+            const isP = document.getElementById('editEmpFuncionario').checked;
             const empId = parseInt(document.getElementById('editEmpId').value);
             
             // Validação manual do nome (necessária pois o campo fica oculto dependendo do tipo)
             if (isP) {
-                const nomeProf = document.getElementById('editEmpNomeProfessor').value.trim();
+                const nomeProf = document.getElementById('editEmpNomeFuncionario').value.trim();
                 if (!nomeProf) {
-                    window.mostrarMsg('msgEmp', '❌ INFORME O NOME DO PROFESSOR/FUNCIONÁRIO.', 'danger');
-                    document.getElementById('editEmpNomeProfessor').focus();
+                    window.mostrarMsg('msgEmp', '❌ INFORME O NOME DO FUNCIONÁRIO.', 'danger');
+                    document.getElementById('editEmpNomeFuncionario').focus();
                     return;
                 }
             } else {
@@ -1701,8 +2033,8 @@
             };
             
             if (isP) {
-                data.nome_aluno = document.getElementById('editEmpNomeProfessor').value.trim() || 'SEM NOME';
-                data.sexo = document.getElementById('editEmpSexoProfessor').value || 'F';
+                data.nome_aluno = document.getElementById('editEmpNomeFuncionario').value.trim() || 'SEM NOME';
+                data.sexo = document.getElementById('editEmpSexoFuncionario').value || 'F';
                 data.ano_aluno = 0;
                 data.turma_aluno = 'PROF/FUNC';
             } else {
@@ -1936,26 +2268,39 @@
             try {
                 const data = await window.DB.getPessoas();
                 todasPessoas = data;
+                window._pessoasCache = data; // sincroniza com UMD (abrirEditPessoa usa _pessoasCache)
             } catch(e) { console.warn('Erro ao carregar pessoas:', e); }
         }
 
         window.carregarListaPessoas = async () => {
             document.getElementById('listaPessoas').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--text-light);">CARREGANDO...</p>';
             await carregarPessoas();
-            // Usar empsComLivroCache (já populado por load()) para ter o título do livro
-            // Se o cache ainda estiver vazio, buscar com join
-            // Usar cache com join se disponível, senão buscar
             if (!empsComLivroCache.length) {
                 try { empsComLivroCache = await window.DB.getEmprestimosAtivosComLivro(); } catch(e) {}
             }
-            const emps = empsComLivroCache;
+            // Badge: histórico total (ativos + devolvidos) por nome
             empsAtivosNomeCache = {};
-            (emps || []).forEach(e => {
-                const key = (e.nome_aluno || '').toUpperCase();
-                if (!empsAtivosNomeCache[key]) empsAtivosNomeCache[key] = [];
-                empsAtivosNomeCache[key].push(e);
-            });
+            try {
+                const sb = window._sb13 || (window._sb13 = window.supabase.createClient(
+                    'https://skiqzvtbogtaygvvhswk.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNraXF6dnRib2d0YXlndnZoc3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNzAwMjMsImV4cCI6MjA4NzY0NjAyM30.VPHf3Wj0IKotbtC4JauebzOH5Ln2JexDYFabANF2n1k'
+                ));
+                const { data: hist } = await sb.from('emprestimos').select('nome_aluno');
+                (hist || []).forEach(e => {
+                    const key = (e.nome_aluno || '').toUpperCase();
+                    if (!empsAtivosNomeCache[key]) empsAtivosNomeCache[key] = 0;
+                    empsAtivosNomeCache[key]++;
+                });
+            } catch(e) {}
             renderListaPessoas();
+            // Busca: oninput aponta para renderListaPessoas (ES module)
+            const inp = document.getElementById('buscaPessoas');
+            if (inp) {
+                let _deb = null;
+                inp.oninput = () => { clearTimeout(_deb); _deb = setTimeout(renderListaPessoas, 80); };
+            }
+            // Voz e X
+            if (window._initVozPessoas) window._initVozPessoas();
         };
         window.renderListaPessoas = renderListaPessoas;
 
@@ -2074,7 +2419,7 @@
                 return { titulo, count: lista.length, itens: lista };
             });
             if (funcionarios.length) {
-                grupos.push({ titulo: 'PROFESSORES E FUNCIONÁRIOS', count: funcionarios.length, itens: funcionarios });
+                grupos.push({ titulo: 'FUNCIONÁRIOS', count: funcionarios.length, itens: funcionarios });
             }
 
             // Limpar imediatamente — resposta instantânea ao clique
@@ -2127,6 +2472,10 @@
             }
             const uid = `pemp-${p.id}`;
             const nomeEsc = p.nome.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            const empsAtivos = empsAtivosNomeCache[p.nome.toUpperCase()] || 0;
+            const badgeHtml = empsAtivos
+                ? `<span style="background:var(--primary);color:#fff;border-radius:12px;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:700;margin-left:0.35rem;">${empsAtivos} ${empsAtivos === 1 ? 'LIVRO' : 'LIVROS'}</span>`
+                : '';
             return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.3rem;background:var(--card);overflow:hidden;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;gap:0.5rem;">
                     <button onclick="togglePessoaAccordion('${uid}','${nomeEsc}')"
@@ -2136,7 +2485,7 @@
                         <span style="font-size:0.8rem;flex:1;min-width:0;color:var(--text);">
                             <strong>${p.nome}</strong>
                             <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span>
-                            <span id="${uid}-badge"></span>
+                            ${badgeHtml}
                         </span>
                     </button>
                     <div style="display:flex;gap:0.35rem;flex-shrink:0;">
@@ -2208,6 +2557,8 @@
         };
 
         window.abrirEditPessoa = (id) => {
+            // UMD controla a lista — sempre delegar para a versão UMD
+            if (window._editPessoaUMDReady) { window._abrirEditPessoaUMD && window._abrirEditPessoaUMD(id); return; }
             const p = todasPessoas.find(x => x.id === id);
             if (!p) return;
             const func = p.tipo === 'funcionario';
@@ -2376,21 +2727,31 @@
         // Autocompletar nome no formulário de empréstimo a partir de todasPessoas
 
 
-        document.getElementById('buscaAdmin').addEventListener('input', renderAcervo);
-        _iniciarBotaoLimpar(document.getElementById('buscaAdmin'), renderAcervo);
+        // BUG FIX #8: Adicionar debounce na busca para evitar travamento
+        let _searchTimeoutAdmin = null;
+        document.getElementById('buscaAdmin').addEventListener('input', () => {
+            if (_searchTimeoutAdmin) clearTimeout(_searchTimeoutAdmin);
+            _searchTimeoutAdmin = setTimeout(() => {
+                renderAcervo();
+            }, 300); // 300ms debounce
+        });
+        document.getElementById('filtroCategoriaAdmin')?.addEventListener('change', () => renderAcervo());
+        _iniciarBotaoLimpar(document.getElementById('buscaAdmin'), () => {
+            if (_searchTimeoutAdmin) clearTimeout(_searchTimeoutAdmin);
+            renderAcervo();
+        });
 
         // Voz e botão X para buscaPessoas — exposto via window para o bloco UMD chamar
         // O oninput/debounce é gerenciado pelo bloco UMD; aqui só registramos voz e X.
-        window._initVozPessoas = (() => {
-            let _done = false;
-            return () => {
-                if (_done) return; _done = true;
+        window._initVozPessoas = () => {
                 const inp = document.getElementById('buscaPessoas');
                 if (!inp) return;
-                iniciarBuscaVoz(inp, () => { if (window._renderPessoasUMD) window._renderPessoasUMD(); });
-                _iniciarBotaoLimpar(inp, () => { if (window._renderPessoasUMD) window._renderPessoasUMD(); });
+                const wrap = inp.parentElement;
+                // Só inicializa se ainda não há botões de voz/X no wrap
+                if (wrap && wrap.querySelector('.clear-btn, .voice-btn')) return;
+                iniciarBuscaVoz(inp, () => { if (window.renderListaPessoas) window.renderListaPessoas(); });
+                _iniciarBotaoLimpar(inp, () => { if (window.renderListaPessoas) window.renderListaPessoas(); });
             };
-        })();
 
         // Busca por voz, botão X e filtro nas devoluções
         iniciarBuscaVoz(document.getElementById('buscaDevolucoes'), () => renderDevolucoes());
@@ -2436,8 +2797,8 @@
 
             const hoje = new Date(); hoje.setHours(0,0,0,0);
 
-            // Separar professores/funcionários dos alunos
-            const funcGroup  = { label: 'PROFESSORES E FUNCIONÁRIOS', key: 'func', itens: [] };
+            // Separar funcionários dos alunos
+            const funcGroup  = { label: 'FUNCIONÁRIOS', key: 'func', itens: [] };
             const turmaMap   = {}; // "ANO|TURMA" → []
 
             emps.forEach(e => {
@@ -2466,7 +2827,7 @@
                 html += renderGrupoDevolucao(`${ano}º ANO — TURMA ${turma}`, key, itens, hoje);
             });
 
-            // Renderizar professores/funcionários
+            // Renderizar funcionários
             if (funcGroup.itens.length) {
                 html += renderGrupoDevolucao(funcGroup.label, funcGroup.key, funcGroup.itens, hoje);
             }
@@ -2727,31 +3088,6 @@
         r.readAsDataURL(file);
     });
 
-    window.validarPrateleira = (input) => {
-        // Maiúsculas automáticas já garantidas por text-transform:uppercase no CSS
-        // mas o value precisa ser em maiúsculas para validar corretamente
-        let v = input.value.toUpperCase();
-
-        // Permitir apenas letras, números e /
-        v = v.replace(/[^A-Z0-9/]/g, '');
-
-        // Evitar // duplos
-        v = v.replace(/\/+/g, '/');
-
-        // Não pode começar com /
-        if (v.startsWith('/')) v = v.slice(1);
-
-        input.value = v;
-
-        // Validar: cada segmento separado por / deve ser letra + dígito
-        const segmentos = v.split('/').filter(s => s.length > 0);
-        const valido = segmentos.length > 0 &&
-            segmentos.every(s => /^[A-Z][0-9]$/.test(s)) &&
-            !v.endsWith('/');
-
-        input.setCustomValidity(valido ? '' : 'Use o formato: C3 ou C3/C4 ou F3/F4/F6');
-        input.style.borderColor = (v.length === 0 || valido) ? '' : 'var(--danger)';
-    };
 
     // =====================================================================
     // PUBLICAÇÃO INDEPENDENTE
@@ -3065,7 +3401,7 @@
 'use strict';
 
 // ── Config ────────────────────────────────────────────────────
-var IMGBB_KEY = '34b422ddb75df904d1d380c05b8a9ba4';
+window.IMGBB_KEY = window.IMGBB_KEY || ''; // carregada do banco após login
 var IA_CATS = ['EDUCAÇÃO INCLUSIVA','INFANTIL (1º AO 4º)','INFANTOJUVENIL (5º E 6º)','JUVENIL (7º AO 9º)','JOVEM ADULTO (ENSINO MÉDIO)','EJA (FUNDAMENTAL)','EJA (MÉDIO)','DIDÁTICO (1º)','DIDÁTICO (2º)','DIDÁTICO (3º)','DIDÁTICO (4º)','DIDÁTICO (5º)','DIDÁTICO (6º)','DIDÁTICO (7º)','DIDÁTICO (8º)','DIDÁTICO (9º)','DIDÁTICO (EM 1º)','DIDÁTICO (EM 2º)','DIDÁTICO (EM 3º)','DIDÁTICO (EJAF)','DIDÁTICO (EJAM)','DE REFERÊNCIA','CLÁSSICOS & REGIONAIS','POESIA'];
 window.BIBVANIA_CATS = IA_CATS;
 
@@ -3100,6 +3436,17 @@ window.iaInitOnce = function() {
         if (el) el.innerHTML = optsHtml;
     });
     _iaCarregarUltimosDoSupabase();
+
+    // Polling: atualiza histórico a cada 15s para captar cadastros de outros dispositivos
+    if (!window._iaHistoricoInterval) {
+        window._iaHistoricoInterval = setInterval(function() {
+            // Só atualiza se a aba IA estiver visível
+            var tabIA = document.getElementById('tab-cadastro-ia');
+            if (tabIA && tabIA.classList.contains('active')) {
+                _iaCarregarUltimosDoSupabase();
+            }
+        }, 15000);
+    }
 };
 
 // ── Status ────────────────────────────────────────────────────
@@ -3227,27 +3574,49 @@ function _iaComprimirParaIA(src) {
 // ── imgbb upload ──────────────────────────────────────────────
 async function _iaUploadImgbb(base64dataurl) {
     // Aceita data URL ou base64 puro
-    var b64 = base64dataurl.includes(',') ? base64dataurl.split(',')[1] : base64dataurl;
-    var form = new FormData();
-    form.append('image', b64);
-    var r = await fetch('https://api.imgbb.com/1/upload?key=' + IMGBB_KEY, { method:'POST', body: form });
-    if (!r.ok) throw new Error('imgbb HTTP ' + r.status);
-    var j = await r.json();
-    if (!j.success) throw new Error('imgbb: ' + (j.error && j.error.message || 'falha'));
-    return j.data.url; // URL permanente
+    var b64 = base64dataurl && base64dataurl.includes(',') ? base64dataurl.split(',')[1] : base64dataurl;
+    if (!b64 || b64.trim().length < 100) throw new Error('Imagem vazia ou inválida');
+
+    async function _tentativa() {
+        var form = new FormData();
+        form.append('image', b64);
+        var r = await fetch('https://api.imgbb.com/1/upload?key=' + window.IMGBB_KEY, {
+            method: 'POST',
+            body: form
+        });
+        if (!r.ok) throw new Error('imgbb HTTP ' + r.status + ': ' + r.statusText);
+        var j = await r.json();
+        if (!j.success) throw new Error('imgbb: ' + (j.error && j.error.message || JSON.stringify(j.error) || 'falha'));
+        var url = (j.data && (j.data.display_url || j.data.image && j.data.image.url || j.data.url)) || null;
+        if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+            throw new Error('imgbb retornou URL inválida: ' + url);
+        }
+        return url;
+    }
+
+    // Até 3 tentativas com backoff (resolve problemas de múltiplos dispositivos e rate limit)
+    var ultimoErro;
+    for (var i = 0; i < 3; i++) {
+        try {
+            return await _tentativa();
+        } catch(e) {
+            ultimoErro = e;
+            if (i < 2) await new Promise(function(r){ setTimeout(r, 1200 * (i + 1)); });
+        }
+    }
+    throw ultimoErro;
 }
 window._iaUploadImgbb = _iaUploadImgbb; // exposto para uso no módulo ES (cadastro manual)
 
 // ── Groq direto do browser ────────────────────────────────────
 function _iaGroqKey() {
-    var p = ['gsk_','1X7Q','m3GC','l9bW','9ZIG','eQB4','WGdy','b3FY','4rre','QHcc','CKSb','J3Rt','hsWn','05Ir'];
-    return p.join('');
+    return window._GROQ_KEY || '';
 }
 async function iaChamarGroq(base64) {
     var cats = (window.DB && window.DB.CATEGORIAS) || IA_CATS;
     var catsList = Array.isArray(cats) ? cats.join(', ') : cats;
 
-    var prompt = 'Você é um catalogador expert de biblioteca escolar brasileira. Analise a capa do livro com máxima atenção e responda APENAS com um objeto JSON válido, sem markdown, sem explicações.\n\nRegras obrigatórias:\n- titulo: string — transcreva EXATAMENTE como aparece na capa, incluindo subtítulo se houver (separado por ": ")\n- autor: string — nome completo como aparece na capa; se múltiplos autores, separe por "; "; "DESCONHECIDO" apenas se não houver qualquer indicação\n- editora: string — nome da editora como aparece na capa ou lombada; "DESCONHECIDA" se não visível\n- isbn: string — ISBN-13 preferido, ISBN-10 se único; extraia da contracapa/lombada se visível; "" se não encontrado\n- sinopse: string — sinopse de 2-3 frases inferida pelo título/gênero/capa; não deixe vazio\n- categoria: string — escolha UMA das seguintes (considere o público-alvo e tipo de obra): ' + catsList + '\n- palavras_chave: array com EXATAMENTE 1 string — escolha a palavra-chave mais relevante do livro; pode ser simples (ex: "aventura") ou composta (ex: "romance juvenil" ou "contos de fadas"); NUNCA retorne mais de 1 elemento no array\n- alt_text: string — descreva a capa em 1 frase objetiva para acessibilidade\n\nResponda SOMENTE o JSON, começando com { e terminando com }.';
+    var prompt = 'Você é um catalogador expert de biblioteca escolar brasileira. Analise a capa do livro com máxima atenção e responda APENAS com um objeto JSON válido, sem markdown, sem explicações.\n\nREGRAS ABSOLUTAS — NUNCA viole:\n\n1. titulo (string MAIÚSCULAS, NUNCA vazio): transcreva EXATAMENTE como aparece na capa, incluindo subtítulo se houver (separado por ": "). Se a capa estiver ilegível, use "SEM TÍTULO".\n\n2. autor (string MAIÚSCULAS, NUNCA vazio, NUNCA null): nome do autor principal como aparece na capa. Se houver múltiplos autores, use SOMENTE O PRIMEIRO — NUNCA liste mais de um nome, NUNCA use "e", "et al." ou vírgulas. Se não houver autor visível, use o nome da editora/instituição. Se absolutamente impossível identificar, use "AUTOR DESCONHECIDO".\n\n3. isbn (string só dígitos, ou null): procure ativamente na capa, lombada ou contracapa. Se encontrar, inclua. Caso contrário, null.\n\n4. categoria (string, NUNCA vazio, NUNCA null): escolha OBRIGATORIAMENTE UMA das opções a seguir — mesmo sem certeza absoluta, escolha a mais provável: ' + catsList + '\n\n5. palavras_chave (array com EXATAMENTE 1 string em minúsculas, NUNCA vazio): escolha o tema/gênero principal. Pode ser simples (ex: "aventura") ou composta (ex: "ficção científica"). NUNCA retorne array vazio.\n\n6. alt_text (string, máx 100 chars): descreva a capa em 1 frase objetiva para acessibilidade.\n\nResponda SOMENTE o JSON, começando com { e terminando com }.';
 
     var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -3267,7 +3636,26 @@ async function iaChamarGroq(base64) {
     var texto = raw.choices && raw.choices[0] && raw.choices[0].message && raw.choices[0].message.content;
     if (!texto) throw new Error('Resposta vazia do Groq');
     texto = texto.replace(/```json\s*/gi,'').replace(/```/g,'').trim();
-    try { return JSON.parse(texto); }
+    try {
+        var dados = JSON.parse(texto);
+        // Sanitização: garante que nenhum campo obrigatório fique vazio
+        var cats2 = (window.DB && window.DB.CATEGORIAS) || IA_CATS;
+        dados.titulo = (dados.titulo||'').trim() || 'SEM TÍTULO';
+        dados.autor  = (dados.autor||'').trim()  || 'AUTOR DESCONHECIDO';
+        // ISBN: normaliza para só dígitos ou null
+        var isbnRaw = (dados.isbn||'').toString().replace(/\D/g,'');
+        dados.isbn = isbnRaw.length >= 10 ? isbnRaw : null;
+        // Categoria: valida se é uma das opções; se não, pega a primeira
+        if (!dados.categoria || !cats2.includes(dados.categoria)) {
+            dados.categoria = cats2[0] || '';
+        }
+        // Palavras-chave: garante array não vazio
+        if (!Array.isArray(dados.palavras_chave) || !dados.palavras_chave.length || !dados.palavras_chave[0]) {
+            dados.palavras_chave = ['literatura'];
+        }
+        dados.palavras_chave = [dados.palavras_chave[0]]; // garante só 1
+        return dados;
+    }
     catch(e) { throw new Error('JSON inválido do Groq: ' + texto.substring(0,120)); }
 }
 
@@ -3396,7 +3784,22 @@ function _iaMesclar(img, web, livro) {
     var titulo = (web.titulo&&img.titulo&&web.titulo.indexOf(img.titulo.slice(0,8))>=0)?web.titulo:(img.titulo||web.titulo||livro.titulo||null);
     var autor  = web.autor || img.autor || livro.autor || null;
     var isbn   = web.isbn  || img.isbn  || livro.isbn  || null;
-    var categoria   = img.categoria   || livro.categoria   || null;
+    var categoria = img.categoria || livro.categoria || null;
+    // Fallback automático de categoria baseado no título/contexto
+    if (!categoria && titulo) {
+        var tUp = titulo.toUpperCase();
+        var cats = window.DB && window.DB.CATEGORIAS || IA_CATS;
+        // Heurísticas simples por palavras no título
+        if (/DIDÁTICO|DIDATICO|MATEMÁTICA|PORTUGUÊS|HISTÓRIA|CIÊNCIAS|GEOGRAFIA|FÍSICA|QUÍMICA|BIOLOGIA/.test(tUp)) {
+            categoria = cats.find(function(c){ return c.startsWith('DIDÁTICO'); }) || null;
+        } else if (/INFANTIL|CRIANÇA|CRIANCA|BRINCAR/.test(tUp)) {
+            categoria = 'INFANTIL (1º AO 4º)';
+        } else if (/POESIA|POEMA|VERSO|LÍRICA|LIRICA/.test(tUp)) {
+            categoria = 'POESIA';
+        } else if (/CLÁSSICO|CLASSICO|REGIONAL|CORDEL/.test(tUp)) {
+            categoria = 'CLÁSSICOS & REGIONAIS';
+        }
+    }
     var palavras_chave = (img.palavras_chave&&img.palavras_chave.length)?img.palavras_chave:(livro.palavras_chave||[]);
     var alt_text = img.alt_text || livro.alt_text || null;
     var sinopse  = web.sinopse  || livro.sinopse  || img.sinopse  || null;
@@ -3440,7 +3843,12 @@ window.iaAnalisarComIA = async function() {
         _iaS('iaCampoTitulo', d.titulo); _iaS('iaCampoAutor', d.autor); _iaS('iaCampoIsbn', d.isbn);
         _iaS('iaCampoPalavrasChave', (d.palavras_chave||[]).join(', '));
         _iaS('iaCampoAltText', d.alt_text);
-        var cat = document.getElementById('iaCampoCategoria'); if(cat&&d.categoria) cat.value=d.categoria;
+        var cat = document.getElementById('iaCampoCategoria');
+        if(cat && d.categoria) {
+            cat.value = d.categoria;
+            // Se o valor não casou com nenhuma option (categoria desconhecida), seleciona a primeira válida
+            if (!cat.value) cat.selectedIndex = 1;
+        }
         var crEl=document.getElementById('iaCapaResultado');
         var crW=document.getElementById('iaCapaResultadoWrap');
         if(crEl){crEl.src='data:'+_iaFotoMime+';base64,'+_iaFotoBase64;}
@@ -3449,11 +3857,29 @@ window.iaAnalisarComIA = async function() {
         document.getElementById('iaInfoTitulo').textContent = d.titulo||'—';
         document.getElementById('iaInfoAutor').textContent  = d.autor||'—';
         document.getElementById('iaInfoIsbn').textContent   = d.isbn?'ISBN: '+d.isbn:'';
-        // Verifica se já está cadastrado
+        // Verifica se já está cadastrado — busca fuzzy robusta
         var existente = null;
         if (d.titulo) {
-            var re = await _iaGetSupabase().from('livros').select('*').ilike('titulo', d.titulo).maybeSingle();
-            existente = re.data;
+            var tituloNorm = d.titulo.trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+            // Busca todas as correspondências parciais (primeiras 4 palavras)
+            var palavras = d.titulo.trim().split(/\s+/);
+            var prefixo = palavras.slice(0, Math.min(4, palavras.length)).join(' ');
+            if (prefixo.length > 3) {
+                var re = await _iaGetSupabase().from('livros').select('*').ilike('titulo', '%' + prefixo + '%').limit(5);
+                if (re.data && re.data.length) {
+                    // Escolhe o mais similar pelo título normalizado
+                    existente = re.data.find(function(l) {
+                        var lNorm = (l.titulo||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                        // Similaridade: título normalizado contém o prefixo ou vice-versa
+                        return lNorm.includes(tituloNorm.slice(0,12)) || tituloNorm.includes(lNorm.slice(0,12));
+                    }) || null;
+                }
+            }
+            // Fallback: busca exata se fuzzy não encontrou
+            if (!existente) {
+                var re2 = await _iaGetSupabase().from('livros').select('*').ilike('titulo', d.titulo).maybeSingle();
+                if (!re2.error) existente = re2.data;
+            }
         }
         if (existente) {
             _iaLivroEncontrado = existente;
@@ -3469,7 +3895,13 @@ window.iaAnalisarComIA = async function() {
             }
             document.getElementById('iaTituloEncontrado').textContent   = existente.titulo;
             document.getElementById('iaAutorEncontrado').textContent    = existente.autor||'—';
-            document.getElementById('iaTagEncontrada').textContent      = (existente.palavras_chave||[]).map(function(p){return '#'+p;}).join(' ');
+            document.getElementById('iaIsbnEncontradoVal').textContent = existente.isbn||'—';
+            document.getElementById('iaCategoriaEncontradaVal').textContent = existente.categoria||'—';
+            var _tagsEl = document.getElementById('iaTagEncontrada');
+            if (_tagsEl) {
+                var _tags = existente.palavras_chave||[];
+                _tagsEl.innerHTML = _tags.length ? _tags.map(function(p){return '<span class="tag-keyword tag-static">#'+p+'</span>';}).join(' ') : '';
+            }
             var q=existente.quantidade_total;
             document.getElementById('iaQtdEncontrada').textContent = q+(q===1?' EXEMPLAR':' EXEMPLARES');
             document.getElementById('iaCardEncontrado').style.display   = 'block';
@@ -3563,9 +3995,13 @@ window.iaEditarComIAById = async function(id) {
     }
     document.getElementById('iaTituloEncontrado').textContent   = livro.titulo||'—';
     document.getElementById('iaAutorEncontrado').textContent    = livro.autor||'—';
+    document.getElementById('iaIsbnEncontradoVal').textContent  = livro.isbn||'—';
+    document.getElementById('iaCategoriaEncontradaVal').textContent = livro.categoria||'—';
     var q = livro.quantidade_total;
     document.getElementById('iaQtdEncontrada').textContent = q+(q===1?' EXEMPLAR':' EXEMPLARES');
-    document.getElementById('iaTagEncontrada').textContent = (livro.palavras_chave||[]).map(function(p){return '#'+p;}).join(' ');
+    var _tagsEl2 = document.getElementById('iaTagEncontrada');
+    if(_tagsEl2){var _tags2=livro.palavras_chave||[];_tagsEl2.innerHTML=_tags2.length?_tags2.map(function(p){return '<span class="tag-keyword tag-static">#'+p+'</span>';}).join(' '):'';}
+
     document.getElementById('iaCardEncontrado').style.display  = 'block';
     document.getElementById('iaCardEditForm').style.display    = 'none';
     document.getElementById('iaCardDados').style.display       = 'none';
@@ -3584,7 +4020,11 @@ function _iaPreencherFormEdicao(d) {
     _iaS('iaEditPdfUrl', livro.pdf_url||'');
     var qtdRapida = document.getElementById('iaQtdRapida');
     _iaS('iaEditQtd', qtdRapida&&parseInt(qtdRapida.value)>0?qtdRapida.value:(livro.quantidade_total||1));
-    var ec=document.getElementById('iaEditCategoria'); if(ec) ec.value=d.categoria||livro.categoria||'';
+    var ec=document.getElementById('iaEditCategoria');
+    if(ec) {
+        ec.value = d.categoria||livro.categoria||'';
+        if (!ec.value) ec.selectedIndex = 1;
+    }
     // Capa de edição: foto carregada > foto de análise > URL do livro
     _iaCapaEditBase64 = null;
     var capaUrl = (_iaFotoBase64?('data:'+_iaFotoMime+';base64,'+_iaFotoBase64):null) || livro.imagem_url || null;
@@ -3653,6 +4093,15 @@ window.iaSalvarEdicao = async function() {
         document.getElementById('iaResultadoNome').textContent    = titulo;
         document.getElementById('iaResultadoAutorFinal').textContent = autor;
         document.getElementById('iaResultadoQtd').textContent    = qtd+(qtd===1?' EXEMPLAR':' EXEMPLARES');
+        var _catValE = document.getElementById('iaEditCategoria')?.value || livro.categoria || '';
+        var _isbnValE = livro.isbn || '';
+        var _tagsValE = (livro.palavras_chave||[]);
+        var _catElE = document.getElementById('iaResultadoCategoria'); var _catVE = document.getElementById('iaResultadoCategoriaVal');
+        var _isbnElE = document.getElementById('iaResultadoIsbn'); var _isbnVE = document.getElementById('iaResultadoIsbnVal');
+        var _tagsElE = document.getElementById('iaResultadoTags');
+        if(_catElE&&_catVE){ if(_catValE){_catVE.textContent=_catValE;_catElE.style.display='block';}else{_catElE.style.display='none';} }
+        if(_isbnElE&&_isbnVE){ if(_isbnValE){_isbnVE.textContent=_isbnValE;_isbnElE.style.display='block';}else{_isbnElE.style.display='none';} }
+        if(_tagsElE){ _tagsElE.innerHTML=_tagsValE.length?_tagsValE.map(function(p){return '<span class="tag-keyword tag-static">#'+p+'</span>';}).join(' '):''; }
         var capEl2=document.getElementById('iaResultadoCapa');
         var capW2=document.getElementById('iaResultadoCapaWrap');
         var capaSrcFinal = (capaSrc||null) || livro.imagem_url || null;
@@ -3670,8 +4119,11 @@ window.iaCadastrarLivro = async function() {
     var qtd    = parseInt(document.getElementById('iaCampoQtd').value)||1;
     var pcs    = document.getElementById('iaCampoPalavrasChave').value.split(',').map(function(x){return x.trim().toLowerCase();}).filter(Boolean);
     var pdfUrl = document.getElementById('iaCampoPdfUrl').value.trim()||'';
+    var categoria = document.getElementById('iaCampoCategoria').value.trim()||'';
     if (!titulo) { iaMostrarStatus('⚠️ INFORME O TÍTULO','erro'); return; }
     if (!autor)  { iaMostrarStatus('⚠️ INFORME O AUTOR','erro'); return; }
+    // BUG FIX #7: Validar categoria obrigatória
+    if (!categoria) { iaMostrarStatus('⚠️ INFORME A CATEGORIA','erro'); return; }
     var btn=document.getElementById('iaBtnCadastrar');
     btn.disabled=true; btn.innerHTML='<div class="spinner"></div> CADASTRANDO...';
     iaMostrarStatus('💾 SALVANDO...','info');
@@ -3709,6 +4161,15 @@ window.iaCadastrarLivro = async function() {
         document.getElementById('iaResultadoNome').textContent  = titulo;
         document.getElementById('iaResultadoAutorFinal').textContent = autor;
         document.getElementById('iaResultadoQtd').textContent  = qtd+(qtd===1?' EXEMPLAR':' EXEMPLARES');
+        var _catValN = categoria || '';
+        var _isbnValN = document.getElementById('iaCampoIsbn')?.value.trim() || '';
+        var _tagsValN = pcs || [];
+        var _catElN = document.getElementById('iaResultadoCategoria'); var _catVN = document.getElementById('iaResultadoCategoriaVal');
+        var _isbnElN = document.getElementById('iaResultadoIsbn'); var _isbnVN = document.getElementById('iaResultadoIsbnVal');
+        var _tagsElN = document.getElementById('iaResultadoTags');
+        if(_catElN&&_catVN){ if(_catValN){_catVN.textContent=_catValN;_catElN.style.display='block';}else{_catElN.style.display='none';} }
+        if(_isbnElN&&_isbnVN){ if(_isbnValN){_isbnVN.textContent=_isbnValN;_isbnElN.style.display='block';}else{_isbnElN.style.display='none';} }
+        if(_tagsElN){ _tagsElN.innerHTML=_tagsValN.length?_tagsValN.map(function(p){return '<span class="tag-keyword tag-static">#'+p+'</span>';}).join(' '):''; }
         var capEl=document.getElementById('iaResultadoCapa');
         var capW=document.getElementById('iaResultadoCapaWrap');
         var capaFinal = urlCapa || capaSrc || '';
@@ -3767,14 +4228,14 @@ async function _iaCarregarUltimosDoSupabase() {
         var sb = _iaGetSupabase();
         // Ordena por data_cadastro desc, depois id desc como fallback
         var r = await sb.from('livros')
-            .select('id,titulo,autor,imagem_url,categoria,pdf_url,palavras_chave,quantidade_total,quantidade_disponivel')
+            .select('id,titulo,autor,isbn,imagem_url,categoria,pdf_url,palavras_chave,quantidade_total,quantidade_disponivel')
             .order('data_cadastro', { ascending: false })
             .order('id', { ascending: false })
             .limit(5);
         if (r.error || !r.data || !r.data.length) {
             // Fallback: sem data_cadastro ainda — ordena por id
             var r2 = await sb.from('livros')
-                .select('id,titulo,autor,imagem_url,categoria,pdf_url,palavras_chave,quantidade_total,quantidade_disponivel')
+                .select('id,titulo,autor,isbn,imagem_url,categoria,pdf_url,palavras_chave,quantidade_total,quantidade_disponivel')
                 .order('id', { ascending: false })
                 .limit(5);
             if (!r2.error && r2.data && r2.data.length) {
@@ -3790,6 +4251,7 @@ async function _iaCarregarUltimosDoSupabase() {
         var merged = r.data.map(function(l){
             var loc=localMap[l.id];
             return { id:l.id, titulo:l.titulo||'—', autor:l.autor||'—',
+                     isbn:l.isbn||'',
                      categoria:l.categoria||'', pdf_url:l.pdf_url||'',
                      palavras_chave:l.palavras_chave||[],
                      quantidade_total:l.quantidade_total||0,
@@ -3810,11 +4272,8 @@ function _iaRenderHistorico(lista) {
         var capaHtml = h.capa
             ? '<div class="hist-capa"><img src="'+h.capa+'" alt=""></div>'
             : '<div class="hist-capa"><span class="hist-sem-capa-label">SEM<br>CAPA</span></div>';
-        var downloadHtml = h.pdf_url
-            ? '<a href="'+h.pdf_url+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--primary);font-weight:700;text-decoration:none;">BAIXAR PDF</a>'
-            : '';
         var tagsHtml = h.palavras_chave && h.palavras_chave.length
-            ? h.palavras_chave.map(function(p){ return '<span class="tag-keyword">#'+p+'</span>'; }).join(' ')
+            ? h.palavras_chave.map(function(p){ return '<span class="tag-keyword tag-static">#'+p+'</span>'; }).join(' ')
             : '';
         var disp = h.quantidade_disponivel, total = h.quantidade_total;
         var badgeClass = disp > 0 ? 'badge-disponivel' : 'badge-indisponivel';
@@ -3823,8 +4282,8 @@ function _iaRenderHistorico(lista) {
             +'<div class="hist-info">'
             +'<div class="hist-titulo">ID '+h.id+': '+h.titulo+'</div>'
             +'<div class="hist-meta"><strong>AUTOR:</strong> '+(h.autor||'—')+'</div>'
-            +'<div class="hist-meta"><strong>CAT.:</strong> '+(h.categoria||'')+'</div>'
-            +'<div class="hist-meta"><strong>DOWNLOAD:</strong> '+downloadHtml+'</div>'
+            +'<div class="hist-meta"><strong>ISBN:</strong> '+(h.isbn||'—')+'</div>'
+            +'<div class="hist-meta"><strong>CAT.:</strong> '+(h.categoria||'—')+'</div>'
             +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem;">'
             +'<div>'+tagsHtml+'</div>'
             +'<span class="badge '+badgeClass+'" style="flex-shrink:0;font-size:0.65rem;">'+disp+'/'+total+' DISPONÍVEIS</span>'
@@ -3862,9 +4321,12 @@ window.iaCancelarEdicao = function() {
         if(livro.imagem_url){ce.src=livro.imagem_url;if(cew){cew.classList.remove('sem-capa');cew.classList.add('has-image','capa-carregada');}}else{ce.src='';if(cew){cew.classList.add('sem-capa','capa-carregada');cew.classList.remove('has-image');}}
         document.getElementById('iaTituloEncontrado').textContent=livro.titulo||'—';
         document.getElementById('iaAutorEncontrado').textContent=livro.autor||'—';
+        document.getElementById('iaIsbnEncontradoVal').textContent=livro.isbn||'—';
+        document.getElementById('iaCategoriaEncontradaVal').textContent=livro.categoria||'—';
         var q=livro.quantidade_total;
         document.getElementById('iaQtdEncontrada').textContent=q+(q===1?' EXEMPLAR':' EXEMPLARES');
-        document.getElementById('iaTagEncontrada').textContent=(livro.palavras_chave||[]).map(function(p){return '#'+p;}).join(' ');
+        var _tagsEl3=document.getElementById('iaTagEncontrada');
+        if(_tagsEl3){var _tags3=livro.palavras_chave||[];_tagsEl3.innerHTML=_tags3.length?_tags3.map(function(p){return '<span class="tag-keyword tag-static">#'+p+'</span>';}).join(' '):'';}
         document.getElementById('iaCardEncontrado').style.display='block';
     }
     iaMostrarStatus('','');
@@ -4062,7 +4524,7 @@ window._iaPreAquecerDB = function() {};
                + '<div><strong>' + p.nome + '</strong></div>';
       if (isFunc) {
         var gen = p.sexo === 'F' ? 'Funcionária' : 'Funcionário';
-        html += '<div style="color:var(--text-light);">' + gen + ' · PROF/FUNC</div>';
+        html += '<div style="color:var(--text-light);">' + gen + ' · FUNCIONÁRIO</div>';
 
       } else {
         var anoNum = parseInt(p.ano_aluno) || 0;
@@ -4178,7 +4640,7 @@ window._iaPreAquecerDB = function() {};
                  + (anoNum >= 10 ? 'EM ' + (anoNum - 9) + 'º' : anoNum + 'º EF')
                  + ' — TURMA ' + (p.turma_aluno || '?') + '</span>';
           } else {
-            info = '<span style="color:var(--text-light);font-size:0.72rem;"> · PROF/FUNC</span>';
+            info = '<span style="color:var(--text-light);font-size:0.72rem;"> · FUNCIONÁRIO</span>';
           }
           return '<div data-emp-pid="' + p.id + '" style="' + _iStyle() + '">'
                + '<strong>' + p.nome + '</strong>' + info + '</div>';
@@ -4438,6 +4900,8 @@ window._iaPreAquecerDB = function() {};
 
   window.carregarAcervo = async function () {
     setHTML('listaAdmin', '<p style="text-align:center;padding:2rem;color:var(--text-light)">CARREGANDO...</p>');
+    var sel = document.getElementById('filtroCategoriaAdmin');
+    if (sel) sel.innerHTML = '<option value="">TODOS (0)</option>';
     try {
       var sb = getSB();
       var [r1, r2] = await Promise.all([
@@ -4448,8 +4912,17 @@ window._iaPreAquecerDB = function() {};
       if (r2.error) throw r2.error;
 
       _livros = r1.data || [];
-      // Sincroniza com window._todosLivros para que window.openEdit (módulo ES) encontre os livros
       window._todosLivros = _livros;
+      // Popular select de categorias diretamente com dados do fetch
+      (function() {
+        var sel = document.getElementById('filtroCategoriaAdmin');
+        if (!sel) return;
+        var cats = (window.DB && window.DB.CATEGORIAS) || [];
+        var contagem = {};
+        _livros.forEach(function(l) { if (l.categoria) contagem[l.categoria] = (contagem[l.categoria]||0)+1; });
+        sel.innerHTML = '<option value="">TODOS (' + _livros.length + ')</option>' +
+          cats.filter(function(c){ return contagem[c]; }).map(function(c){ return '<option value="'+c+'">'+c+' ('+contagem[c]+')</option>'; }).join('');
+      })();
       var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
       _empsAtivos = {};
@@ -4464,11 +4937,17 @@ window._iaPreAquecerDB = function() {};
       });
 
       renderAcervoFiltrado();
-      document.getElementById('buscaAdmin').addEventListener('input', renderAcervoFiltrado);
+      var _debBuscaAdmin = null;
+      document.getElementById('buscaAdmin').oninput = function() {
+        clearTimeout(_debBuscaAdmin);
+        _debBuscaAdmin = setTimeout(renderAcervoFiltrado, 80);
+      };
     } catch (err) {
       setHTML('listaAdmin', '<p style="text-align:center;padding:2rem;color:var(--danger)">❌ ERRO: ' + err.message + '</p>');
     }
   };
+
+  var _renderAcervoToken = 0;
 
   function renderAcervoFiltrado() {
     var termo = norm(document.getElementById('buscaAdmin').value || '');
@@ -4493,11 +4972,29 @@ window._iaPreAquecerDB = function() {};
       secao.classList.add('hidden');
     }
 
+    var cont = document.getElementById('listaAdmin');
     if (!normais.length) {
-      setHTML('listaAdmin', atrasados.length ? '' : '<p style="text-align:center;padding:2rem;color:var(--text-light)">NENHUM LIVRO ENCONTRADO.</p>');
+      cont.innerHTML = atrasados.length ? '' : '<p style="text-align:center;padding:2rem;color:var(--text-light)">NENHUM LIVRO ENCONTRADO.</p>';
       return;
     }
-    setHTML('listaAdmin', normais.map(function (l) { return cardLivro(l, false); }).join(''));
+
+    // Render incremental: chunks de 20 cards por rAF — não bloqueia o thread
+    var token = ++_renderAcervoToken;
+    cont.innerHTML = '';
+    var CHUNK = 20;
+    function _inserir(i) {
+      if (token !== _renderAcervoToken) return;
+      var frag = document.createDocumentFragment();
+      var fim = Math.min(i + CHUNK, normais.length);
+      var tmp = document.createElement('div');
+      for (var j = i; j < fim; j++) {
+        tmp.innerHTML = cardLivro(normais[j], false);
+        while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+      }
+      cont.appendChild(frag);
+      if (fim < normais.length) requestAnimationFrame(function() { _inserir(fim); });
+    }
+    requestAnimationFrame(function() { _inserir(0); });
   }
 
   function cardLivro(l, atrasado) {
@@ -4622,7 +5119,7 @@ window._iaPreAquecerDB = function() {};
       var label = anoNum >= 10 ? 'EM ' + (anoNum - 9) + 'º ANO — TURMA ' + turma : anoNum + 'º ANO — TURMA ' + turma;
       html += _grupoDev(label, key, turmaMap[key], hoje);
     });
-    if (funcGroup.length) html += _grupoDev('PROFESSORES E FUNCIONÁRIOS', 'func', funcGroup, hoje);
+    if (funcGroup.length) html += _grupoDev('FUNCIONÁRIOS', 'func', funcGroup, hoje);
 
     setHTML('listaDevolucoes', html);
   }
@@ -4760,15 +5257,7 @@ window._iaPreAquecerDB = function() {};
       } catch(e) { _empsNomeCacheUMD = {}; }
 
       _renderPessoas();
-      // Listener de busca com debounce curto (80ms) — evita render a cada tecla
-      // sem tornar a busca perceptivelmente lenta
-      var _debBuscaP = null;
-      document.getElementById('buscaPessoas').oninput = function() {
-        clearTimeout(_debBuscaP);
-        _debBuscaP = setTimeout(_renderPessoas, 80);
-      };
-      // Voz e botão X são inicializados pelo bloco module via window._initVozPessoas()
-      if (window._initVozPessoas) window._initVozPessoas();
+      // oninput e voz/X gerenciados pelo ES module
     } catch (err) {
       setHTML('listaPessoas', '<p style="text-align:center;padding:2rem;color:var(--danger)">❌ ERRO: ' + err.message + '</p>');
     }
@@ -4929,7 +5418,7 @@ window._iaPreAquecerDB = function() {};
       var partes = key.split('|');
       return { titulo: _tituloGrupo(parseInt(partes[0]), partes[1]), lista: turmaMap[key] };
     });
-    if (funcionarios.length) grupos.push({ titulo: 'PROFESSORES E FUNCIONÁRIOS', lista: funcionarios });
+    if (funcionarios.length) grupos.push({ titulo: 'FUNCIONÁRIOS', lista: funcionarios });
 
     var container = document.getElementById('listaPessoas');
     container.innerHTML = '';
@@ -5296,6 +5785,8 @@ window._iaPreAquecerDB = function() {};
 
     document.getElementById('modalEditPessoa').classList.remove('hidden');
   };
+  // Alias imediato para o ES module delegar (não pode ser definido dentro da função)
+  window._abrirEditPessoaUMD = window.abrirEditPessoa;
 
   /* ═══════════════════════════════════════════
      SOBRESCREVER switchTab para chamar direto
@@ -5400,5 +5891,491 @@ window._iaPreAquecerDB = function() {};
 
 </script>
     <script src="bibvania-transition.js"></script>
+
+    <script>
+    // ── RELATÓRIOS ────────────────────────────────────────────────────────────
+    (function() {
+        let relatorioTexto = '';
+        let _clockInterval = null;
+        let _relDados = null;
+        const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+
+        function _initFiltros() {
+            const el = document.getElementById('filtroAno');
+            if (el && !el.value) el.value = new Date().getFullYear();
+            const em = document.getElementById('filtroMes');
+            if (em && !em.value) {
+                const n = new Date();
+                em.value = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
+            }
+        }
+
+        window.relAlternarTipo = function() {
+            _initFiltros();
+            const anual = document.getElementById('tipoRelatorio').value === 'anual';
+            document.getElementById('containerAno').classList.toggle('hidden', !anual);
+            document.getElementById('containerMes').classList.toggle('hidden', anual);
+            const _sy = window.scrollY;
+            relGerar(true).then(() => requestAnimationFrame(() => window.scrollTo({ top: _sy, behavior: 'instant' })));
+        };
+
+        function ehFunc(e) {
+            return e.turma_aluno === 'PROF/FUNC' || e.turma_aluno === 'PROFESSOR' || e.turma_aluno === 'FUNCIONARIO';
+        }
+
+        window.relGerar = async function(silencioso = false) {
+            _initFiltros();
+            const preview = document.getElementById('previewRelatorio');
+            if (!preview) return;
+            if (!silencioso) preview.textContent = 'CARREGANDO RELATÓRIO...';
+            try {
+                const [livros, emprestimos] = await Promise.all([
+                    window.DB.getLivros(), window.DB.getEmprestimos()
+                ]);
+                const tipo = document.getElementById('tipoRelatorio').value;
+                const hoje = new Date();
+                let labelPeriodo, empFiltrados;
+                if (tipo === 'anual') {
+                    const ano = parseInt(document.getElementById('filtroAno').value) || hoje.getFullYear();
+                    labelPeriodo = 'RELATÓRIO ANUAL DE ' + ano;
+                    empFiltrados = emprestimos.filter(e => new Date(e.data_emprestimo).getFullYear() === ano);
+                } else {
+                    const [ano, mes] = document.getElementById('filtroMes').value.split('-');
+                    labelPeriodo = 'RELATÓRIO MENSAL DE ' + MESES[parseInt(mes)-1] + ' DE ' + ano;
+                    empFiltrados = emprestimos.filter(e => {
+                        const d = new Date(e.data_emprestimo);
+                        return d.getFullYear() === parseInt(ano) && (d.getMonth()+1) === parseInt(mes);
+                    });
+                }
+                const livroMap = {};
+                livros.forEach(l => { livroMap[l.id] = l; });
+                const normEx = n => n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+                const EXCLUIR = new Set(['ANTONIO','ANTÔNIO','MARIA','LUANA']);
+                const empAlunos = empFiltrados.filter(e =>
+                    !ehFunc(e) && !EXCLUIR.has(normEx(e.nome_aluno||'').split(' ')[0])
+                );
+                const todosEmpAlunos = emprestimos.filter(e =>
+                    !ehFunc(e) && !EXCLUIR.has(normEx(e.nome_aluno||'').split(' ')[0])
+                );
+                _relDados = { livroMap, empAlunos, todosEmpAlunos, labelPeriodo, empFiltrados };
+                _atualizarPreview();
+                document.getElementById('btnBaixar').disabled = false;
+            } catch(err) {
+                preview.textContent = 'ERRO: ' + err.message + '\n\n📶 Internet instável? Recarregue a página.';
+            }
+        };
+
+        function _agora() {
+            const n = new Date();
+            return {
+                dataStr: n.toLocaleDateString('pt-BR'),
+                horaStr: n.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+            };
+        }
+
+        function _atualizarPreview() {
+            const preview = document.getElementById('previewRelatorio');
+            if (!_relDados || !preview) return;
+            const { dataStr, horaStr } = _agora();
+            relatorioTexto = _gerarTxt({ ..._relDados, dataStr, horaStr });
+            preview.textContent = relatorioTexto;
+            document.getElementById('btnBaixar').disabled = false;
+            if (!_clockInterval) {
+                _clockInterval = setInterval(() => {
+                    if (!_relDados) return;
+                    const { dataStr, horaStr } = _agora();
+                    relatorioTexto = _gerarTxt({ ..._relDados, dataStr, horaStr });
+                    const p = document.getElementById('previewRelatorio');
+                    if (p) p.textContent = relatorioTexto;
+                }, 1000);
+            }
+        }
+
+        function _gerarTxt({ livroMap, empAlunos, todosEmpAlunos, labelPeriodo, empFiltrados, dataStr, horaStr }) {
+            const SEP  = '='.repeat(60);
+            const sep2 = '-'.repeat(40);
+            const tAlunos = {};
+            empAlunos.forEach(e => {
+                if (ehFunc(e)) return;
+                const key = e.ano_aluno + '|' + e.turma_aluno;
+                if (!tAlunos[key]) tAlunos[key] = {};
+                if (!tAlunos[key][e.nome_aluno]) tAlunos[key][e.nome_aluno] = { emps:[], sexo:e.sexo };
+                tAlunos[key][e.nome_aluno].emps.push(e);
+            });
+            const turmasOrd = Object.keys(tAlunos).sort((a,b) => {
+                const [aA,tA]=a.split('|'); const [aB,tB]=b.split('|');
+                const ejA = tA.startsWith('EJA-'), ejB = tB.startsWith('EJA-');
+                if (ejA !== ejB) return ejA ? 1 : -1;
+                if (ejA && ejB) return tA.localeCompare(tB);
+                return aA-aB || tA.localeCompare(tB);
+            });
+            let t = '';
+            t += SEP + '\n';
+            t += 'BIBVANIA ONLINE\n';
+            t += 'BIBLIOTECA ESCOLAR DA EMTI\n';
+            t += 'PROFESSORA MARIA VÂNIA FARIAS LINHARES\n';
+            t += SEP + '\n';
+            t += labelPeriodo + '\n';
+            t += 'DATA: ' + dataStr + '   HORA: ' + horaStr + '\n';
+            t += SEP + '\n\n';
+            t += SEP + '\n';
+            t += '1. OS LIVROS MAIS LIDOS NO PERÍODO\n';
+            t += SEP + '\n';
+            const _todosEmpLivros = todosEmpAlunos || empAlunos;
+            function _nTurmas(filtroFn) {
+                const s = new Set();
+                _todosEmpLivros.forEach(e => { if (filtroFn(e)) s.add(e.ano_aluno+'|'+e.turma_aluno); });
+                return Math.max(s.size, 1);
+            }
+            const _isEJAe = e => String(e.turma_aluno||'').startsWith('EJA-');
+            const nEFI1  = _nTurmas(e => !ehFunc(e) && !_isEJAe(e) && [1,2,3,4,5].includes(parseInt(e.ano_aluno)));
+            const nEFII1 = _nTurmas(e => !ehFunc(e) && !_isEJAe(e) && [6,7,8,9].includes(parseInt(e.ano_aluno)));
+            const nEM1   = _nTurmas(e => !ehFunc(e) && !_isEJAe(e) && [10,11,12].includes(parseInt(e.ano_aluno)));
+            const nEJAF1 = _nTurmas(e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-FUNDAMENTAL'));
+            const nEJAM1 = _nTurmas(e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-MÉDIO'));
+            function _livrosSegmento(label, filtroEmpFn, numLivros) {
+                const cnt = {}, leitores = {};
+                empAlunos.forEach(e => {
+                    if (!e.livro_id || !filtroEmpFn(e)) return;
+                    cnt[e.livro_id] = (cnt[e.livro_id]||0) + 1;
+                    if (!leitores[e.livro_id]) leitores[e.livro_id] = [];
+                    leitores[e.livro_id].push(e);
+                });
+                const top = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0, numLivros);
+                t += '\n' + sep2 + '\n';
+                t += label + '\n';
+                t += sep2 + '\n';
+                if (!top.length) { t += 'Nenhum empréstimo no período para este segmento.\n'; return; }
+                top.forEach(([id, qtd], i) => {
+                    const l = livroMap[id];
+                    const titulo = l ? l.titulo : ('Livro ID ' + id);
+                    t += '\n' + (i+1) + '. ' + titulo + ' (' + qtd + ' empréstimo' + (qtd!==1?'s':'') + ')\n';
+                    if (l && l.autor) t += '   Autor: ' + l.autor + '\n';
+                    const lista = (leitores[id]||[]).sort((a,b)=>a.nome_aluno.localeCompare(b.nome_aluno));
+                    if (lista.length) {
+                        t += '   Leitores:\n';
+                        lista.forEach(e => {
+                            const isEJAE = String(e.turma_aluno||'').startsWith('EJA-');
+                            let info;
+                            if (ehFunc(e)) { info = e.sexo === 'F' ? 'Funcionária' : 'Funcionário'; }
+                            else if (isEJAE) { const p = e.turma_aluno.split('-'); info = (p[1]==='FUNDAMENTAL'?'EJA FUND.':'EJA MÉDIO') + ' — Sala ' + p[2]; }
+                            else { info = e.ano_aluno + 'º Ano — Turma ' + e.turma_aluno; }
+                            t += '   - ' + e.nome_aluno + ' (' + info + ')\n';
+                        });
+                    }
+                });
+            }
+            t += '\n' + sep2 + '\n';
+            t += 'GERAL (TODA A ESCOLA)\n';
+            t += sep2 + '\n';
+            {
+                const cntG = {}, leitG = {};
+                empAlunos.forEach(e => {
+                    if (!e.livro_id) return;
+                    cntG[e.livro_id] = (cntG[e.livro_id]||0) + 1;
+                    if (!leitG[e.livro_id]) leitG[e.livro_id] = [];
+                    leitG[e.livro_id].push(e);
+                });
+                const top4 = Object.entries(cntG).sort((a,b)=>b[1]-a[1]).slice(0,4);
+                if (!top4.length) { t += 'Nenhum empréstimo no período.\n'; }
+                else {
+                    top4.forEach(([id, qtd], i) => {
+                        const l = livroMap[id];
+                        t += '\n' + (i+1) + '. ' + (l?l.titulo:('Livro ID '+id)) + ' (' + qtd + ' empréstimo' + (qtd!==1?'s':'') + ')\n';
+                        if (l && l.autor) t += '   Autor: ' + l.autor + '\n';
+                        const lista = (leitG[id]||[]).sort((a,b)=>a.nome_aluno.localeCompare(b.nome_aluno));
+                        if (lista.length) {
+                            t += '   Leitores:\n';
+                            lista.forEach(e => {
+                                const isEJAE = String(e.turma_aluno||'').startsWith('EJA-');
+                                let info;
+                                if (ehFunc(e)) { info = e.sexo === 'F' ? 'Funcionária' : 'Funcionário'; }
+                                else if (isEJAE) { const p = e.turma_aluno.split('-'); info = (p[1]==='FUNDAMENTAL'?'EJA FUND.':'EJA MÉDIO') + ' — Sala ' + p[2]; }
+                                else { info = e.ano_aluno + 'º Ano — Turma ' + e.turma_aluno; }
+                                t += '   - ' + e.nome_aluno + ' (' + info + ')\n';
+                            });
+                        }
+                    });
+                }
+            }
+            _livrosSegmento('ENSINO FUNDAMENTAL I (1º AO 5º ANO)', e => !ehFunc(e) && !_isEJAe(e) && [1,2,3,4,5].includes(parseInt(e.ano_aluno)), nEFI1);
+            _livrosSegmento('ENSINO FUNDAMENTAL II (6º AO 9º ANO)', e => !ehFunc(e) && !_isEJAe(e) && [6,7,8,9].includes(parseInt(e.ano_aluno)), nEFII1);
+            _livrosSegmento('ENSINO MÉDIO (1º AO 3º ANO)', e => !ehFunc(e) && !_isEJAe(e) && [10,11,12].includes(parseInt(e.ano_aluno)), nEM1);
+            _livrosSegmento('EJA FUNDAMENTAL', e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-FUNDAMENTAL'), nEJAF1);
+            _livrosSegmento('EJA MÉDIO', e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-MÉDIO'), nEJAM1);
+            t += '\n' + SEP + '\n';
+            t += '2. ALUNO E ALUNA DESTAQUE POR SALA\n';
+            t += SEP + '\n';
+            function _destaqueSegmento(label, filtroKeyFn) {
+                const turmasDoSeg = turmasOrd.filter(filtroKeyFn);
+                t += '\n' + sep2 + '\n';
+                t += label + '\n';
+                t += sep2 + '\n';
+                if (!turmasDoSeg.length) { t += 'Nenhum empréstimo neste segmento no período.\n'; return; }
+                turmasDoSeg.forEach(key => {
+                    const [ano, turma] = key.split('|');
+                    const isEJAKey = turma.startsWith('EJA-');
+                    let tituloSala;
+                    if (isEJAKey) { const partes = turma.split('-'); tituloSala = (partes[1]==='FUNDAMENTAL'?'EJA FUND.':'EJA MÉDIO') + ' — SALA ' + partes[2]; }
+                    else { tituloSala = ano + 'º ANO - TURMA ' + turma; }
+                    t += '\n  ' + tituloSala + '\n';
+                    const arr = Object.entries(tAlunos[key])
+                        .map(([nome,d])=>({nome,sexo:d.sexo,qtd:d.emps.length,emps:d.emps}))
+                        .sort((a,b)=>b.qtd-a.qtd);
+                    [arr.find(a=>a.sexo==='M'), arr.find(a=>a.sexo==='F')].filter(Boolean).forEach(d => {
+                        const rotulo = d.sexo==='M' ? 'ALUNO DESTAQUE' : 'ALUNA DESTAQUE';
+                        t += '\n  * ' + rotulo + ': ' + d.nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                        t += '    Livros lidos:\n';
+                        d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                            const l = livroMap[e.livro_id]; if (!l) return;
+                            t += '    - ' + l.titulo; if (l.autor) t += ' | Autor: ' + l.autor; t += '\n';
+                        });
+                    });
+                });
+            }
+            if (!turmasOrd.length) {
+                t += 'Nenhum empréstimo de alunos no período.\n';
+            } else {
+                const isEJAKey = key => key.split('|')[1].startsWith('EJA-');
+                const anoKey   = key => parseInt(key.split('|')[0]);
+                _destaqueSegmento('ENSINO FUNDAMENTAL I (1º AO 5º ANO)', key => !isEJAKey(key) && [1,2,3,4,5].includes(anoKey(key)));
+                _destaqueSegmento('ENSINO FUNDAMENTAL II (6º AO 9º ANO)', key => !isEJAKey(key) && [6,7,8,9].includes(anoKey(key)));
+                _destaqueSegmento('ENSINO MÉDIO (1º AO 3º ANO)', key => !isEJAKey(key) && [10,11,12].includes(anoKey(key)));
+                _destaqueSegmento('EJA FUNDAMENTAL', key => key.split('|')[1].startsWith('EJA-FUNDAMENTAL'));
+                _destaqueSegmento('EJA MÉDIO', key => key.split('|')[1].startsWith('EJA-MÉDIO'));
+            }
+            t += '\n' + sep2 + '\n';
+            t += 'GERAL (TODA A ESCOLA)\n';
+            t += sep2 + '\n';
+            {
+                const leiturasG = {};
+                empAlunos.forEach(e => {
+                    if (ehFunc(e)) return;
+                    if (!leiturasG[e.nome_aluno]) leiturasG[e.nome_aluno] = { qtd:0, sexo:e.sexo, emps:[] };
+                    leiturasG[e.nome_aluno].qtd++;
+                    leiturasG[e.nome_aluno].emps.push(e);
+                    if (e.sexo) leiturasG[e.nome_aluno].sexo = e.sexo;
+                });
+                const todos = Object.entries(leiturasG).sort((a,b)=>b[1].qtd-a[1].qtd);
+                const top2M = todos.filter(([,d])=>d.sexo==='M').slice(0,2);
+                const top2F = todos.filter(([,d])=>d.sexo==='F').slice(0,2);
+                const _imprimirAluno = (nome, d, rotulo) => {
+                    t += '\n* ' + rotulo + ': ' + nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                    t += '  Livros lidos:\n';
+                    d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                        const l = livroMap[e.livro_id]; if (!l) return;
+                        t += '  - ' + l.titulo; if (l.autor) t += ' | Autor: ' + l.autor; t += '\n';
+                    });
+                };
+                if (!top2M.length && !top2F.length) { t += 'Nenhum empréstimo no período.\n'; }
+                else {
+                    const max = Math.max(top2M.length, top2F.length);
+                    for (let i = 0; i < max; i++) {
+                        if (top2M[i]) _imprimirAluno(top2M[i][0], top2M[i][1], ['1º','2º'][i] + ' ALUNO QUE MAIS LEU');
+                        if (top2F[i]) _imprimirAluno(top2F[i][0], top2F[i][1], ['1ª','2ª'][i] + ' ALUNA QUE MAIS LEU');
+                    }
+                }
+            }
+            t += '\n' + SEP + '\n';
+            t += '3. ALUNOS QUE MAIS LERAM\n';
+            t += SEP + '\n';
+            const _todosEmp = todosEmpAlunos || empAlunos;
+            function _contarTurmasEmp(filtroFn) {
+                const s = new Set();
+                _todosEmp.forEach(e => { if (filtroFn(e)) s.add(e.ano_aluno+'|'+e.turma_aluno); });
+                return Math.max(s.size, 1);
+            }
+            function _rankingSegmento(label, filtroFn, turmasUnicas) {
+                const leituras = {};
+                empAlunos.forEach(e => {
+                    if (!filtroFn(e)) return;
+                    if (!leituras[e.nome_aluno]) leituras[e.nome_aluno] = { qtd:0, emps:[] };
+                    leituras[e.nome_aluno].qtd++;
+                    leituras[e.nome_aluno].emps.push(e);
+                });
+                const ranking = Object.entries(leituras).sort((a,b)=>b[1].qtd-a[1].qtd).slice(0, turmasUnicas);
+                t += '\n' + sep2 + '\n'; t += label + '\n'; t += sep2 + '\n';
+                if (!ranking.length) { t += 'Nenhum empréstimo no período para este segmento.\n'; return; }
+                ranking.forEach(([nome, d], i) => {
+                    t += '\n' + (i+1) + '. ' + nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                    t += '  Livros lidos:\n';
+                    d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                        const l = livroMap[e.livro_id]; if (!l) return;
+                        t += '  - ' + l.titulo; if (l.autor) t += ' | Autor: ' + l.autor; t += '\n';
+                    });
+                });
+            }
+            const isEJA = e => String(e.turma_aluno||'').startsWith('EJA-');
+            _rankingSegmento('ENSINO FUNDAMENTAL I (1º AO 5º ANO)', e => !ehFunc(e) && !isEJA(e) && [1,2,3,4,5].includes(parseInt(e.ano_aluno)), _contarTurmasEmp(e => !ehFunc(e) && !isEJA(e) && [1,2,3,4,5].includes(parseInt(e.ano_aluno))));
+            _rankingSegmento('ENSINO FUNDAMENTAL II (6º AO 9º ANO)', e => !ehFunc(e) && !isEJA(e) && [6,7,8,9].includes(parseInt(e.ano_aluno)), _contarTurmasEmp(e => !ehFunc(e) && !isEJA(e) && [6,7,8,9].includes(parseInt(e.ano_aluno))));
+            _rankingSegmento('ENSINO MÉDIO (1º AO 3º ANO)', e => !ehFunc(e) && !isEJA(e) && [10,11,12].includes(parseInt(e.ano_aluno)), _contarTurmasEmp(e => !ehFunc(e) && !isEJA(e) && [10,11,12].includes(parseInt(e.ano_aluno))));
+            _rankingSegmento('EJA FUNDAMENTAL', e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-FUNDAMENTAL'), _contarTurmasEmp(e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-FUNDAMENTAL')));
+            _rankingSegmento('EJA MÉDIO', e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-MÉDIO'), _contarTurmasEmp(e => !ehFunc(e) && String(e.turma_aluno||'').startsWith('EJA-MÉDIO')));
+            t += '\n' + sep2 + '\n';
+            t += 'GERAL (TODA A ESCOLA — QUALQUER GÊNERO)\n';
+            t += sep2 + '\n';
+            {
+                const leiturasG2 = {};
+                empAlunos.forEach(e => {
+                    if (ehFunc(e)) return;
+                    if (!leiturasG2[e.nome_aluno]) leiturasG2[e.nome_aluno] = { qtd:0, sexo:e.sexo, emps:[] };
+                    leiturasG2[e.nome_aluno].qtd++;
+                    leiturasG2[e.nome_aluno].emps.push(e);
+                    if (e.sexo) leiturasG2[e.nome_aluno].sexo = e.sexo;
+                });
+                const top4G = Object.entries(leiturasG2).sort((a,b)=>b[1].qtd-a[1].qtd).slice(0,4);
+                if (!top4G.length) { t += 'Nenhum empréstimo no período.\n'; }
+                else {
+                    top4G.forEach(([nome, d], i) => {
+                        t += '\n' + (i+1) + '. ' + nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                        t += '  Livros lidos:\n';
+                        d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                            const l = livroMap[e.livro_id]; if (!l) return;
+                            t += '  - ' + l.titulo; if (l.autor) t += ' | Autor: ' + l.autor; t += '\n';
+                        });
+                    });
+                }
+            }
+            const empFunc = empFiltrados.filter(e => ehFunc(e));
+            t += '\n' + SEP + '\n';
+            t += '4. LEITURA DOS FUNCIONÁRIOS\n';
+            t += SEP + '\n';
+            t += '\n' + sep2 + '\n';
+            t += 'OS 4 LIVROS MAIS LIDOS PELOS FUNCIONÁRIOS\n';
+            t += sep2 + '\n';
+            {
+                const cntF = {}, leitF = {};
+                empFunc.forEach(e => {
+                    if (!e.livro_id) return;
+                    cntF[e.livro_id] = (cntF[e.livro_id]||0) + 1;
+                    if (!leitF[e.livro_id]) leitF[e.livro_id] = [];
+                    leitF[e.livro_id].push(e);
+                });
+                const top4F = Object.entries(cntF).sort((a,b)=>b[1]-a[1]).slice(0,4);
+                if (!top4F.length) { t += 'Nenhum empréstimo de funcionários no período.\n'; }
+                else {
+                    top4F.forEach(([id, qtd], i) => {
+                        const l = livroMap[id];
+                        t += '\n' + (i+1) + '. ' + (l?l.titulo:('Livro ID '+id)) + ' (' + qtd + ' empréstimo' + (qtd!==1?'s':'') + ')\n';
+                        if (l && l.autor) t += '   Autor: ' + l.autor + '\n';
+                        const lista = (leitF[id]||[]).sort((a,b)=>a.nome_aluno.localeCompare(b.nome_aluno));
+                        if (lista.length) { t += '   Funcionários:\n'; lista.forEach(e => { t += '   - ' + e.nome_aluno + '\n'; }); }
+                    });
+                }
+            }
+            t += '\n' + sep2 + '\n';
+            t += 'OS 2 FUNCIONÁRIOS E AS 2 FUNCIONÁRIAS QUE MAIS LERAM\n';
+            t += sep2 + '\n';
+            {
+                const leiturasF2 = {};
+                empFunc.forEach(e => {
+                    if (!leiturasF2[e.nome_aluno]) leiturasF2[e.nome_aluno] = { qtd:0, sexo:e.sexo, emps:[] };
+                    leiturasF2[e.nome_aluno].qtd++;
+                    leiturasF2[e.nome_aluno].emps.push(e);
+                    if (e.sexo) leiturasF2[e.nome_aluno].sexo = e.sexo;
+                });
+                const todosF = Object.entries(leiturasF2).sort((a,b)=>b[1].qtd-a[1].qtd);
+                const top2FM = todosF.filter(([,d])=>d.sexo==='M').slice(0,2);
+                const top2FF = todosF.filter(([,d])=>d.sexo==='F').slice(0,2);
+                const _imprimirFunc = (nome, d, rotulo) => {
+                    t += '\n* ' + rotulo + ': ' + nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                    t += '  Livros lidos:\n';
+                    d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                        const l = livroMap[e.livro_id]; if (!l) return;
+                        t += '  - ' + l.titulo; if (l.autor) t += ' | Autor: ' + l.autor; t += '\n';
+                    });
+                };
+                if (!top2FM.length && !top2FF.length) { t += 'Nenhum empréstimo de funcionários no período.\n'; }
+                else {
+                    const max = Math.max(top2FM.length, top2FF.length);
+                    for (let i = 0; i < max; i++) {
+                        if (top2FM[i]) _imprimirFunc(top2FM[i][0], top2FM[i][1], ['1º','2º'][i] + ' FUNCIONÁRIO QUE MAIS LEU');
+                        if (top2FF[i]) _imprimirFunc(top2FF[i][0], top2FF[i][1], ['1ª','2ª'][i] + ' FUNCIONÁRIA QUE MAIS LEU');
+                    }
+                }
+            }
+            t += '\n' + sep2 + '\n';
+            t += 'OS 4 FUNCIONÁRIOS QUE MAIS LERAM (QUALQUER GÊNERO)\n';
+            t += sep2 + '\n';
+            {
+                const leiturasF3 = {};
+                empFunc.forEach(e => {
+                    if (!leiturasF3[e.nome_aluno]) leiturasF3[e.nome_aluno] = { qtd:0, emps:[] };
+                    leiturasF3[e.nome_aluno].qtd++;
+                    leiturasF3[e.nome_aluno].emps.push(e);
+                });
+                const top4Func = Object.entries(leiturasF3).sort((a,b)=>b[1].qtd-a[1].qtd).slice(0,4);
+                if (!top4Func.length) { t += 'Nenhum empréstimo de funcionários no período.\n'; }
+                else {
+                    top4Func.forEach(([nome, d], i) => {
+                        t += '\n' + (i+1) + '. ' + nome + ' (' + d.qtd + ' livro' + (d.qtd!==1?'s':'') + ')\n';
+                        t += '  Livros lidos:\n';
+                        d.emps.sort((a,b)=>a.data_emprestimo.localeCompare(b.data_emprestimo)).forEach(e => {
+                            const l = livroMap[e.livro_id]; if (!l) return;
+                            t += '  - ' + l.titulo; if (l.autor) t += ' | Autor: ' + l.autor; t += '\n';
+                        });
+                    });
+                }
+            }
+            t += '\n' + SEP + '\n';
+            t += 'BibVania v1.2 © 2026 — ruanolima.github.io/BibVania\n';
+            t += SEP + '\n';
+            return t;
+        }
+
+        window.relBaixar = function() {
+            const btn = document.getElementById('btnBaixar');
+            if (!relatorioTexto || btn.disabled) return;
+            btn.disabled = true;
+            btn.classList.add('baixando');
+            btn.textContent = '⏳ BAIXANDO...';
+            setTimeout(() => {
+                try {
+                    const tipo = document.getElementById('tipoRelatorio').value;
+                    const nomeArq = tipo === 'anual'
+                        ? 'RELATORIO_ANUAL_' + document.getElementById('filtroAno').value + '.txt'
+                        : 'RELATORIO_' + document.getElementById('filtroMes').value.replace('-','_') + '.txt';
+                    const { dataStr: dDl, horaStr: hDl } = _agora();
+                    const txtDownload = _gerarTxt({ ..._relDados, dataStr: dDl, horaStr: hDl });
+                    const blob = new Blob([txtDownload], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = nomeArq; a.click();
+                    URL.revokeObjectURL(url);
+                } finally {
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.classList.remove('baixando');
+                        btn.textContent = '📥 BAIXAR RELATÓRIO EM TXT';
+                    }, 600);
+                }
+            }, 150);
+        };
+
+        // Inicializa quando a aba de relatório for ativada pela primeira vez
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabBtn = document.getElementById('tab-btn-relatorio');
+            if (tabBtn) {
+                tabBtn.addEventListener('click', function() {
+                    if (!_relDados) {
+                        _initFiltros();
+                        if (window.DB) relGerar();
+                    }
+                });
+            }
+            // Escuta mudanças em tempo real
+            if (window.DB) {
+                const regenarDebounce = (() => {
+                    let t = null;
+                    return () => { clearTimeout(t); t = setTimeout(() => { if (_relDados) relGerar(true); }, 400); };
+                })();
+                window.DB.onLivrosChange(regenarDebounce);
+                window.DB.onEmprestimosChange(regenarDebounce);
+                window.DB.onPessoasChange(regenarDebounce);
+            }
+        });
+    })();
+    </script>
+
 </body>
 </html>

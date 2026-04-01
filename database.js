@@ -112,7 +112,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("livros")
-                .select("id, titulo, autor, isbn, categoria, prateleira, quantidade_total, quantidade_disponivel, palavras_chave, alt_text, imagem_url, pdf_url")
+                .select("id, titulo, autor, isbn, categoria, quantidade_total, quantidade_disponivel, palavras_chave, alt_text, imagem_url, pdf_url")
                 .order("data_cadastro", { ascending: false });
             if (error) throw error;
             if (!data) {
@@ -208,7 +208,6 @@ const DB = {
                         autor: livro.autor || existente.autor,
                         isbn: livro.isbn || existente.isbn,
                         categoria: livro.categoria || existente.categoria,
-                        prateleira: livro.prateleira || existente.prateleira,
                         palavras_chave: livro.palavras_chave?.length ? livro.palavras_chave : existente.palavras_chave,
                         alt_text: livro.alt_text || existente.alt_text,
                     })
@@ -501,7 +500,7 @@ const DB = {
         try {
             const { data, error } = await supabase
                 .from("emprestimos")
-                .select("*, livros(titulo, autor, prateleira)")
+                .select("*, livros(titulo, autor)")
                 .eq("status", "emprestado")
                 .order("ano_aluno", { ascending: true })
                 .order("turma_aluno", { ascending: true })

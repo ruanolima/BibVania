@@ -1,5 +1,5 @@
 -- ============================================================================
--- BIBVANIA ONLINE — CONFIGURAÇÃO DO BANCO DE DADOS v1.2
+-- BIBVANIA ONLINE — CONFIGURAÇÃO DO BANCO DE DADOS v1.3
 -- Execute este script no SQL Editor do Supabase para configuração inicial.
 -- Seguro executar em bancos já existentes — todos os comandos usam IF NOT EXISTS.
 -- ============================================================================
@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS livros (
     pdf_url TEXT,
     titulo TEXT NOT NULL,
     autor TEXT,
-    prateleira TEXT,
     categoria TEXT,
     palavras_chave TEXT[] DEFAULT '{}',
     alt_text TEXT,
@@ -99,7 +98,6 @@ FOR EACH ROW EXECUTE FUNCTION recalcular_disponivel();
 -- Seguro executar mesmo se o banco já existia — IF NOT EXISTS evita erros.
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS pdf_url TEXT;
-ALTER TABLE livros ADD COLUMN IF NOT EXISTS prateleira TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS alt_text TEXT;
 
 -- 7. TABELA DE PESSOAS (alunos e funcionários)
@@ -153,3 +151,58 @@ END $$;
 -- FROM pg_publication_tables
 -- WHERE pubname = 'supabase_realtime'
 -- ORDER BY tablename;
+
+-- ============================================================================
+-- 10. CONFIGURAÇÕES PRIVADAS (chaves de API)
+-- Acessível apenas por usuários autenticados (admin).
+-- ATENÇÃO: Execute supabase_setup_privado.sql separadamente para inserir
+-- as chaves reais. Esse arquivo NÃO vai para o GitHub.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS config_privada (
+    chave TEXT PRIMARY KEY,
+    valor TEXT NOT NULL
+);
+
+ALTER TABLE config_privada ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Somente autenticados leem config_privada" ON config_privada;
+CREATE POLICY "Somente autenticados leem config_privada"
+    ON config_privada
+    FOR SELECT
+    TO authenticated
+    USING (true);
+
+-- Ninguém (nem autenticado) pode inserir/alterar/deletar via API
+-- Só você pelo Dashboard do Supabase
+
+-- ============================================================================
+-- 11. TABELA DE ADMINS SECUNDÁRIOS
+-- Vincula UUID do Supabase Auth ao nome e foto de perfil do admin.
+-- Os dados (UUID + nome) são inseridos manualmente no SQL Editor após criar
+-- o usuário em Authentication > Users no Dashboard do Supabase.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS admins (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    nome TEXT NOT NULL,
+    foto_url TEXT
+);
+
+ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin lê próprio perfil" ON admins;
+CREATE POLICY "Admin lê próprio perfil"
+    ON admins FOR SELECT
+    TO authenticated
+    USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admin atualiza própria foto" ON admins;
+CREATE POLICY "Admin atualiza própria foto"
+    ON admins FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id);
+
+-- Para inserir um novo admin secundário após criar o usuário no Auth:
+-- INSERT INTO admins (id, nome) VALUES ('uuid-do-usuario', 'Nome do Admin');

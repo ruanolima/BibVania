@@ -58,6 +58,12 @@
         <main id="conteudo-principal">
         <div class="card">
             <div class="form-group">
+                <label for="filtroCategoriaPublico">CATEGORIA</label>
+                <select id="filtroCategoriaPublico" aria-label="Filtrar por categoria" style="width:100%;padding:0.5rem;font-size:0.95rem;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text);cursor:pointer;">
+                    <option value="">TODOS (0)</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label for="buscaLivros">BUSCAR NO ACERVO</label>
                 <div class="search-voice-wrap">
                     <input type="search" id="buscaLivros" placeholder="BUSCAR LIVRO..." aria-label="Buscar livros no acervo" autocomplete="off">
@@ -215,9 +221,9 @@
                             <div class="book-meta-item book-meta-single"><strong>DOWNLOAD:</strong> ${l.pdf_url ? `<a href="${l.pdf_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--primary);font-weight:700;text-decoration:none;">BAIXAR PDF</a>` : ''}</div>
                         </div>
                         <div class="book-status-row stacked">
-                            <div class="book-tags-inline">
+                            <div class="book-tags-inline" data-quantidade="${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS">
                                 ${isAtrasado?'<span class="atrasado-label" role="alert">⚠️ ATRASO</span>':''}
-                                ${l.palavras_chave && l.palavras_chave.length ? l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}')";>#${p}</span>`).join(' ') : ''}
+                                ${l.palavras_chave && l.palavras_chave.length ? l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}')">;#${p}</span>`).join(' ') : ''}
                             </div>
                             <div class="book-status-badge-row">
                                 <span class="badge ${l.quantidade_disponivel>0?'badge-disponivel':'badge-indisponivel'}" style="flex-shrink:0;">
@@ -307,7 +313,8 @@
 
         async function _renderAcervoInterno() {
             const termo = normalizar(document.getElementById('buscaLivros').value);
-            let filtrados = todosLivros;
+            const catFiltro = document.getElementById('filtroCategoriaPublico')?.value || '';
+            let filtrados = catFiltro ? todosLivros.filter(l => (l.categoria||'') === catFiltro) : todosLivros;
             if (termo) {
                 const termoTag = termo.startsWith('#') ? termo.slice(1) : null;
                 filtrados = filtrados.filter(l =>
@@ -341,8 +348,9 @@
 
             lista.innerHTML = '';
 
-            // Renderizar em lotes de 20 — não bloqueia a thread
-            const LOTE = 20;
+            // Renderizar em lotes calculados pela viewport
+            const _altEstimada = 130; // altura aproximada de um card (fallback antes de haver DOM)
+            const LOTE = Math.max(3, Math.ceil(window.innerHeight / _altEstimada));
             const scrollY = window.scrollY;
             const renderLote = (inicio) => {
                 if (token !== _renderToken) return;
@@ -444,6 +452,10 @@
         // Wrapper — mostra "Carregando..." apenas entre navegações (não no primeiro load nem no Realtime)
         function renderAcervo(opcoes = {}) {
             const lista = document.getElementById('listaLivros');
+            // BUG FIX #10: Rolar para o topo ao renderizar acervo
+            if (opcoes.scrollToTop !== false) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
             // Só mostra "Carregando..." se: já carregou antes E é uma troca intencional (opcoes.comLoader)
             if (opcoes.comLoader && _acervoCarregado && lista && todosLivros.length) {
                 lista.innerHTML = '<p style="text-align:center;padding:1rem;color:var(--text-light);font-size:0.8rem;">Carregando...</p>';
@@ -479,6 +491,7 @@
                 idsAtrasadosCache = [...new Set(emps.filter(e=>e.atrasado).map(e=>e.livro_id))];
                 empsAtivosCache = {};
                 emps.forEach(e => { (empsAtivosCache[e.livro_id]||(empsAtivosCache[e.livro_id]=[])).push(e); });
+                _popularCategoriasFiltro();
                 renderAcervo();
             } catch(e) { console.warn('Erro ao atualizar acervo:', e); }
         }
@@ -499,6 +512,7 @@
                 empsAtivosCache = {};
                 emps.forEach(e => { (empsAtivosCache[e.livro_id]||(empsAtivosCache[e.livro_id]=[])).push(e); });
                 _acervoCarregado = true;
+                _popularCategoriasFiltro();
                 renderAcervo();
             } catch(err) {
                 console.error('Erro ao carregar acervo:', err);
@@ -513,6 +527,18 @@
             }
         }
 
+        // ── Popular select de categorias (index público) ────────────
+        function _popularCategoriasFiltro() {
+            const sel = document.getElementById('filtroCategoriaPublico');
+            if (!sel || !todosLivros.length) return;
+            const cats = window.DB?.CATEGORIAS || [];
+            const contagem = {};
+            todosLivros.forEach(l => { if (l.categoria) contagem[l.categoria] = (contagem[l.categoria]||0)+1; });
+            const total = todosLivros.length;
+            sel.innerHTML = `<option value="">TODOS (${total})</option>` +
+                cats.filter(c => contagem[c]).map(c => `<option value="${c}">${c} (${contagem[c]})</option>`).join('');
+        }
+
         // ── Inicialização ──────────────────────────────────────────
         async function inicializar() {
             aplicarPreferencias();
@@ -524,7 +550,17 @@
             _iniciarBotaoLimpar(document.getElementById('buscaLivros'), renderAcervo);
 
             // Listener de busca por texto
-            document.getElementById('buscaLivros').addEventListener('input', renderAcervo);
+            // BUG FIX #9: Adicionar debounce na busca do acervo público para melhorar performance
+            let _searchTimeoutPublic = null;
+            document.getElementById('buscaLivros').addEventListener('input', () => {
+                if (_searchTimeoutPublic) clearTimeout(_searchTimeoutPublic);
+                _searchTimeoutPublic = setTimeout(() => {
+                    renderAcervo();
+                }, 300); // 300ms debounce
+            });
+
+            // Listener do filtro de categoria
+            document.getElementById('filtroCategoriaPublico')?.addEventListener('change', () => renderAcervo());
 
             // Realtime + interval (preservam capas já resolvidas)
             let _rt = null;

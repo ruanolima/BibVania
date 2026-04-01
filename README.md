@@ -74,7 +74,7 @@ BibVania/
 ├── relatorios.html         — Gerador de relatórios
 ├── login.html              — Autenticação
 ├── database.js             — Conexão Supabase e todas as queries
-├── bibvania-utils.js       — Utilitários: busca por voz, dropdown de prateleira
+├── bibvania-utils.js       — Utilitários: busca por voz
 ├── bibvania-transition.js  — Tela de transição animada entre páginas
 ├── style.css               — Estilos globais (dark/light mode, responsivo)
 ├── logo.png                — Logo do sistema
