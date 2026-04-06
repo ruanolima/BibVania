@@ -22,6 +22,8 @@
     --radius: 12px;
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --font-size: 16px;
+    /* Altura da capa nos cards do acervo — escala com a fonte */
+    --cover-h: calc(var(--font-size) * 9.25);
 }
 
 [data-theme="dark"] {
@@ -474,19 +476,21 @@ input:disabled {
 }
 
 
-/* ── Admin: book-item tem estrutura vertical (header + actions + details) ── */
+/* ── Admin: book-item tem estrutura vertical (header + actions) ── */
 #tab-registro .book-item,
 #secaoAtrasadosAdmin .book-item {
     flex-direction: column;
     padding: 0;
-    overflow: visible;
+    overflow: hidden;
     align-items: stretch;
 }
 
-/* No admin, o header ocupa largura total */
+/* No admin, o header não é clicável — sem cursor pointer */
 #tab-registro .book-header,
 #secaoAtrasadosAdmin .book-header {
     width: 100%;
+    cursor: default;
+    border-bottom: none;
 }
 
 /* No admin, o inner não precisa de altura fixa mas mantém badge embaixo */
@@ -495,13 +499,13 @@ input:disabled {
     min-height: 148px;
     height: auto;
     overflow: visible;
-    justify-content: space-between;
+    justify-content: flex-start;
 }
 
-/* No admin, reservar espaço à direita do título para a setinha */
+/* No admin, título sem espaço reservado (sem setinha) */
 #tab-registro .book-title,
 #secaoAtrasadosAdmin .book-title {
-    padding-right: 2.5rem;
+    padding-right: 0;
 }
 
 /* No admin, a capa fica tamanho padrão alinhada ao topo */
@@ -578,7 +582,7 @@ input:disabled {
 /* Variante usada no index.html: tags + badge em linhas separadas */
 .book-status-row.stacked {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0.25rem;
 }
 
@@ -667,20 +671,9 @@ input:disabled {
     display: block;
 }
 
-/* ── Bordas arredondadas no card admin (overflow:visible exige arredondar os filhos) ── */
+/* book-actions sempre arredondado embaixo */
 #tab-registro .book-actions,
 #secaoAtrasadosAdmin .book-actions {
-    border-radius: 0 0 var(--radius) var(--radius);
-}
-
-/* Quando details está aberto, actions perde o arredondamento e details ganha */
-#tab-registro .book-actions:has(+ .book-details.active),
-#secaoAtrasadosAdmin .book-actions:has(+ .book-details.active) {
-    border-radius: 0;
-}
-
-#tab-registro .book-details.active,
-#secaoAtrasadosAdmin .book-details.active {
     border-radius: 0 0 var(--radius) var(--radius);
 }
 
@@ -1148,30 +1141,66 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
 #listaLivros .book-item,
 #listaAdmin .book-item,
 #listaAtrasadosAdmin .book-item {
-    padding: 0.4rem;
-    gap: 0.4rem;
+    padding: 0;
+    gap: 0;
     margin-bottom: 0.3rem;
+    overflow: hidden;
 }
 
 #listaLivros .book-cover-wrap,
 #listaAdmin .book-cover-wrap,
 #listaAtrasadosAdmin .book-cover-wrap {
-    height: 116px !important;
-    width: calc(116px * 4 / 5) !important;   /* = 93px */
+    width: calc(var(--cover-h) * 4 / 5) !important;
     min-width: unset !important;
     max-width: unset !important;
-    aspect-ratio: 4 / 5;
-    align-self: flex-start;
+    height: auto !important;
+    min-height: var(--cover-h);
+    align-self: stretch;
     flex-shrink: 0 !important;
+}
+
+#listaLivros .book-header,
+#listaAdmin .book-header,
+#listaAtrasadosAdmin .book-header {
+    align-items: stretch !important;
+    padding: 0;
+    gap: 0;
+}
+
+#listaLivros .book-header .book-cover-wrap,
+#listaAdmin .book-header .book-cover-wrap,
+#listaAtrasadosAdmin .book-header .book-cover-wrap {
+    border-radius: var(--radius) 0 0 var(--radius);
 }
 
 #listaLivros .book-header-inner,
 #listaAdmin .book-header-inner,
 #listaAtrasadosAdmin .book-header-inner {
-    min-height: 116px;
-    height: 116px;
-    gap: 0.15rem;
+    min-height: var(--cover-h);
+    height: 100%;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
     justify-content: flex-start;
+    padding: 0.6rem 0.75rem;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+#listaLivros .book-status-row,
+#listaAdmin .book-status-row,
+#listaAtrasadosAdmin .book-status-row {
+    margin-top: auto;
+    padding-top: 0.25rem;
+}
+
+#listaLivros .book-status-badge-row,
+#listaAdmin .book-status-badge-row,
+#listaAtrasadosAdmin .book-status-badge-row {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
 }
 
 #listaLivros .book-title,
@@ -1235,21 +1264,21 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     padding: 0.75rem 0.6rem;
 }
 
-/* ── Status row: tags + badge na mesma linha ─────────────────── */
+/* ── Status row: tag em cima, badge embaixo ───────────────────── */
 #listaLivros .book-status-row.stacked,
 #listaAdmin .book-status-row.stacked,
 #listaAtrasadosAdmin .book-status-row.stacked {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
     flex-wrap: nowrap;
-    gap: 0.25rem;
-    margin-top: auto; /* gruda sempre no pé do book-header-inner */
+    gap: 0.2rem;
+    margin-top: auto;
 }
 
 #listaLivros .book-status-badge-row,
 #listaAdmin .book-status-badge-row,
 #listaAtrasadosAdmin .book-status-badge-row {
-    width: auto;
-    flex-shrink: 0;
+    width: 100%;
+    justify-content: flex-end;
 }

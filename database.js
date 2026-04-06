@@ -40,10 +40,11 @@ const CATEGORIAS_FIXAS = [
 // ============================================================================
 const toUpper = (val) => (val && typeof val === 'string') ? val.toUpperCase().trim() : val;
 
+const _CAMPOS_CASE_SENSITIVE = new Set(['imagem_url', 'pdf_url', 'alt_text', 'foto_url']);
 const padronizarObjeto = (obj) => {
     const novoObj = { ...obj };
     for (let key in novoObj) {
-        if (typeof novoObj[key] === 'string') {
+        if (typeof novoObj[key] === 'string' && !_CAMPOS_CASE_SENSITIVE.has(key)) {
             novoObj[key] = toUpper(novoObj[key]);
         }
     }

@@ -5,7 +5,7 @@
     // Aplicar tema antes do CSS carregar — elimina flash claro→escuro
     (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();
     // Aplicar font-size salvo imediatamente
-    (function(){var f=parseInt(localStorage.getItem('fontSize'));if(f)document.documentElement.style.setProperty('--font-size',f+'px');})();
+    (function(){var levels=[10,12,14,16,18];var f=parseInt(localStorage.getItem('fontSize'));if(f){var idx=levels.reduce(function(b,v,i){return Math.abs(v-f)<Math.abs(levels[b]-f)?i:b},0);f=levels[idx];localStorage.setItem('fontSize',f);document.documentElement.style.setProperty('--font-size',f+'px');}})();;
     // Promise global resolvida pelo módulo ES quando window.DB estiver pronto
     window._dbReady = new Promise(function(resolve){ window._dbReadyResolve = resolve; });
 </script>
@@ -146,6 +146,22 @@
                 <span id="btnPerfilNome" style="font-size:0.85rem;font-weight:700;color:var(--text);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;line-height:1.3;"></span>
             </button>
         </nav>
+        <!-- Aplica perfil instantaneamente do cache — sem esperar o módulo ES -->
+        <script>
+        (function(){
+            var nome = localStorage.getItem('bibvania_admin_nome');
+            var btnPerfil = document.getElementById('btnPerfil');
+            var btnNome   = document.getElementById('btnPerfilNome');
+            var btnSair   = document.getElementById('btnSairPrincipal');
+            if (nome && btnPerfil) {
+                btnPerfil.style.display = 'flex';
+                if (btnNome) btnNome.textContent = nome.split(' ')[0];
+                if (btnSair) btnSair.style.display = 'none';
+            } else if (btnSair) {
+                btnSair.style.display = '';
+            }
+        })();
+        </script>
 
         <!-- Modal perfil admin secundário -->
         <div id="modalPerfil" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;" onclick="if(event.target===this)fecharModalPerfil()">
@@ -951,10 +967,14 @@
 
         let todosLivros = [];
         window._todosLivros = todosLivros; // exposto para openEdit
-        let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+        let fontSize = parseInt(localStorage.getItem('fontSize')) || 14;
 
+        const _FONT_LEVELS = [10, 12, 14, 16, 18];
         window.changeFontSize = (delta) => {
-            fontSize = Math.min(Math.max(fontSize + delta, 12), 24);
+            let idx = _FONT_LEVELS.indexOf(fontSize);
+            if (idx === -1) idx = _FONT_LEVELS.reduce((best, v, i) => Math.abs(v - fontSize) < Math.abs(_FONT_LEVELS[best] - fontSize) ? i : best, 0);
+            idx = Math.min(Math.max(idx + (delta > 0 ? 1 : -1), 0), _FONT_LEVELS.length - 1);
+            fontSize = _FONT_LEVELS[idx];
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             localStorage.setItem('fontSize', fontSize);
         };
@@ -1025,19 +1045,6 @@
 
         // ── PERFIL DO ADMIN SECUNDÁRIO ────────────────────────────────────────
         let _adminPerfil = null; // { id, nome, foto_url } ou null se admin principal
-
-        // Exibe botão perfil instantaneamente se nome estiver em cache
-        (function() {
-            const nomeCache = localStorage.getItem('bibvania_admin_nome');
-            if (nomeCache) {
-                const btnPerfil = document.getElementById('btnPerfil');
-                const btnNome = document.getElementById('btnPerfilNome');
-                const btnSair = document.getElementById('btnSairPrincipal');
-                if (btnPerfil) btnPerfil.style.display = 'flex';
-                if (btnNome) btnNome.textContent = nomeCache.split(' ')[0];
-                if (btnSair) btnSair.style.display = 'none';
-            }
-        })();
 
         async function _carregarAdminPerfil() {
             try {
@@ -1230,7 +1237,7 @@
                 const resp = await fetch('https://api.imgbb.com/1/upload?key=' + window.IMGBB_KEY, { method: 'POST', body: form });
                 const json = await resp.json();
                 if (!json.success) throw new Error('ImgBB: ' + JSON.stringify(json.error));
-                const url = json.data?.display_url || json.data?.url;
+                const url = json.data?.image?.url || json.data?.url || json.data?.display_url;
                 if (!url) throw new Error('ImgBB retornou URL inválida');
 
                 // Salva URL na tabela admins
@@ -1342,14 +1349,15 @@
         }
 
         // Hook chamado pelo switchTab (definido fora do módulo) ao entrar na aba acervo
+        window.load = load; // expor para scripts externos
         window._renderAcervoOnTab = () => {
             if (todosLivros.length > 0) {
                 const lista = document.getElementById('listaAdmin');
                 if (lista) delete lista.dataset.lastHtmlHash;
                 requestAnimationFrame(() => requestAnimationFrame(() => renderAcervo()));
             } else {
-                // Dados ainda não carregados — força busca
-                if (window.load) window.load();
+                // Dados ainda não carregados — força busca completa
+                load();
             }
         };
 
@@ -1586,8 +1594,24 @@
                 if (url) {
                     const img = wrap.querySelector('img.cover-img');
                     if (img) {
-                        img.onload = () => wrap.classList.add('has-image');
+                        img.onload = () => {
+                            // Detecta placeholder do imgbb (azul, 300×300 ou similar e muito pequeno em bytes)
+                            // A forma mais confiável: checar naturalWidth — o placeholder do imgbb é quadrado
+                            if (img.naturalWidth > 0 && img.naturalHeight > 0 &&
+                                img.naturalWidth === img.naturalHeight && img.naturalWidth <= 300) {
+                                // Provável placeholder de "image not found" — tratar como sem capa
+                                l._capaResolvida = 'sem'; l.imagem_url = null;
+                                if (_idsComCapaCache) _idsComCapaCache.delete(l.id);
+                                wrap.classList.remove('has-image');
+                                wrap.classList.add('sem-capa', 'capa-carregada');
+                                _setLabelSemCapa(wrap);
+                            } else {
+                                wrap.classList.add('has-image');
+                            }
+                        };
                         img.onerror = () => {
+                            l._capaResolvida = 'sem'; l.imagem_url = null;
+                            if (_idsComCapaCache) _idsComCapaCache.delete(l.id);
                             wrap.classList.remove('has-image');
                             wrap.classList.add('sem-capa', 'capa-carregada');
                             _setLabelSemCapa(wrap);
@@ -1650,7 +1674,7 @@
                     labelHtml = '<span class="book-cover-label" aria-hidden="true">CARREGANDO<br>CAPA</span>';
                 }
             } else if (l._capaResolvida === 'tem') {
-                wrapClasses = 'book-cover-wrap has-image capa-carregada';
+                wrapClasses = l.imagem_url ? 'book-cover-wrap has-image capa-carregada' : 'book-cover-wrap capa-carregada';
                 labelHtml = '';
             } else {
                 wrapClasses = 'book-cover-wrap sem-capa capa-carregada';
@@ -1659,13 +1683,12 @@
 
             return `
                 <div class="book-item" ${borderStyle}>
-                    <div class="book-header" data-id="${l.id}" onclick="toggleAcc(this, '${prefix}')">
+                    <div class="book-header">
                         <div class="${wrapClasses}" data-lightbox-id="${l.id}" data-livro-id="${l.id}" data-lightbox-titulo="${l.titulo.replace(/"/g, '&quot;')}">
                             ${labelHtml}
                             <img class="cover-img" src="${l._capaResolvida === 'tem' && l.imagem_url ? l.imagem_url : ''}" alt="Capa: ${l.titulo.replace(/"/g,'&quot;')}">
                         </div>
                         <div class="book-header-inner">
-                            <div class="accordion-indicator" style="position:absolute; top:0.5rem; right:0.5rem;">▼</div>
                             <div class="book-title">${isAtr ? '⚠️ ' : ''}ID ${l.id}: ${l.titulo}</div>
                             <div class="book-meta-box">
                                 <div class="book-meta-item book-meta-single"><strong>AUTOR:</strong> ${l.autor || 'NÃO INFORMADO'}</div>
@@ -1686,13 +1709,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="book-actions" onclick="event.stopPropagation()">
-                        <button class="btn-small btn-primary" onclick="event.stopPropagation();window.openEdit(${l.id})">✏️ EDITAR</button>
-                        <button class="btn-small" style="background:var(--warning,#f59e0b);color:#fff;" onclick="event.stopPropagation();window.iaEditarComIAById(${l.id})">✨ IA</button>
-                        <button class="btn-small btn-danger" onclick="event.stopPropagation();window.delLivro(${l.id})">🗑️ EXCLUIR</button>
-                    </div>
-                    <div class="book-details" id="${prefix}det-${l.id}" data-id="${l.id}">
-                        <div id="${prefix}emps-${l.id}"></div>
+                    <div class="book-actions">
+                        <button class="btn-small btn-primary" onclick="window.openEdit(${l.id})">✏️ EDITAR</button>
+                        <button class="btn-small" style="background:var(--warning,#f59e0b);color:#fff;" onclick="window.iaEditarComIAById(${l.id})">✨ IA</button>
+                        <button class="btn-small btn-danger" onclick="window.delLivro(${l.id})">🗑️ EXCLUIR</button>
                     </div>
                 </div>
             `;
@@ -1825,6 +1845,13 @@
                 editImg.className = 'cover-img';
                 if (editCapaLbl) editCapaLbl.style.display = 'none';
                 if (editWrap) { editWrap.classList.remove('sem-capa'); editWrap.classList.add('has-image', 'capa-carregada'); }
+                editImg.onerror = () => {
+                    // URL do imgbb inválida/expirada — volta ao estado sem capa
+                    editImg.src = ''; editImg.onerror = null;
+                    if (editCapaLbl) editCapaLbl.style.display = '';
+                    if (editWrap) { editWrap.classList.remove('has-image', 'capa-carregada'); editWrap.classList.add('sem-capa'); }
+                    document.getElementById('editCapaBtns').innerHTML = `<button type="button" class="btn-block btn-outline" onclick="window.abrirSeletorCapa(null,'editCapaPreview','editCapaBtns','editCapaLabel',true)" style="display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.65rem;cursor:pointer;border-radius:8px;font-weight:700;font-size:0.9rem;">📷 ESCOLHER IMAGEM</button>`;
+                };
                 window.renderBotoesCapa('edit');
             } else {
                 editImg.src = '';
@@ -1852,7 +1879,11 @@
             window.openEdit(ultimo);
         }
 
-        window.closeModal = () => document.getElementById('modalEdit').classList.add('hidden');
+        window.closeModal = () => {
+            document.getElementById('modalEdit').classList.add('hidden');
+            const _ei = document.getElementById('editCapaPreview');
+            if (_ei) _ei.onerror = null;
+        };
 
         document.getElementById('formEdit').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1882,7 +1913,15 @@
                 // Capa — upload via imgbb ANTES de salvar
                 const capaBase64  = window._editCapaBase64  || null;
                 const capaExcluir = !!window._editCapaExcluir;
-                if (capaBase64 && window._iaUploadImgbb) {
+                if (capaBase64) {
+                    if (!window._iaUploadImgbb) {
+                        window.mostrarMsg('msgLivro','⚠️ MÓDULO DE UPLOAD NÃO CARREGADO. RECARREGUE A PÁGINA.','danger');
+                        btnEdit.textContent=lblEdit; btnEdit.disabled=false; return;
+                    }
+                    if (!window.IMGBB_KEY) {
+                        window.mostrarMsg('msgLivro','⚠️ CHAVE IMGBB NÃO CARREGADA. AGUARDE E TENTE NOVAMENTE.','danger');
+                        btnEdit.textContent=lblEdit; btnEdit.disabled=false; return;
+                    }
                     try {
                         btnEdit.textContent = 'ENVIANDO CAPA...';
                         const capaUrl = await window._iaUploadImgbb(capaBase64);
@@ -1896,6 +1935,13 @@
                 }
 
                 await window.DB.atualizarLivro(payload);
+
+                // Invalidar capa do livro editado em memória para forçar rebusca
+                const _livroEditado = todosLivros.find(l => l.id === livroId);
+                if (_livroEditado) { _livroEditado._capaResolvida = null; _livroEditado.imagem_url = null; }
+                // Invalidar hash para forçar rerenderização do HTML mesmo sem mudança de IDs
+                const _listaAdmin = document.getElementById('listaAdmin');
+                if (_listaAdmin) _listaAdmin.dataset.lastHtmlHash = '';
 
                 window.mostrarMsg('msgLivro','✓ ALTERAÇÕES SALVAS!','success');
                 closeModal();
@@ -2474,18 +2520,17 @@
             const nomeEsc = p.nome.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const empsAtivos = empsAtivosNomeCache[p.nome.toUpperCase()] || 0;
             const badgeHtml = empsAtivos
-                ? `<span style="background:var(--primary);color:#fff;border-radius:12px;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:700;margin-left:0.35rem;">${empsAtivos} ${empsAtivos === 1 ? 'LIVRO' : 'LIVROS'}</span>`
-                : '';
+                ? `<span id="${uid}-badge" style="display:inline-block;background:var(--primary);color:#fff;border-radius:12px;padding:0.15rem 0.55rem;font-size:0.65rem;font-weight:700;">${empsAtivos} ${empsAtivos === 1 ? 'LIVRO' : 'LIVROS'}</span>`
+                : `<span id="${uid}-badge"></span>`;
             return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.3rem;background:var(--card);overflow:hidden;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;gap:0.5rem;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:0.5rem 0.75rem;gap:0.5rem;">
                     <button onclick="togglePessoaAccordion('${uid}','${nomeEsc}')"
-                        style="background:none;border:none;cursor:pointer;flex:1;text-align:left;padding:0;display:flex;align-items:center;gap:0.3rem;min-width:0;"
+                        style="background:none;border:none;cursor:pointer;flex:1;text-align:left;padding:0;display:flex;align-items:flex-start;gap:0.3rem;min-width:0;"
                         aria-expanded="false" aria-controls="${uid}">
-                        <span style="font-size:0.75rem;color:var(--text-light);transition:transform .2s;" id="${uid}-arrow">▶</span>
-                        <span style="font-size:0.8rem;flex:1;min-width:0;color:var(--text);">
-                            <strong>${p.nome}</strong>
-                            <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span>
-                            ${badgeHtml}
+                        <span style="font-size:0.75rem;color:var(--text-light);transition:transform .2s;padding-top:0.15rem;" id="${uid}-arrow">▶</span>
+                        <span style="font-size:0.8rem;flex:1;min-width:0;color:var(--text);display:flex;flex-direction:column;gap:0.15rem;">
+                            <span><strong>${p.nome}</strong> <span style="color:var(--text-light);font-size:0.72rem;">(${genero}${extra})</span></span>
+                            ${badgeHtml ? `<span>${badgeHtml}</span>` : ''}
                         </span>
                     </button>
                     <div style="display:flex;gap:0.35rem;flex-shrink:0;">
@@ -2520,7 +2565,9 @@
             const total = historico.length;
 
             if (badge && total > 0) {
-                badge.innerHTML = `<span style="background:var(--primary);color:#fff;border-radius:12px;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:700;margin-left:0.35rem;">${total} ${total === 1 ? 'LIVRO' : 'LIVROS'}</span>`;
+                badge.innerHTML = '';
+                badge.style.cssText = 'display:inline-block;background:var(--primary);color:#fff;border-radius:12px;padding:0.15rem 0.55rem;font-size:0.65rem;font-weight:700;';
+                badge.textContent = total + ' ' + (total === 1 ? 'LIVRO' : 'LIVROS');
             }
 
             if (!total) {
@@ -3208,36 +3255,20 @@
     window._editCapaBase64 = null;
     window._editCapaExcluir = false;
 
-    // Comprime imagem para capa de livro — max 400px / JPEG 60% / 150KB
-    // Suficiente para exibição em cards e lightbox; reduz egress do Supabase drasticamente
+    // Redimensiona capa para Full HD (1080×1350px, ratio 4:5) — só comprime se ultrapassar
     function comprimirImagem(imageSrc) {
         return new Promise((resolve) => {
             const original = new Image();
             original.onload = () => {
-                const LIMITE = 150000;
-                let maxPx = 400;
-                let qualidade = 0.60;
-                let base64;
-
-                do {
-                    const scale = Math.min(1, maxPx / Math.max(original.width, original.height));
-                    const canvas = document.createElement('canvas');
-                    canvas.width  = Math.round(original.width  * scale);
-                    canvas.height = Math.round(original.height * scale);
-                    canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
-                    base64 = canvas.toDataURL('image/jpeg', qualidade);
-
-                    if (base64.length > LIMITE) {
-                        if (qualidade > 0.40) {
-                            qualidade = Math.max(0.40, qualidade - 0.08);
-                        } else {
-                            maxPx = Math.round(maxPx * 0.82);
-                            qualidade = 0.55;
-                        }
-                    }
-                } while (base64.length > LIMITE && maxPx > 150);
-
-                resolve(base64);
+                const MAX_W = 1080, MAX_H = 1350;
+                const scaleW = original.width  > MAX_W ? MAX_W / original.width  : 1;
+                const scaleH = original.height > MAX_H ? MAX_H / original.height : 1;
+                const scale  = Math.min(scaleW, scaleH);
+                const canvas = document.createElement('canvas');
+                canvas.width  = Math.round(original.width  * scale);
+                canvas.height = Math.round(original.height * scale);
+                canvas.getContext('2d').drawImage(original, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.92));
             };
             original.src = imageSrc;
         });
@@ -3251,42 +3282,33 @@
         const submitBtn = document.querySelector('#formLivro button[type="submit"]');
         if (!isEdit && submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'PROCESSANDO IMAGEM...'; }
 
-        // Mostrar miniatura imediatamente (antes da compressão)
-        const imgPrevia = document.getElementById(imgId);
-        const wrapPrevia = imgPrevia?.closest('.book-cover-wrap');
-        const lblPrevia = wrapPrevia?.querySelector('.book-cover-label');
-        const urlTemp = URL.createObjectURL(file);
-        imgPrevia.src = urlTemp;
-        imgPrevia.style.display = 'block';
-        imgPrevia.className = 'cover-img';
-        if (lblPrevia) lblPrevia.style.display = 'none';
-        if (wrapPrevia) { wrapPrevia.classList.remove('sem-capa'); wrapPrevia.classList.add('capa-carregada'); }
-
+        // Lê o arquivo como base64 diretamente — sem object URL, sem flash
         const reader = new FileReader();
         reader.onload = async (e) => {
-            URL.revokeObjectURL(urlTemp); // liberar memória
-            const base64 = await comprimirImagem(e.target.result);
+            const base64Original = e.target.result;
 
+            // Exibir imediatamente com o base64 original (sem flash — src nunca fica vazio)
             const img = document.getElementById(imgId);
-            img.src = base64;
+            img.src = base64Original;
             img.style.display = 'block';
             img.className = 'cover-img';
-            // Esconde label "SEM CAPA" do preview
             const wrap = img.closest('.book-cover-wrap');
             if (wrap) { const lbl = wrap.querySelector('.book-cover-label'); if (lbl) lbl.style.display = 'none'; wrap.classList.remove('sem-capa'); wrap.classList.add('capa-carregada', 'has-image'); }
+
+            // Comprimir em segundo plano e atualizar src pelo comprimido
+            const base64 = await comprimirImagem(base64Original);
+            document.getElementById(imgId).src = base64;
 
             if (isEdit) {
                 window._editCapaBase64 = base64;
                 window._editCapaExcluir = false;
                 renderBotoesCapa('edit');
-                // Mostrar campo alt text manual
                 const eg = document.getElementById('editAltTextGroup');
                 if (eg) eg.style.display = 'block';
             } else {
                 window._capaBase64 = base64;
                 renderBotoesCapa('cadastro');
                 if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'CADASTRAR LIVRO'; }
-                // Mostrar campo alt text manual
                 const ag = document.getElementById('altTextGroup');
                 if (ag) ag.style.display = 'block';
             }
@@ -3319,7 +3341,7 @@
         img.className = 'cover-img';
         // Mostra label "SEM CAPA" de volta no preview
         const wrap = img.closest('.book-cover-wrap');
-        if (wrap) { const lbl = wrap.querySelector('.book-cover-label'); if (lbl) lbl.style.display = ''; wrap.classList.remove('capa-carregada'); wrap.classList.add('sem-capa'); }
+        if (wrap) { const lbl = wrap.querySelector('.book-cover-label'); if (lbl) lbl.style.display = ''; wrap.classList.remove('capa-carregada', 'has-image'); wrap.classList.add('sem-capa'); }
         // Esconder alt text group
         const altGroupId = modo === 'edit' ? 'editAltTextGroup' : 'altTextGroup';
         const altGroup = document.getElementById(altGroupId);
@@ -3532,24 +3554,20 @@ function iaProcessarFoto(file, soPareEdicao) {
 }
 
 // ── Compressão ────────────────────────────────────────────────
+// Redimensiona capa para Full HD (1080×1350px, ratio 4:5) — só comprime se ultrapassar
 function iaComprimirImagem(src) {
     return new Promise(function(resolve) {
         var img = new Image();
         img.onload = function() {
-            var MAX=400, Q=0.60, LIMITE=150000, w=img.width, h=img.height;
-            var base64;
-            do {
-                var scale = Math.min(1, MAX/Math.max(w,h));
-                var c=document.createElement('canvas');
-                c.width=Math.round(w*scale); c.height=Math.round(h*scale);
-                c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-                base64=c.toDataURL('image/jpeg',Q);
-                if (base64.length>LIMITE){
-                    if (Q>0.40) Q=Math.max(0.40,Q-0.08);
-                    else { MAX=Math.round(MAX*0.82); Q=0.55; }
-                }
-            } while(base64.length>LIMITE && MAX>150);
-            resolve(base64);
+            var MAX_W=1080, MAX_H=1350;
+            var scaleW = img.width  > MAX_W ? MAX_W / img.width  : 1;
+            var scaleH = img.height > MAX_H ? MAX_H / img.height : 1;
+            var scale  = Math.min(scaleW, scaleH);
+            var c = document.createElement('canvas');
+            c.width  = Math.round(img.width  * scale);
+            c.height = Math.round(img.height * scale);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            resolve(c.toDataURL('image/jpeg', 0.92));
         };
         img.src = src;
     });
@@ -3587,7 +3605,7 @@ async function _iaUploadImgbb(base64dataurl) {
         if (!r.ok) throw new Error('imgbb HTTP ' + r.status + ': ' + r.statusText);
         var j = await r.json();
         if (!j.success) throw new Error('imgbb: ' + (j.error && j.error.message || JSON.stringify(j.error) || 'falha'));
-        var url = (j.data && (j.data.display_url || j.data.image && j.data.image.url || j.data.url)) || null;
+        var url = (j.data && (j.data.image && j.data.image.url || j.data.url || j.data.display_url)) || null;
         if (!url || typeof url !== 'string' || !url.startsWith('http')) {
             throw new Error('imgbb retornou URL inválida: ' + url);
         }
@@ -5826,9 +5844,12 @@ window._iaPreAquecerDB = function() {};
   (function() {
     function _onReady() {
       var tab = sessionStorage.getItem('bibvania_tab') || 'tab-cadastro';
-      if (tab === 'tab-registro')     { if (window._renderAcervoOnTab) window._renderAcervoOnTab(); }
-      if (tab === 'tab-devolucoes')   window.carregarDevolucoes();
-      if (tab === 'tab-listapessoas') window.carregarListaPessoas();
+      if (tab === 'tab-registro') {
+        if (window._renderAcervoOnTab) window._renderAcervoOnTab();
+        else window._tabPendente = 'tab-registro'; // módulo ainda não carregou — será tratado no init()
+      }
+      if (tab === 'tab-devolucoes')   window.carregarDevolucoes?.();
+      if (tab === 'tab-listapessoas') window.carregarListaPessoas?.();
       if (tab === 'tab-cadastro-ia')  { if (window.iaInitOnce) window.iaInitOnce(); }
       if (window._iaPreAquecerDB)     window._iaPreAquecerDB();
     }

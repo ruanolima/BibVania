@@ -5,7 +5,7 @@
     // Aplicar tema antes do CSS carregar — elimina flash claro→escuro
     (function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
     // Aplicar font-size salvo imediatamente
-    (function(){var f=parseInt(localStorage.getItem('fontSize'));if(f)document.documentElement.style.setProperty('--font-size',f+'px');})();
+    (function(){var levels=[10,12,14,16,18];var f=parseInt(localStorage.getItem('fontSize'));if(f){var idx=levels.reduce(function(b,v,i){return Math.abs(v-f)<Math.abs(levels[b]-f)?i:b},0);f=levels[idx];localStorage.setItem('fontSize',f);document.documentElement.style.setProperty('--font-size',f+'px');}})();;
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -82,7 +82,7 @@
         import { iniciarBuscaVoz } from './bibvania-utils.js';
         window.DB = DB;
 
-        let fontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+        let fontSize = parseInt(localStorage.getItem('fontSize')) || 14;
         let todosLivros = [];
         let _acervoCarregado = false; // true após primeiro carregamento completo
         let idsAtrasadosCache = [];
@@ -93,8 +93,12 @@
         let _livrosOrdenados = [];
 
         // ── Preferências ───────────────────────────────────────────
+        const _FONT_LEVELS = [10, 12, 14, 16, 18];
         window.changeFontSize = (delta) => {
-            fontSize = Math.min(Math.max(fontSize + delta, 12), 24);
+            let idx = _FONT_LEVELS.indexOf(fontSize);
+            if (idx === -1) idx = _FONT_LEVELS.reduce((best, v, i) => Math.abs(v - fontSize) < Math.abs(_FONT_LEVELS[best] - fontSize) ? i : best, 0);
+            idx = Math.min(Math.max(idx + (delta > 0 ? 1 : -1), 0), _FONT_LEVELS.length - 1);
+            fontSize = _FONT_LEVELS[idx];
             document.documentElement.style.setProperty('--font-size', fontSize + 'px');
             localStorage.setItem('fontSize', fontSize);
         };
@@ -193,7 +197,7 @@
                 }
                 temCapa = false;
             } else if (l._capaResolvida === 'tem') {
-                wrapClasses = 'book-cover-wrap has-image capa-carregada';
+                wrapClasses = l.imagem_url ? 'book-cover-wrap has-image capa-carregada' : 'book-cover-wrap capa-carregada';
                 labelHtml = '';
                 temCapa = true;
             } else {
@@ -204,6 +208,7 @@
 
             return `
             <article class="book-item" ${borderStyle}>
+                <div class="book-header">
                     <div class="${wrapClasses}"
                         data-lightbox-id="${l.id}"
                         data-lightbox-titulo="${l.titulo.replace(/"/g,'&quot;')}"
@@ -223,7 +228,7 @@
                         <div class="book-status-row stacked">
                             <div class="book-tags-inline" data-quantidade="${l.quantidade_disponivel}/${l.quantidade_total} DISPONÍVEIS">
                                 ${isAtrasado?'<span class="atrasado-label" role="alert">⚠️ ATRASO</span>':''}
-                                ${l.palavras_chave && l.palavras_chave.length ? l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}')">;#${p}</span>`).join(' ') : ''}
+                                ${l.palavras_chave && l.palavras_chave.length ? l.palavras_chave.map(p => `<span class="tag-keyword" onclick="event.stopPropagation();filtrarPorTag('${p}')">#${p}</span>`).join(' ') : ''}
                             </div>
                             <div class="book-status-badge-row">
                                 <span class="badge ${l.quantidade_disponivel>0?'badge-disponivel':'badge-indisponivel'}" style="flex-shrink:0;">
@@ -254,7 +259,18 @@
                         const img = wrap.querySelector('img.cover-img');
                         if (img && img.src !== l.imagem_url) {
                             wrap.classList.remove('has-image');
-                            img.onload = () => wrap.classList.add('has-image');
+                            img.onload = () => {
+                                if (img.naturalWidth > 0 && img.naturalHeight > 0 &&
+                                    img.naturalWidth === img.naturalHeight && img.naturalWidth <= 300) {
+                                    l._capaResolvida = 'sem'; l.imagem_url = null;
+                                    if (_idsComCapaCache) _idsComCapaCache.delete(l.id);
+                                    wrap.classList.remove('has-image');
+                                    wrap.classList.add('sem-capa', 'capa-carregada');
+                                    _setLabelSemCapa(wrap);
+                                } else {
+                                    wrap.classList.add('has-image');
+                                }
+                            };
                             img.onerror = () => {
                                 l._capaResolvida = 'sem';
                                 l.imagem_url = null;
