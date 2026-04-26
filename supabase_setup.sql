@@ -99,6 +99,7 @@ FOR EACH ROW EXECUTE FUNCTION recalcular_disponivel();
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS imagem_url TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS pdf_url TEXT;
 ALTER TABLE livros ADD COLUMN IF NOT EXISTS alt_text TEXT;
+ALTER TABLE livros ADD COLUMN IF NOT EXISTS data_edicao TIMESTAMP WITH TIME ZONE;
 
 -- 7. TABELA DE PESSOAS (alunos e funcionários)
 CREATE TABLE IF NOT EXISTS pessoas (
@@ -155,7 +156,7 @@ END $$;
 -- ============================================================================
 -- 10. CONFIGURAÇÕES PRIVADAS (chaves de API)
 -- Acessível apenas por usuários autenticados (admin).
--- ATENÇÃO: Execute supabase_setup_privado.sql separadamente para inserir
+-- ATENÇÃO: Execute setup_private.sql separadamente para inserir
 -- as chaves reais. Esse arquivo NÃO vai para o GitHub.
 -- ============================================================================
 

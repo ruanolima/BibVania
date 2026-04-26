@@ -69,14 +69,14 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 48px;
+    height: 96px;
     background: var(--primary);
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 0 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    padding: 0.4rem;
     z-index: 1000;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .control-btn {
@@ -84,19 +84,22 @@ body {
     background: rgba(255,255,255,0.2);
     border: none;
     color: white;
-    width: 36px;
-    height: 36px;
+    width: 100%;
+    height: 100%;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     transition: opacity 0.1s ease;
+    padding: 0 0.5rem;
+    text-align: center;
+    gap: 0.3rem;
 }
 
 .control-btn:active {
@@ -105,7 +108,7 @@ body {
 
 /* Layout Base */
 header {
-    margin-top: 48px;
+    margin-top: 96px;
     background: var(--card);
     padding: 1.25rem 1rem;
     border-bottom: 1px solid var(--border);
@@ -260,8 +263,6 @@ input:disabled {
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-
-
 .checkbox-container input[type="checkbox"] {
     width: 20px;
     height: 20px;
@@ -312,36 +313,30 @@ input:disabled {
 /* ── Abas de navegação ─────────────────────────────── */
 .tabs-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
+    justify-content: center;
     margin-bottom: 0.75rem;
     padding: 0.25rem;
-    background: var(--bg);
-    border-radius: var(--radius);
 }
 
-.tab-btn {
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--border);
+#tab-select {
+    width: 100%;
+    max-width: 320px;
+    padding: 0.6rem 1rem;
+    border: 1.5px solid var(--border);
     border-radius: 20px;
     background: var(--card);
     color: var(--text);
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s;
-}
-
-.tab-btn.active,
-.tab-btn[aria-selected="true"] {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-}
-
-.tab-btn:hover:not(.active) {
-    background: var(--border);
+    font-family: inherit;
+    text-align: center;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
 }
 
 .tab-content {
@@ -450,7 +445,6 @@ input:disabled {
     opacity: 0.35;
 }
 
-
 .book-header-inner {
     display: flex;
     flex-direction: column;
@@ -475,7 +469,6 @@ input:disabled {
     padding: 1.25rem;
 }
 
-
 /* ── Admin: book-item tem estrutura vertical (header + actions) ── */
 #tab-registro .book-item,
 #secaoAtrasadosAdmin .book-item {
@@ -499,7 +492,7 @@ input:disabled {
     min-height: 148px;
     height: auto;
     overflow: visible;
-    justify-content: flex-start;
+    justify-content: space-between;
 }
 
 /* No admin, título sem espaço reservado (sem setinha) */
@@ -546,25 +539,24 @@ input:disabled {
 .book-meta-box {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0;
     overflow: visible; /* BUG FIX #3: Permitir conteúdo fluir naturalmente */
 }
 
 .book-meta-item {
     font-size: 0.8rem;
     color: var(--text-light);
-    font-weight: 600;
-    word-break: break-word; /* BUG FIX #3: Quebrar palavras longas */
+    font-weight: 700;
+    word-break: break-word;
     line-height: 1.3;
 }
 
 .book-meta-single {
-    white-space: normal; /* BUG FIX #3: Permitir quebra de linha */
-    overflow: visible;
-    text-overflow: clip;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Máximo 2 linhas por item */
-    -webkit-box-orient: vertical;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    max-width: 100%;
 }
 
 .book-meta-item strong {
@@ -576,19 +568,18 @@ input:disabled {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-top: auto;
 }
 
 /* Variante usada no index.html: tags + badge em linhas separadas */
 .book-status-row.stacked {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 0.25rem;
 }
 
 .book-status-badge-row {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     width: 100%;
 }
 
@@ -599,7 +590,6 @@ input:disabled {
     gap: 0.2rem;
     min-width: 0;
 }
-
 
 /* ── Barra de ações do card (admin) — FORA do accordion para evitar conflito de clique ── */
 .book-actions {
@@ -619,11 +609,11 @@ input:disabled {
 }
 
 .badge {
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 800;
-    white-space: nowrap; /* BUG FIX #4: Evitar quebra de linha no badge */
+    white-space: nowrap;
 }
 
 .badge-disponivel { background: #dcfce7; color: #166534; }
@@ -838,8 +828,6 @@ footer {
     display: none !important;
 }
 
-
-
 /* ══════════════════════════════════════════════════════════════
    ACESSIBILIDADE W3C / WCAG 2.1 AA
    ══════════════════════════════════════════════════════════════ */
@@ -1021,7 +1009,6 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     to   { opacity: 1; transform: translateY(0); }
 }
 
-
 /* Respeitar preferência de cor do sistema quando não há preferência salva */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme]) {
@@ -1101,29 +1088,25 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     line-height: 1.5;
 }
 
-
 /* ── Tags de palavras-chave ──────────────────────────────────── */
 .tag-keyword {
-    display: inline-block;
-    background: var(--primary);
-    color: #fff;
-    border-radius: 20px;
-    padding: 0.15rem 0.55rem;
+    display: inline;
+    background: none;
+    color: #60a5fa;
+    border-radius: 0;
+    padding: 0;
     font-size: 0.68rem;
     font-weight: 700;
-    cursor: pointer;
-    margin: 0.1rem 0.15rem 0.1rem 0;
-    transition: opacity 0.15s, transform 0.15s;
+    transition: opacity 0.15s;
     user-select: none;
     white-space: nowrap;
 }
-.tag-keyword:hover { opacity: 0.82; transform: scale(1.07); }
+.tag-keyword:hover { opacity: 0.7; transform: none; }
 .tag-keyword.tag-static {
     cursor: default;
     pointer-events: none;
 }
-.tag-keyword.tag-static:hover { opacity: 1; transform: none; }
-
+.tag-keyword.tag-static:hover { opacity: 1; }
 
 /* ══════════════════════════════════════════════════════════════
    ACERVO — cards horizontais em escala ~50%
@@ -1151,10 +1134,10 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
 #listaAdmin .book-cover-wrap,
 #listaAtrasadosAdmin .book-cover-wrap {
     width: calc(var(--cover-h) * 4 / 5) !important;
-    min-width: unset !important;
-    max-width: unset !important;
+    min-width: calc(var(--cover-h) * 4 / 5) !important;
+    max-width: calc(var(--cover-h) * 4 / 5) !important;
     height: auto !important;
-    min-height: var(--cover-h);
+    min-height: var(--cover-h) !important;
     align-self: stretch;
     flex-shrink: 0 !important;
 }
@@ -1162,9 +1145,10 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
 #listaLivros .book-header,
 #listaAdmin .book-header,
 #listaAtrasadosAdmin .book-header {
-    align-items: stretch !important;
+    align-items: stretch;
     padding: 0;
     gap: 0;
+    overflow: hidden;
 }
 
 #listaLivros .book-header .book-cover-wrap,
@@ -1177,40 +1161,33 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
 #listaAdmin .book-header-inner,
 #listaAtrasadosAdmin .book-header-inner {
     min-height: var(--cover-h);
-    height: 100%;
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    height: auto;
+    gap: 0;
     justify-content: flex-start;
-    padding: 0.6rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     flex: 1 1 0;
     min-width: 0;
+    overflow: hidden;
 }
 
 #listaLivros .book-status-row,
 #listaAdmin .book-status-row,
 #listaAtrasadosAdmin .book-status-row {
-    margin-top: auto;
-    padding-top: 0.25rem;
-}
-
-#listaLivros .book-status-badge-row,
-#listaAdmin .book-status-badge-row,
-#listaAtrasadosAdmin .book-status-badge-row {
-    display: flex;
-    justify-content: flex-end;
     width: 100%;
+    align-self: stretch;
 }
 
 #listaLivros .book-title,
 #listaAdmin .book-title,
 #listaAtrasadosAdmin .book-title {
     font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
     line-height: 1.35;
-    min-height: calc(0.75rem * 1.35 * 2); /* sempre reserva 2 linhas */
+    word-break: break-word;
+    overflow-wrap: break-word;
     display: -webkit-box !important;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     padding-right: 0.75rem;
@@ -1220,6 +1197,39 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
 #listaAdmin .book-meta-item,
 #listaAtrasadosAdmin .book-meta-item {
     font-size: 0.68rem;
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Autor: máx 2 linhas */
+#listaLivros .book-meta-item.meta-autor,
+#listaAdmin .book-meta-item.meta-autor,
+#listaAtrasadosAdmin .book-meta-item.meta-autor {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Categoria: máx 2 linhas */
+#listaLivros .book-meta-item.meta-categoria,
+#listaAdmin .book-meta-item.meta-categoria,
+#listaAtrasadosAdmin .book-meta-item.meta-categoria {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Tags: máx 1 linha com reticências */
+#listaLivros .book-tags-inline,
+#listaAdmin .book-tags-inline,
+#listaAtrasadosAdmin .book-tags-inline {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 #listaLivros .badge,
@@ -1233,7 +1243,6 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
 #listaAdmin .tag-keyword,
 #listaAtrasadosAdmin .tag-keyword {
     font-size: 0.64rem;
-    padding: 0.08rem 0.25rem;
 }
 
 #listaLivros .accordion-indicator,
@@ -1264,21 +1273,270 @@ input[type="search"] { appearance: none; -webkit-appearance: none; }
     padding: 0.75rem 0.6rem;
 }
 
-/* ── Status row: tag em cima, badge embaixo ───────────────────── */
+/* ── Status row: tag em cima, badge embaixo ──────────────────────────── */
 #listaLivros .book-status-row.stacked,
 #listaAdmin .book-status-row.stacked,
 #listaAtrasadosAdmin .book-status-row.stacked {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-    gap: 0.2rem;
-    margin-top: auto;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.1rem;
+    margin-top: 0;
+    width: 100%;
+    align-self: stretch;
 }
 
-#listaLivros .book-status-badge-row,
 #listaAdmin .book-status-badge-row,
-#listaAtrasadosAdmin .book-status-badge-row {
+#listaAtrasadosAdmin .book-status-badge-row,
+#listaLivros .book-status-badge-row {
+    display: flex;
+    justify-content: flex-start;
     width: 100%;
-    justify-content: flex-end;
+}
+
+/* Index: badge à esquerda */
+#listaLivros .book-status-badge-row {
+    justify-content: flex-start;
+}
+
+/* Altura mínima da lista = card maior possível (font 16px: sem botões de ação) */
+#listaLivros {
+    min-height: 192px;
+}
+
+/* Container fixo das setas — separado dos cards */
+#acervo-nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+}
+#acervo-nav-wrapper-admin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+}
+
+/* Garante espaço mínimo para setas não sumirem com poucos cards */
+#listaAdmin {
+    min-height: 230px;
+}
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================================
+   BIBMAKER — Estilos específicos da página bibmaker.html
+   ============================================================================ */
+
+/* Barra de acessibilidade verde para o BibMaker */
+body.bibmaker-page .accessibility-bar {
+    background: #166534;
+}
+
+/* Cabeçalho com borda verde */
+body.bibmaker-page header {
+    border-bottom: 3px solid #166534;
+}
+
+body.bibmaker-page header h1 {
+    color: #166534;
+}
+
+/* Abas de navegação do BibMaker */
+.bm-tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 0.4rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.bm-tab-btn {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-light);
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    font-family: inherit;
+}
+
+.bm-tab-btn.active {
+    background: #166534;
+    color: #fff;
+}
+
+/* Botão verde BibMaker */
+.btn-bibmaker {
+    background: #166534;
+    color: #fff;
+}
+
+.btn-bibmaker:hover {
+    background: #15803d;
+}
+
+/* Card h2 verde */
+body.bibmaker-page .card h2 {
+    color: #166534;
+}
+
+/* Tipo de biblioteca selecionado */
+.bm-tipo-btn.selected {
+    border-color: #166534;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+[data-theme="dark"] .bm-tipo-btn.selected {
+    background: #052e16;
+}
+
+/* Preview do nome da biblioteca */
+.bm-nome-preview {
+    background: #f0fdf4;
+    border: 1px solid #22c55e;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    color: #166534;
+    font-weight: 700;
+    text-align: center;
+}
+
+[data-theme="dark"] .bm-nome-preview {
+    background: #052e16;
+}
+
+/* Upload zone */
+.bm-upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg);
+}
+
+.bm-upload-zone:hover,
+.bm-upload-zone.drag-over {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+
+[data-theme="dark"] .bm-upload-zone:hover,
+[data-theme="dark"] .bm-upload-zone.drag-over {
+    background: #052e16;
+}
+
+/* Status de versão OK */
+.bm-diff-ok {
+    background: #f0fdf4;
+    border: 1px solid #22c55e;
+    color: #166534;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .bm-diff-ok {
+    background: #052e16;
+}
+
+/* Status de versão desatualizada */
+.bm-diff-warn {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .bm-diff-warn {
+    background: #1c1200;
+    color: #fcd34d;
+}
+
+/* Badge de versão */
+.bm-version-badge {
+    display: inline-block;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #22c55e;
+    border-radius: 20px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+}
+
+[data-theme="dark"] .bm-version-badge {
+    background: #052e16;
+}
+
+/* Subtítulo do cabeçalho BibMaker */
+.bm-subtitle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    text-align: center;
+}
+
+.bm-subtitle span:first-child {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.bm-subtitle span:last-child {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.bm-version-info {
+    font-size: 0.65rem;
+    color: var(--text-light);
+    margin-top: 0.15rem;
+    letter-spacing: 0.05em;
+}
+
+/* Foco verde nos inputs do BibMaker */
+body.bibmaker-page input:focus,
+body.bibmaker-page select:focus,
+body.bibmaker-page textarea:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
+/* Checkbox verde */
+body.bibmaker-page .checkbox-container.checked {
+    border-color: #166534;
+    background: #f0fdf4;
+}
+
+[data-theme="dark"] body.bibmaker-page .checkbox-container.checked {
+    background: #052e16;
 }
