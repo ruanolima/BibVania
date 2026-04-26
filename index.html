@@ -649,14 +649,16 @@
 <script>
 // ── Abrir BibMaker (cadastro ou atualização) ─────────────────────────────────
 const BIBMAKER_BASE_URL = 'https://ruanolima.github.io/BibVania/bibmaker.html';
+const BIBMAKER_CADASTRO_URL = 'bibmaker-cadastro.html';
+const BIBMAKER_ATUALIZAR_URL = 'bibmaker-atualizar.html';
 
 function abrirBibMakerCadastro() {
-    window.open(BIBMAKER_BASE_URL + '?aba=cadastro', '_blank');
+    window.open(BIBMAKER_CADASTRO_URL, '_blank');
 }
 
 async function abrirBibMakerAtualizar() {
     // Abrir o BibMaker primeiro para não ser bloqueado como popup
-    const janela = window.open(BIBMAKER_BASE_URL + '?aba=atualizacao', '_blank');
+    const janela = window.open(BIBMAKER_ATUALIZAR_URL, '_blank');
     if (!janela) {
         alert('Permita popups para usar o atualizador.');
         return;
