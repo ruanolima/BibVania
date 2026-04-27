@@ -1,8 +1,51 @@
 -- ============================================================================
--- BIBVANIA ONLINE — CONFIGURAÇÃO DO BANCO DE DADOS v1.3
--- Execute este script no SQL Editor do Supabase para configuração inicial.
--- Seguro executar em bancos já existentes — todos os comandos usam IF NOT EXISTS.
+-- BibVania — supabase_setup.sql
+-- Configuração pública do banco de dados Supabase
 -- ============================================================================
+--
+-- PROPÓSITO
+--   Cria toda a estrutura de banco necessária para o BibVania:
+--   tabelas, tipos, funções, políticas RLS e triggers.
+--   Este arquivo é SEGURO para commitar no GitHub (não contém segredos).
+--
+-- PRÉ-REQUISITO
+--   Execute este arquivo ANTES de setup_private.sql.
+--
+-- COMO EXECUTAR
+--   1. Acesse o Dashboard do Supabase → SQL Editor → New query
+--   2. Cole o conteúdo e clique em Run
+--
+-- TABELAS CRIADAS
+--   livros          — Acervo bibliográfico (título, autor, ISBN, categoria,
+--                     quantidade_total, quantidade_disponivel, imagem_url,
+--                     pdf_url, palavras_chave, alt_text, data_cadastro,
+--                     data_edicao)
+--   emprestimos     — Registro de empréstimos e devoluções (livro_id,
+--                     nome_aluno, sexo, ano_aluno, turma_aluno, status,
+--                     data_emprestimo, data_prevista_devolucao,
+--                     data_devolucao, dias_emprestimo, atrasado,
+--                     sem_data_definida)
+--   pessoas         — Cadastro de alunos e funcionários (nome, sexo,
+--                     ano, turma, eh_funcionario, pcd, data_cadastro)
+--   admins          — Perfil do bibliotecário autenticado (id → auth.users,
+--                     nome, foto_url)
+--   configuracoes   — Configurações gerais (chave, valor) — uso futuro
+--   config_privada  — Chaves de API (groq_api_key, imgbb_api_key)
+--                     com RLS: somente usuários autenticados leem
+--
+-- SEGURANÇA (RLS)
+--   • livros, emprestimos, pessoas: leitura pública; escrita autenticada
+--   • admins: leitura e escrita apenas pelo próprio usuário autenticado
+--   • config_privada: somente autenticados leem
+--
+-- TRIGGERS / FUNÇÕES
+--   • atualizar_quantidade_disponivel(): recalcula quantidade_disponivel
+--     nos livros após INSERT/UPDATE/DELETE em emprestimos
+--   • atualizar_atrasado(): marca emprestimos.atrasado = true quando
+--     data_prevista_devolucao < now() e status = 'emprestado'
+--
+-- ============================================================================
+
 
 -- 0. EXTENSÕES NECESSÁRIAS
 CREATE EXTENSION IF NOT EXISTS unaccent; -- busca sem acento (usada no script de limpeza)

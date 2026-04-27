@@ -1,4 +1,36 @@
 -- ============================================================================
+-- BibVania — setup_private.sql
+-- Configuração PRIVADA — Chaves de API
+-- ============================================================================
+--
+-- ⚠️  ATENÇÃO: ESTE ARQUIVO CONTÉM SEGREDOS DE API.
+--    NUNCA faça commit deste arquivo para um repositório público no GitHub.
+--    Adicione "setup_private.sql" ao seu .gitignore.
+--
+-- PROPÓSITO
+--   Insere as chaves de API necessárias para as funcionalidades avançadas:
+--   • imgbb_api_key  — upload de capas de livros via ImgBB
+--   • groq_api_key   — análise de imagens com IA (Llama 4 Scout via Groq)
+--   Ambas as chaves são lidas pela Supabase Edge Function (bibvania.ts)
+--   em tempo de execução, mantendo-as fora do código JavaScript do frontend.
+--
+-- PRÉ-REQUISITO
+--   Execute supabase_setup.sql ANTES deste arquivo.
+--   A tabela config_privada deve existir.
+--
+-- COMO OBTER AS CHAVES
+--   imgbb_api_key: https://api.imgbb.com (conta gratuita)
+--   groq_api_key:  https://console.groq.com/keys (conta gratuita)
+--
+-- COMO EXECUTAR
+--   1. Substitua os valores <<SUA_CHAVE_AQUI>> abaixo pelas chaves reais
+--   2. Acesse Dashboard Supabase → SQL Editor → New query
+--   3. Cole e clique em Run
+--   4. Apague o arquivo ou remova as chaves após executar
+--
+-- ============================================================================
+
+-- ============================================================================
 -- BIBVANIA ONLINE — CONFIGURAÇÃO PRIVADA v1.3
 -- Chaves de API: Groq AI e ImgBB
 --

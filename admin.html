@@ -1,4 +1,66 @@
 <!DOCTYPE html>
+<!--
+  ===========================================================================
+  BibVania — admin.html  |  Painel Administrativo do Bibliotecário
+  ===========================================================================
+  PROPÓSITO
+    Interface completa de gestão da biblioteca. Acesso restrito: redireciona
+    para login.html se não houver sessão ativa.
+
+  ARQUITETURA — DOIS SISTEMAS DE RENDERIZAÇÃO EM COEXISTÊNCIA
+    Este arquivo usa DOIS blocos de script que precisam cooperar:
+
+    A) <script type="module"> (ES Module, assíncrono)
+       • Importa DB, spanCategoria, iniciarBuscaVoz de bibvania.js
+       • Gerencia: acervo (tab-registro), lógica de capas, empréstimos,
+         devoluções, perfil de admin, chaves privadas
+       • Expõe funções em window.* para chamadas síncronas dos scripts
+         inline dos formulários HTML
+
+    B) <script> UMD (síncrono, carregado após o módulo)
+       • Inicializa tabs de: cadastro manual, cadastro com IA,
+         lista de pessoas, relatório
+       • Lê window.DB (preenchido pelo módulo A via window._dbReady Promise)
+       • Usa window._dbReady para aguardar o módulo antes de executar
+
+    ⚠️ REGRA CRÍTICA: funções chamadas por onclick/oninput no HTML devem
+    ser expostas em window.* pelo módulo ES, pois o HTML é parseado antes
+    do módulo terminar de carregar.
+
+  ABAS DO PAINEL
+    tab-cadastro     — Cadastro manual de livros (formulário + edição)
+    tab-cadastro-ia  — Cadastro assistido por IA (Groq + Google Books)
+    tab-registro     — Acervo completo com carrossel + busca + empréstimos
+    tab-devolucoes   — Devoluções pendentes com urgência visual
+    tab-listapessoas — Cadastro e gestão de alunos/funcionários
+    tab-relatorio    — Relatório de empréstimos por turma (download HTML)
+
+  FLUXO DE INICIALIZAÇÃO
+    1. Script inline HEAD restaura tema, aba ativa (sessionStorage) e
+       oculta body (visibility:hidden) para evitar flash de conteúdo
+    2. Módulo ES carrega → init() → checkAuth() → load() → renderAcervo()
+    3. window._dbReadyResolve() sinaliza scripts UMD que window.DB está pronto
+    4. Scripts UMD inicializam suas abas
+
+  REALTIME
+    Canais Supabase ativos: livros, empréstimos, pessoas
+    Atualização incremental preserva scroll e capas já carregadas
+
+  ACESSIBILIDADE
+    • Barra de acessibilidade com modo escuro
+    • Skip links implícitos via tab-select
+    • VLibras integrado
+    • Todas as modais com foco trap e Escape
+
+  DEPENDÊNCIAS
+    • bibvania.js (ES Module + UMD)
+    • style.css
+    • Groq API (via Supabase Edge Function bibvania.ts) — cadastro IA
+    • ImgBB API (via Edge Function) — upload de capas
+    • Google Books API (público) — metadados de livros
+    • Open Library API (público) — metadados fallback
+  ===========================================================================
+-->
 <html lang="pt-BR">
 <head>
 <script>function navegarCom(url){window.location.href=url;}</script>
@@ -24,7 +86,10 @@
 </script>
 <script>
     // Aplicar font-size salvo imediatamente
-    // Promise global resolvida pelo módulo ES quando window.DB estiver pronto
+    // _dbReady: Promise que sinaliza quando o módulo ES terminou de carregar.
+    // O módulo ES chama window._dbReadyResolve(DB) após importar bibvania.js.
+    // Scripts UMD fazem: window._dbReady.then(DB => ...) para garantir que
+    // window.DB está disponível antes de qualquer operação de banco.
     window._dbReady = new Promise(function(resolve){ window._dbReadyResolve = resolve; });
 </script>
     <meta charset="UTF-8">
@@ -158,8 +223,50 @@
 
     <div class="accessibility-bar" role="toolbar" aria-label="Barra de acessibilidade">
         <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="width:auto;padding:0 0.75rem;text-align:left;" aria-label="Abrir repositório no GitHub">📁 Repositório</button>
-        <button class="control-btn" onclick="abrirBibMakerCadastro()" style="width:auto;padding:0 0.75rem;text-align:left;" aria-label="Criar sua própria biblioteca">📚 Crie sua Bib!</button>
-        <button class="control-btn" onclick="abrirBibMakerAtualizar()" style="width:auto;padding:0 0.75rem;text-align:left;margin-right:auto;" aria-label="Atualizar esta biblioteca">🔄 Atualizar</button>
+        <button class="control-btn" id="btnVerificarVersao" style="width:auto;padding:0 0.75rem;text-align:left;margin-right:auto;" aria-label="Verificar se a biblioteca está atualizada">🔄 Verificando...</button>
+        <script>
+        (function(){
+            const btn    = document.getElementById('btnVerificarVersao');
+            const banner = document.getElementById('bannerAtualizacao');
+            const desc   = document.getElementById('bannerAtualizacaoDesc');
+
+            function renderBtn(versaoLocal, versaoBase) {
+                if (!btn) return;
+                const local = (versaoLocal || '?').trim();
+                const base  = (versaoBase  || '?').trim();
+                if (local !== '?' && base !== '?' && local === base) {
+                    btn.textContent = '✅ Atualizada';
+                    btn.title = `Sua biblioteca está na versão mais recente (v${local})`;
+                    btn.onclick = null;
+                    btn.style.cursor = 'default';
+                    btn.style.opacity = '0.75';
+                    if (banner) banner.style.display = 'none';
+                } else if (base === '?') {
+                    btn.textContent = '📡 Sem conexão';
+                    btn.title = 'Não foi possível verificar a versão base. Verifique sua conexão.';
+                    btn.onclick = null;
+                    btn.style.cursor = 'default';
+                    btn.style.opacity = '0.6';
+                    if (banner) banner.style.display = 'none';
+                } else {
+                    btn.textContent = '⚠️ Atualizar Bib';
+                    btn.title = `Sua biblioteca está na v${local}. Versão base: v${base}`;
+                    btn.onclick = function(){ window.open('bibmaker.html', '_blank'); };
+                    btn.style.cursor = 'pointer';
+                    btn.style.opacity = '1';
+                    if (banner) banner.style.display = 'flex';
+                    if (desc) desc.textContent = `Sua biblioteca está na versão v${local}. A versão base mais recente do BibVania é v${base}. Atualize para obter correções e novos recursos.`;
+                }
+            }
+
+            const fetchLocal  = fetch('VERSION.json?_=' + Date.now()).then(r => r.json()).catch(() => ({}));
+            const fetchRemoto = fetch('https://ruanolima.github.io/BibVania/VERSION.json?_=' + Date.now()).then(r => r.json()).catch(() => ({}));
+
+            Promise.all([fetchLocal, fetchRemoto]).then(([local, remoto]) => {
+                renderBtn(local.bibvania || '?', remoto.bibvania || '?');
+            });
+        })();
+        </script>
         <button class="control-btn" id="darkModeBtn" aria-label="Alternar modo escuro" aria-pressed="false">🌙</button>
         <script>(function(){var t=localStorage.getItem('theme');var b=document.getElementById('darkModeBtn');if(b&&t==='dark'){b.innerText='☀️';b.setAttribute('aria-pressed','true');}})();</script>
     </div>
@@ -169,6 +276,16 @@
         <h1>ÁREA DO BIBLIOTECÁRIO</h1>
         <div class="school-name" id="nomeEscolaAdmin" aria-label="Biblioteca Escolar da EMTI Professora Maria Vânia Farias Linhares"><span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span></div>
     </header>
+
+    <!-- Banner de atualização — exibido apenas quando desatualizado -->
+    <div id="bannerAtualizacao" style="display:none; margin:0.75rem 1rem 0; background:#fffbeb; border:1.5px solid #f59e0b; border-radius:10px; padding:0.85rem 1rem; display:none; align-items:flex-start; gap:0.65rem;">
+        <span style="font-size:1.3rem; flex-shrink:0; margin-top:0.05rem;">⚠️</span>
+        <div style="flex:1;">
+            <div style="font-size:0.82rem; font-weight:800; color:#92400e; margin-bottom:0.2rem;">Atualização disponível</div>
+            <div id="bannerAtualizacaoDesc" style="font-size:0.72rem; font-weight:600; color:#92400e; opacity:0.85; text-transform:none; line-height:1.4;"></div>
+            <button onclick="window.open('bibmaker.html','_blank')" style="margin-top:0.6rem; background:#f59e0b; color:#fff; border:none; border-radius:7px; padding:0.45rem 0.9rem; font-size:0.75rem; font-weight:800; cursor:pointer; font-family:inherit; text-transform:uppercase; letter-spacing:0.03em;">🔄 Atualizar agora</button>
+        </div>
+    </div>
 
     <main class="container" id="conteudo-admin">
         <nav aria-label="Navegação do sistema" id="navAdmin" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -914,6 +1031,13 @@
     // Aba pendente — gravada aqui se o módulo ainda não terminou de inicializar
     window._tabPendente = null;
 
+    /**
+     * switchTab(e, id)
+     * Gerencia a troca de aba no painel. Salva a aba ativa em sessionStorage
+     * para restaurar após reload. Usa window._tabPendente para abas cujos
+     * scripts ainda não terminaram de carregar (lazy init).
+     * Aciona a função de init específica de cada aba na primeira visita.
+     */
     function switchTab(e, id) {
         document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
         document.getElementById(id).classList.add('active');
@@ -941,6 +1065,11 @@
     window.switchTab = switchTab;
 
     // openEdit provisório: enfileira chamadas até o módulo ES estar pronto
+    // openEdit: stub síncrono necessário porque os botões "✏️ EDITAR" são
+    // gerados como onclick="window.openEdit(id)" no HTML renderizado por
+    // renderLivro(). Como o módulo ES é assíncrono, openEdit pode ser chamado
+    // antes de window._openEditReal estar disponível. A fila garante que
+    // o ID não seja perdido.
     window._openEditFila = [];
     window.openEdit = function(id) {
         window._openEditFila.push(id);
@@ -1010,6 +1139,8 @@
 </script>
 <script type="module">
         import DB, { iniciarBuscaVoz, spanCategoria } from './bibvania.js';
+        // Expor funções do módulo em window.* para uso síncrono pelos scripts UMD
+        // e pelas chamadas onclick/oninput dos elementos HTML
         window.spanCategoria = spanCategoria;
         window.iniciarBuscaVoz = iniciarBuscaVoz; // expor para UMD
         if (window._pendingVozAdmin) { window._pendingVozAdmin(); window._pendingVozAdmin = null; }
@@ -1069,6 +1200,13 @@
             if (el) el.innerHTML = '<span>BIBLIOTECA ESCOLAR DA EMTI</span><span>PROFESSORA MARIA VÂNIA FARIAS LINHARES</span>';
         }
 
+        /**
+         * _carregarChavesPrivadas()
+         * Busca as chaves de API (groq_api_key, imgbb_api_key) da tabela
+         * config_privada do Supabase. Só funciona com sessão autenticada
+         * (RLS). As chaves são armazenadas em window._GROQ_KEY e
+         * window.IMGBB_KEY para uso pelo módulo de cadastro IA.
+         */
         // ── Carrega chaves privadas do banco (só funciona autenticado) ──
         async function _carregarChavesPrivadas() {
             try {
@@ -1449,6 +1587,15 @@
         let _jaCarregouUmaVez = false;
 
         // load(): busca livros e empréstimos em paralelo (mais rápido)
+        /**
+         * load()
+         * Carregamento principal do acervo admin. Busca em paralelo:
+         *   • getLivros() — lista completa com imagem_url
+         *   • getEmprestimosAtivos() — sem join, rápido
+         *   • getIdsComCapa() — apenas na primeira carga (cache _idsComCapaCache)
+         * Preserva scroll do usuário após reload (salvo em _scrollProtegido).
+         * Atualiza todosLivros e dispara renderAcervo() se a aba estiver ativa.
+         */
         async function load() {
             if (_loadEmAndamento) { _loadPendente = true; return; } // já há load em curso — agenda reexecução
             _loadEmAndamento = true;
@@ -1759,6 +1906,13 @@
             lbl.style.display = '';
         }
 
+        /**
+         * renderLivro(l, isAtrasado)
+         * Gera o HTML de um card de livro para o painel admin.
+         * Inclui botões de ação: EDITAR, IA (editar com IA), EXCLUIR.
+         * Exibe accordion de empréstimos ativos se houver.
+         * Aplica borda laranja para livros com empréstimos atrasados.
+         */
         function renderLivro(l, isAtr) {
             const prefix = isAtr ? 'adm-atr-' : 'adm-';
             const borderStyle = isAtr ? 'style="border-color:var(--danger); border-width: 2px;"' : '';
@@ -3510,48 +3664,6 @@
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
 
     <script>
-    // =====================================================================
-    // COLABORADORES
-    // =====================================================================
-    function criarCampoColaborador(funcao = '', nome = '', prefixId = 'col', lista = 'listaColaboradores') {
-        const id = Date.now() + Math.random().toString(36).slice(2);
-        const div = document.createElement('div');
-        div.className = 'colaborador-item';
-        div.id = `${prefixId}-${id}`;
-        div.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:0.75rem; margin-bottom:0.5rem;';
-        div.innerHTML = `
-            <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:0.5rem; align-items:center;">
-                <input class="col-funcao" type="text" placeholder="FUNÇÃO"
-                    style="padding:0.5rem; font-size:0.8rem; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text); width:100%;"
-                    value="${funcao}">
-                <input class="col-nome" type="text" placeholder="NOME"
-                    style="padding:0.5rem; font-size:0.8rem; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text); width:100%;"
-                    value="${nome}">
-                <button type="button" onclick="document.getElementById('${prefixId}-${id}').remove()"
-                    style="background:var(--danger); border:none; color:white; border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:1.1rem; flex-shrink:0; display:flex; align-items:center; justify-content:center;">×</button>
-            </div>
-        `;
-        document.getElementById(lista).appendChild(div);
-    }
-
-    window.adicionarColaborador = () => criarCampoColaborador('', '', 'col', 'listaColaboradores');
-    window.adicionarColaboradorEdit = (funcao = '', nome = '') => criarCampoColaborador(funcao, nome, 'edit-col', 'editListaColaboradores');
-
-    function coletarDeLista(listaId) {
-        const items = document.getElementById(listaId).querySelectorAll('.colaborador-item');
-        const result = [];
-        items.forEach(item => {
-            const funcao = item.querySelector('.col-funcao').value.trim();
-            const nome = item.querySelector('.col-nome').value.trim();
-            if (!nome) return;
-            result.push({ funcao: funcao || 'COLABORADOR', nome });
-        });
-        return result;
-    }
-
-    window.coletarColaboradores = () => coletarDeLista('listaColaboradores');
-    window.coletarColaboradoresEdit = () => coletarDeLista('editListaColaboradores');
-
     // ── PDF helper ────────────────────────────────────────────────────────────
     window.pdfSelecionado = (input, nomeId, btnsId) => {
         const file = input.files[0];
@@ -3576,10 +3688,6 @@
         r.readAsDataURL(file);
     });
 
-
-    // =====================================================================
-    // PUBLICAÇÃO INDEPENDENTE
-    // =====================================================================
 
     // =====================================================================
     // COLABORADORES, CATEGORIAS, PUB. INDEPENDENTE
@@ -4078,7 +4186,7 @@ async function iaChamarGroq(base64) {
     var cats = (window.DB && window.DB.CATEGORIAS) || IA_CATS;
     var catsList = Array.isArray(cats) ? cats.join(', ') : cats;
 
-    var prompt = 'Você é um catalogador expert de biblioteca escolar brasileira. Analise a capa do livro com máxima atenção e responda APENAS com um objeto JSON válido, sem markdown, sem explicações.\n\nREGRAS ABSOLUTAS — NUNCA viole:\n\n1. titulo (string MAIÚSCULAS, NUNCA vazio): transcreva EXATAMENTE como aparece na capa. Preserve acentos. Inclua subtítulo se houver, separado por \": \". Se ilegível, use \"SEM TÍTULO\". NUNCA invente palavras.\n\n2. autor (string MAIÚSCULAS ou \"N/A\"): nome do autor principal como aparece na capa. Se houver múltiplos autores, use SOMENTE O PRIMEIRO. IMPORTANTE: se não houver autor visível na capa, retorne \"N/A\". NUNCA use o nome da editora, da instituição ou da empresa como autor. Editora não é autor.\n\n3. isbn (string só dígitos, ou null): SOMENTE inclua se você conseguir ler com clareza um ISBN-10 ou ISBN-13. Se houver qualquer dúvida, retorne null. NUNCA invente ISBNs.\n\n4. categoria (string, NUNCA vazio, NUNCA null): escolha OBRIGATORIAMENTE UMA das opções: ' + catsList + '\n\nREGRAS CRÍTICAS PARA CATEGORIA:\n\nATENÇÃO — ELEMENTOS VISUAIS DA CAPA NÃO DETERMINAM CATEGORIA: A presença de crianças, ilustrações infantis ou palavras como \"criança\", \"menino\", \"menina\", \"maternidade\", \"família\" no título ou na capa NÃO é suficiente para classificar como INFANTIL ou INFANTOJUVENIL. O que determina a categoria é o CONTEÚDO REAL e o PÚBLICO-ALVO do livro. Exemplos: um livro sobre maternidade atípica é DE REFERÊNCIA, não INFANTIL; um dicionário com criança na capa é DE REFERÊNCIA, não INFANTIL.\n\n— LIVROS PARADIDÁTICOS (de leitura, não didáticos):\n\nINFANTIL (1º AO 4º): livros para crianças pequenas com linguagem e ilustrações muito simples.\nINFANTOJUVENIL (5º E 6º): livros para crianças e pré-adolescentes. Se houver DÚVIDA entre INFANTIL e INFANTOJUVENIL, use INFANTOJUVENIL.\nJUVENIL (7º AO 9º): livros para adolescentes. Se houver DÚVIDA entre INFANTOJUVENIL e JUVENIL, use JUVENIL. Se houver DÚVIDA entre JUVENIL e JOVEM ADULTO, use JOVEM ADULTO (ENSINO MÉDIO) — EXCETO se a capa indicar explicitamente que é do Ensino Fundamental (6º ao 9º ano), nesse caso use JUVENIL.\nJOVEM ADULTO (ENSINO MÉDIO): livros de literatura destinados ao Ensino Médio.\nEDUCAÇÃO INCLUSIVA: livros destinados a leitores com deficiência (visual, auditiva, intelectual, física). NÃO use para livros que ensinam profissionais sobre inclusão — esses vão em DE REFERÊNCIA.\nCLÁSSICOS: clássicos universais de literatura E livros brasileiros com 100 anos ou mais de publicação.\nREGIONAIS: livros brasileiros com menos de 100 anos de publicação COM temática, publicação ou autoria especificamente definida por um estado ou município brasileiro.\nPOESIA: use SOMENTE para livros cujo conteúdo principal É poesia (coletâneas, livros de poemas, cordel). IMPORTANTE: se o livro CONTÉM poemas, deve ser POESIA — mesmo que pareça infantil, juvenil, regional ou clássico: a presença de poemas prevalece sobre qualquer outra característica. NÃO use para livros que estudam, analisam ou ensinam SOBRE poesia (teoria literária, métrica, análise poética) — esses vão em DE REFERÊNCIA.\nDE REFERÊNCIA: livros de estudo e consulta NÃO didáticos (sem tipo de ensino + ano + matéria). Inclui: dicionários, atlas, enciclopédias, manuais, paradidáticos de apoio escolar, e livros de formação de profissionais de educação inclusiva, e livros que estudam ou analisam poesia sem serem livros de poemas. NÃO use para literatura infantil, juvenil ou regional.\n\n— LIVROS DIDÁTICOS (têm OBRIGATORIAMENTE os três: tipo de ensino + ano/série + matéria/disciplina):\nDIDÁTICO (EF 1º) a DIDÁTICO (EF 9º): Ensino Fundamental, anos 1 ao 9.\nDIDÁTICO (EM 1º) a DIDÁTICO (EM 3º): Ensino Médio, anos 1 ao 3.\nDIDÁTICO (EJAF): EJA Fundamental.\nDIDÁTICO (EJAM): EJA Médio.\nSe faltar qualquer um dos três (tipo de ensino, ano OU matéria), use DE REFERÊNCIA.\n\n5. palavras_chave (array com EXATAMENTE 1 string em minúsculas, NUNCA vazio): tema/gênero principal. Ex: \"aventura\", \"matemática\", \"poesia\". NUNCA vazio.\n\n6. alt_text (string, máx 100 chars): descreva a capa em 1 frase objetiva.\n\nResponda SOMENTE o JSON, começando com { e terminando com }.';
+    var prompt = 'Você é um catalogador expert de biblioteca escolar brasileira. Analise a capa do livro com máxima atenção e responda APENAS com um objeto JSON válido, sem markdown, sem explicações.\n\nREGRAS ABSOLUTAS — NUNCA viole:\n\n1. titulo (string MAIÚSCULAS, NUNCA vazio): transcreva EXATAMENTE como aparece na capa. Preserve acentos. Inclua subtítulo se houver, separado por \": \". Se ilegível, use \"SEM TÍTULO\". NUNCA invente palavras.\n\n2. autor (string MAIÚSCULAS ou \"N/A\"): nome do autor principal como aparece na capa. Se houver múltiplos autores, use SOMENTE O PRIMEIRO. IMPORTANTE: se não houver autor visível na capa, retorne \"N/A\". NUNCA use o nome da editora, da instituição ou da empresa como autor. Editora não é autor.\n\n3. isbn (string só dígitos, ou null): SOMENTE inclua se você conseguir ler com clareza um ISBN-10 ou ISBN-13. Se houver qualquer dúvida, retorne null. NUNCA invente ISBNs.\n\n4. categoria (string, NUNCA vazio, NUNCA null): escolha OBRIGATORIAMENTE UMA das opções: ' + catsList + '\n\nREGRAS CRÍTICAS PARA CATEGORIA:\n\nATENÇÃO — ELEMENTOS VISUAIS DA CAPA NÃO DETERMINAM CATEGORIA: A presença de crianças, ilustrações infantis ou palavras como \"criança\", \"menino\", \"menina\", \"maternidade\", \"família\" no título ou na capa NÃO é suficiente para classificar como INFANTIL ou INFANTOJUVENIL. O que determina a categoria é o CONTEÚDO REAL e o PÚBLICO-ALVO do livro. Exemplos: um livro sobre maternidade atípica é DE REFERÊNCIA, não INFANTIL; um dicionário com criança na capa é DE REFERÊNCIA, não INFANTIL.\n\n— LIVROS PARADIDÁTICOS (de leitura, não didáticos):\n\nINFANTIL (1º AO 4º): livros para crianças pequenas com linguagem e ilustrações muito simples.\nINFANTOJUVENIL (5º E 6º): livros para crianças e pré-adolescentes. Se houver DÚVIDA entre INFANTIL e INFANTOJUVENIL, use INFANTOJUVENIL.\nJUVENIL (7º AO 9º): livros para adolescentes. Se houver DÚVIDA entre INFANTOJUVENIL e JUVENIL, use JUVENIL. Se houver DÚVIDA entre JUVENIL e JOVEM ADULTO, use JOVEM ADULTO (ENSINO MÉDIO) — EXCETO se a capa indicar explicitamente que é do Ensino Fundamental (6º ao 9º ano), nesse caso use JUVENIL.\nJOVEM ADULTO (ENSINO MÉDIO): livros de literatura destinados ao Ensino Médio. ATENÇÃO: livros infantojuvenis e juvenis NUNCA devem ser classificados como JOVEM ADULTO (ENSINO MÉDIO), mesmo em caso de dúvida — a regra de dúvida entre JUVENIL e JOVEM ADULTO se aplica APENAS quando o livro claramente não é voltado para o Ensino Fundamental.\nEDUCAÇÃO INCLUSIVA: use para DOIS tipos de livros: (A) Livros paradidáticos/de leitura destinados a leitores com deficiência — SOMENTE se a capa indicar EXPLICITAMENTE que é voltado para educação inclusiva ou especial (ex: adaptados em Braille, pictogramas de CAA, comunicação alternativa, ou texto que mencione explicitamente \"educação inclusiva\" ou \"educação especial\"). Livros infantis, infantojuvenis ou juvenis comuns NÃO devem ser classificados aqui apenas por tratarem de personagens com deficiência ou por terem tema de inclusão; (B) Livros de formação de profissionais da educação inclusiva/especial (professores, pedagogos, psicólogos, terapeutas) e livros de estudo acadêmico sobre inclusão escolar, deficiência, neurodiversidade, AEE, LIBRAS etc.\nCLÁSSICOS: clássicos universais de literatura E livros brasileiros com 100 anos ou mais de publicação.\nREGIONAIS: livros brasileiros com menos de 100 anos de publicação COM temática, publicação ou autoria especificamente definida por um estado ou município brasileiro.\nPOESIA: use SOMENTE para livros cujo conteúdo principal É poesia (coletâneas, livros de poemas, cordel). IMPORTANTE: se o livro CONTÉM poemas, deve ser POESIA — mesmo que pareça infantil, juvenil, regional ou clássico: a presença de poemas prevalece sobre qualquer outra característica. NÃO use para livros que estudam, analisam ou ensinam SOBRE poesia (teoria literária, métrica, análise poética) — esses vão em DE REFERÊNCIA.\nDE REFERÊNCIA: livros de estudo e consulta NÃO didáticos (sem tipo de ensino + ano + matéria). Inclui: dicionários, atlas, enciclopédias, manuais, paradidáticos de apoio escolar, e livros que estudam ou analisam poesia sem serem livros de poemas. NÃO use para literatura infantil, juvenil ou regional. NÃO use para livros de formação de profissionais de educação inclusiva — esses vão em EDUCAÇÃO INCLUSIVA.\n\n— LIVROS DIDÁTICOS (têm OBRIGATORIAMENTE os três: tipo de ensino + ano/série + matéria/disciplina):\nDIDÁTICO (EF 1º) a DIDÁTICO (EF 9º): Ensino Fundamental, anos 1 ao 9.\nDIDÁTICO (EM 1º) a DIDÁTICO (EM 3º): Ensino Médio, anos 1 ao 3.\nDIDÁTICO (EJAF): EJA Fundamental.\nDIDÁTICO (EJAM): EJA Médio.\nSe faltar qualquer um dos três (tipo de ensino, ano OU matéria), use DE REFERÊNCIA.\n\n5. palavras_chave (array com EXATAMENTE 1 string em minúsculas, NUNCA vazio): tema/gênero principal. Ex: \"aventura\", \"matemática\", \"poesia\". NUNCA vazio.\n\n6. alt_text (string, máx 100 chars): descreva a capa em 1 frase objetiva.\n\nResponda SOMENTE o JSON, começando com { e terminando com }.';
 
     var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -4712,6 +4820,11 @@ window.iaSalvarQuantidadeRapida = async function() {
 };
 
 // ── Histórico: sempre 5 últimos do Supabase ───────────────────
+// _iaCarregarUltimosDoSupabase() é chamada em três momentos:
+//   1. Na inicialização da aba IA (onIaTabActivated)
+//   2. Após salvarLivro() — para refletir livros recém-cadastrados
+//   3. Após atualizarLivro() — para que edições apareçam na lista sem reload
+// Isso garante que o histórico esteja sempre atualizado sem recarregar a página.
 function _iaAdicionarAoHistoricoLocal(titulo, autor, capa, id) {
     // Só guarda localmente como referência temporária de sessão
     try {
@@ -7376,62 +7489,6 @@ ${corpoHtml}
 
 
 
-<script>
-// ── Abrir BibMaker (cadastro ou atualização) ─────────────────────────────────
-const BIBMAKER_BASE_URL = 'https://ruanolima.github.io/BibVania/bibmaker.html';
-
-function abrirBibMakerCadastro() {
-    window.open(BIBMAKER_BASE_URL + '?aba=cadastro', '_blank');
-}
-
-async function abrirBibMakerAtualizar() {
-    // Abrir o BibMaker primeiro para não ser bloqueado como popup
-    const janela = window.open(BIBMAKER_BASE_URL + '?aba=atualizacao', '_blank');
-    if (!janela) {
-        alert('Permita popups para usar o atualizador.');
-        return;
-    }
-
-    // Coletar arquivos da biblioteca atual via fetch
-    const arqTexto   = ['index.html','admin.html','login.html','bibvania.js','style.css','README.md','LICENCE.md','setup_private.sql'];
-    const arqBinario = ['logo.png','favicon.png','og-image.png','bibmaker-logo.png','bibmaker-favicon.png','bibmaker-og-image.png'];
-    const arquivos   = {};
-
-    for (const nome of arqTexto) {
-        try { const r = await fetch(nome); if (r.ok) arquivos[nome] = await r.text(); } catch(_) {}
-    }
-    for (const nome of arqBinario) {
-        try {
-            const r = await fetch(nome);
-            if (r.ok) {
-                const buf = await r.arrayBuffer();
-                const bytes = new Uint8Array(buf);
-                let b64 = '';
-                for (let i = 0; i < bytes.byteLength; i++) b64 += String.fromCharCode(bytes[i]);
-                arquivos[nome] = { tipo: 'binario', base64: btoa(b64) };
-            }
-        } catch(_) {}
-    }
-
-    // Aguardar o BibMaker carregar e enviar os dados (tenta por até 20 segundos)
-    const BIBMAKER_ORIGIN = new URL(BIBMAKER_BASE_URL).origin;
-    const MAX_TENTATIVAS  = 40;
-    let tentativas = 0;
-    const intervalo = setInterval(() => {
-        tentativas++;
-        if (janela.closed || tentativas > MAX_TENTATIVAS) { clearInterval(intervalo); return; }
-        try { janela.postMessage({ tipo: 'bibvania-atualizar', arquivos }, BIBMAKER_ORIGIN); } catch(_) {}
-    }, 500);
-
-    // Parar ao receber confirmação
-    window.addEventListener('message', function handler(e) {
-        if (e.origin === BIBMAKER_ORIGIN && e.data && e.data.tipo === 'bibvania-atualizar-ok') {
-            clearInterval(intervalo);
-            window.removeEventListener('message', handler);
-        }
-    });
-}
-</script>
 </body>
 </html>`;
                     // Convert inline styles from the generated HTML to use semantic classes where possible

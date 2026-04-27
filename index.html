@@ -1,4 +1,53 @@
 <!DOCTYPE html>
+<!--
+  ===========================================================================
+  BibVania — index.html  |  Catálogo Público do Acervo
+  ===========================================================================
+  PROPÓSITO
+    Página pública, sem autenticação. Permite que qualquer visitante
+    pesquise o acervo da biblioteca, filtre por categoria, visualize
+    capas em lightbox e acesse tags de palavras-chave.
+
+  ARQUITETURA GERAL
+    • Carrega bibvania.js como ES Module (import DB) E como script UMD
+      no final do body (retrocompatibilidade com chamadas síncronas).
+    • Todo o estado da lista (todosLivros, filtros, paginação) fica em
+      variáveis locais dentro do bloco <script type="module">.
+    • Comunicação em tempo real via Supabase Realtime (onLivrosChange +
+      onEmprestimosChange) + intervalo de 60 s como fallback.
+
+  FLUXO DE INICIALIZAÇÃO
+    1. Script inline (head) aplica tema e font-size ANTES do CSS externo
+       carregar → elimina flash claro→escuro.
+    2. inicializar() → aplica preferências → carregarLivros().
+    3. carregarLivros(): busca getLivros() + getEmprestimosAtivos() em
+       paralelo; resolve capas diretamente de imagem_url; renderiza.
+    4. Realtime/setInterval disparam carregarSemCapas() que preserva
+       capas já resolvidas em memória.
+
+  FUNCIONALIDADES
+    • Busca textual: título, ISBN, autor, palavras-chave (#tag syntax)
+    • Filtro por categoria via <select>
+    • Busca por voz (Web Speech API, graceful degradation)
+    • Botão "✕ limpar busca"
+    • Carrossel paginado (1 livro/página) com swipe touch
+    • Lightbox ao clicar em capa com imagem
+    • Modo escuro (localStorage)
+    • VLibras (acessibilidade em Libras)
+    • Skip link WCAG 2.4.1
+
+  ACESSIBILIDADE
+    • role=banner, role=toolbar, aria-label em todos os controles
+    • aria-live="polite" na lista de livros
+    • Lightbox com focus trap e Escape para fechar
+    • Botões touch com touchstart listener (elimina delay 300ms)
+
+  DEPENDÊNCIAS EXTERNAS
+    • bibvania.js (mesmo diretório)
+    • style.css (mesmo diretório)
+    • vlibras.gov.br/app/vlibras-plugin.js (CDN externo)
+  ===========================================================================
+-->
 <html lang="pt-BR">
 <head>
 <script>function navegarCom(url){window.location.href=url;}</script>
@@ -30,7 +79,11 @@
     <meta property="og:url" content="https://ruanolima.github.io/BibVania/">
     <meta property="og:locale" content="pt_BR">
 <style>
-    /* CSS crítico — previne piscada de botões antes de style.css carregar */
+    /*
+     * CSS CRÍTICO (inline) — aplicado ANTES de style.css ser baixado.
+     * Define variáveis de tema (light e dark), reset básico, classes de botão
+     * e a barra de acessibilidade, evitando flash de layout não estilizado (FOUC).
+     */
     :root{--primary:#2563eb;--success:#10b981;--danger:#ef4444;--bg:#f1f5f9;--card:#ffffff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;--radius:12px;--font-size:16px}
     [data-theme=dark]{--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--text-light:#94a3b8;--border:#334155}
     *{box-sizing:border-box;margin:0;padding:0}
@@ -39,8 +92,8 @@
     .btn-primary{background:var(--primary);color:#fff}
     .btn-danger{background:#ef4444;color:#fff}
     .btn-outline{background:var(--card);border:1px solid var(--border);color:var(--text)}
-    .accessibility-bar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--primary);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;padding:0.4rem;gap:0.4rem;height:96px}
-    .control-btn{background:rgba(255,255,255,.2);border:none;color:#fff;width:100%;height:100%;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.85rem;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;padding:0 0.5rem;text-align:center;display:flex;align-items:center;justify-content:center;gap:0.3rem;}
+    .accessibility-bar{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--primary);display:flex;padding:0.4rem;gap:0.5rem;height:48px}
+    .control-btn{background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.9rem;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;}
 </style>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -49,9 +102,8 @@
     <a href="#conteudo-principal" class="skip-link">Ir para o conteúdo principal</a>
 
     <div class="accessibility-bar" role="toolbar" aria-label="Barra de acessibilidade">
-        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" aria-label="Abrir repositório no GitHub">📁 REPOSITÓRIO</button>
-        <button class="control-btn" onclick="abrirBibMakerCadastro()" aria-label="Criar sua própria biblioteca">📚 CRIE SUA BIB!</button>
-        <button class="control-btn" onclick="abrirBibMakerAtualizar()" aria-label="Atualizar esta biblioteca">🔄 ATUALIZAR</button>
+        <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="width:auto;padding:0 0.75rem;text-align:left;" aria-label="Abrir repositório no GitHub">📁 Repositório</button>
+        <button class="control-btn" onclick="window.open('bibmaker.html','_blank')" style="width:auto;padding:0 0.75rem;text-align:left;margin-right:auto;" aria-label="Criar sua própria biblioteca">📚 Crie sua Bib!</button>
         <button class="control-btn" id="darkModeBtn" aria-label="Alternar modo escuro" aria-pressed="false">🌙</button>
         <script>(function(){var t=localStorage.getItem('theme');var b=document.getElementById('darkModeBtn');if(b&&t==='dark'){b.innerText='☀️';b.setAttribute('aria-pressed','true');}})();</script>
     </div>
@@ -92,18 +144,32 @@
         </main>
     </div>
 
+    <!--
+    ==========================================================================
+    MÓDULO PRINCIPAL (ES Module) — lógica do catálogo público
+    ==========================================================================
+    Importa DB (Supabase), iniciarBuscaVoz e spanCategoria de bibvania.js.
+    Expõe window.DB para scripts inline e o script UMD carregado no final.
+    Contém: estado da lista, renderização, paginação/carrossel, capas,
+    filtros, busca, realtime, lightbox e navegação para o admin.
+    ==========================================================================
+    -->
     <script type="module">
         import DB, { iniciarBuscaVoz, spanCategoria } from './bibvania.js';
         window.DB = DB;
 
         let fontSize = parseInt(localStorage.getItem('fontSize')) || 16; if (fontSize === 18) { fontSize = 16; localStorage.setItem('fontSize', 16); }
-        let todosLivros = [];
-        let _acervoCarregado = false; // true após primeiro carregamento completo
-        let idsAtrasadosCache = [];
-        let empsAtivosCache = {};
+        // ── Estado global do catálogo ──────────────────────────────────────
+        let todosLivros = [];          // Array com todos os livros do banco (imutável entre renders)
+        let _acervoCarregado = false;  // true após primeiro carregamento completo (evita duplo load)
+        let idsAtrasadosCache = [];     // IDs de livros com empréstimo atrasado (destaque vermelho)
+        let empsAtivosCache = {};       // { livro_id → [emprestimos] } para badges de disponibilidade
         // Collator instanciado uma vez — localeCompare inline é ~10x mais lento
+        // Collator instanciado uma vez — localeCompare inline é ~10x mais lento
+        // sensitivity: 'base' → ignora acentos e maiúsculas na ordenação
         const _collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
-        // Cache da lista ordenada — só recalcula quando todosLivros muda
+        // Cache da lista ordenada alfabeticamente — evita re-sort a cada render
+        // Invalidado sempre que todosLivros é substituído
         let _livrosOrdenados = [];
 
         // ── Preferências ───────────────────────────────────────────
@@ -173,6 +239,15 @@
             lbl.style.display = '';
         }
 
+        /**
+         * renderizarLivro(l, isAtrasado)
+         * Gera o HTML de um card de livro para o catálogo público.
+         * Aplica borda vermelha se o livro tiver empréstimo atrasado.
+         * Usa _idsComCapaCache para decidir o estado inicial da capa:
+         *   - 'sem'  → placeholder "SEM CAPA" imediatamente
+         *   - 'tem'  → img com src em branco; _injetarCapas preencherá via preload
+         *   - null   → "CARREGANDO CAPA" até _injetarCapas resolver
+         */
         function renderizarLivro(l, isAtrasado) {
             const borderStyle = isAtrasado ? 'style="border-color:var(--danger); border-width: 2px;"' : '';
 
@@ -337,6 +412,13 @@
             }, { passive: true });
         }
 
+        /**
+         * renderAcervo()
+         * Filtra todosLivros por termo de busca e categoria, ordena alfabeticamente
+         * (usando _collator), e aciona _renderPaginaAtual para o lote atual.
+         * Otimização: se o hash da lista filtrada não mudou (mesmo conjunto de IDs),
+         * apenas reinjeta as capas pendentes sem reescrever o DOM.
+         */
         async function renderAcervo() {
             const termo = normalizar(document.getElementById('buscaLivros').value);
             const catFiltro = document.getElementById('filtroCategoriaPublico')?.value || '';
@@ -391,6 +473,14 @@
             _atualizarNavCarrossel();
         }
 
+        /**
+         * _injetarCapas(lote, renderToken)
+         * Carrega capas em background via new Image() para não bloquear o render.
+         * Fade-in de 250ms quando a imagem carrega.
+         * Cancela a injeção se renderToken !== _renderToken (stale render).
+         * Detecta imagens placeholder do imgBB (quadrado ≤300px) e as trata
+         * como "sem capa", invalidando o cache e removendo a URL do livro.
+         */
         // Injeta capas em background via new Image() — fade-in quando prontas
         function _injetarCapas(lote, renderToken) {
             lote.forEach(l => {
@@ -475,6 +565,13 @@
             } catch(e) { console.warn('Erro ao atualizar acervo:', e); }
         }
 
+        /**
+         * carregarLivros()  [exposta em window para bfcache pageshow]
+         * Carregamento inicial completo: busca getLivros() e getEmprestimosAtivos()
+         * em paralelo. Resolve capas diretamente de imagem_url (sem requests extras).
+         * Popula categorias no <select> e renderiza o carrossel.
+         * Em caso de erro, exibe mensagem com botão "Tentar Novamente".
+         */
         window.carregarLivros = async function carregarLivros() {
             try {
                 const [livros, emps] = await Promise.all([
@@ -595,6 +692,11 @@
         });
 
     </script>
+    <!--
+    Widget VLibras (vlibras.gov.br) — fornece interpretação em Língua Brasileira
+    de Sinais (Libras) para toda a página. Exigido por boas práticas de
+    acessibilidade para o público escolar brasileiro.
+    -->
     <!-- VLibras — Libras accessibility widget -->
     <div vw class="enabled" aria-label="Widget de acessibilidade em Libras" role="complementary">
         <div vw-access-button class="active" aria-label="Abrir interpretação em Libras"></div>
@@ -603,6 +705,13 @@
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
 
+    <!--
+    LIGHTBOX DE CAPA
+    Exibido ao clicar em um card com imagem (classe .has-image).
+    Acessível: foco movido para o botão "← VOLTAR" ao abrir;
+    Escape fecha; clique no fundo (overlay) fecha.
+    Não exibe para livros sem capa (evita lightbox vazio).
+    -->
     <!-- Lightbox de capa -->
     <div class="lightbox-overlay" id="capLightbox" role="dialog" aria-modal="true" aria-label="Visualizar capa ampliada">
         <div class="lightbox-bg" onclick="fecharLightbox()"></div>
@@ -646,63 +755,5 @@
 
 
 
-<script>
-// ── Abrir BibMaker (cadastro ou atualização) ─────────────────────────────────
-const BIBMAKER_BASE_URL = 'https://ruanolima.github.io/BibVania/bibmaker.html';
-const BIBMAKER_CADASTRO_URL = 'bibmaker-cadastro.html';
-const BIBMAKER_ATUALIZAR_URL = 'bibmaker-atualizar.html';
-
-function abrirBibMakerCadastro() {
-    window.open(BIBMAKER_CADASTRO_URL, '_blank');
-}
-
-async function abrirBibMakerAtualizar() {
-    // Abrir o BibMaker primeiro para não ser bloqueado como popup
-    const janela = window.open(BIBMAKER_ATUALIZAR_URL, '_blank');
-    if (!janela) {
-        alert('Permita popups para usar o atualizador.');
-        return;
-    }
-
-    // Coletar arquivos da biblioteca atual via fetch
-    const arqTexto   = ['index.html','admin.html','login.html','bibvania.js','style.css','README.md','LICENCE.md','setup_private.sql'];
-    const arqBinario = ['logo.png','favicon.png','og-image.png','bibmaker-logo.png','bibmaker-favicon.png','bibmaker-og-image.png'];
-    const arquivos   = {};
-
-    for (const nome of arqTexto) {
-        try { const r = await fetch(nome); if (r.ok) arquivos[nome] = await r.text(); } catch(_) {}
-    }
-    for (const nome of arqBinario) {
-        try {
-            const r = await fetch(nome);
-            if (r.ok) {
-                const buf = await r.arrayBuffer();
-                const bytes = new Uint8Array(buf);
-                let b64 = '';
-                for (let i = 0; i < bytes.byteLength; i++) b64 += String.fromCharCode(bytes[i]);
-                arquivos[nome] = { tipo: 'binario', base64: btoa(b64) };
-            }
-        } catch(_) {}
-    }
-
-    // Aguardar o BibMaker carregar e enviar os dados (tenta por até 20 segundos)
-    const BIBMAKER_ORIGIN = new URL(BIBMAKER_BASE_URL).origin;
-    const MAX_TENTATIVAS  = 40;
-    let tentativas = 0;
-    const intervalo = setInterval(() => {
-        tentativas++;
-        if (janela.closed || tentativas > MAX_TENTATIVAS) { clearInterval(intervalo); return; }
-        try { janela.postMessage({ tipo: 'bibvania-atualizar', arquivos }, BIBMAKER_ORIGIN); } catch(_) {}
-    }, 500);
-
-    // Parar ao receber confirmação
-    window.addEventListener('message', function handler(e) {
-        if (e.origin === BIBMAKER_ORIGIN && e.data && e.data.tipo === 'bibvania-atualizar-ok') {
-            clearInterval(intervalo);
-            window.removeEventListener('message', handler);
-        }
-    });
-}
-</script>
 </body>
 </html>

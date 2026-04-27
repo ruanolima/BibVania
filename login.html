@@ -1,4 +1,39 @@
 <!DOCTYPE html>
+<!--
+  ===========================================================================
+  BibVania — login.html  |  Autenticação do Bibliotecário
+  ===========================================================================
+  PROPÓSITO
+    Página de login. Protege o painel administrativo (admin.html).
+    Não deve ser indexada por mecanismos de busca (robots: noindex).
+
+  FLUXO DE AUTENTICAÇÃO
+    1. Ao carregar: redirectIfLoggedIn() → se já há sessão ativa,
+       redireciona imediatamente para admin.html sem exibir a tela.
+    2. O body começa com visibility:hidden e só é exibido após a
+       checagem assíncrona de sessão (elimina flash da tela de login
+       para usuários já autenticados).
+    3. No submit: signIn(email, password) → se sucesso, pré-popula
+       localStorage com o nome do admin (bibvania_admin_nome) para
+       evitar flash do nome no admin.html após redirect.
+    4. Erros de rede são diferenciados de credenciais incorretas.
+
+  SEGURANÇA
+    • robots: noindex — página não aparece em buscas
+    • autocomplete: username / current-password — suporte a gerenciadores
+    • novalidate no <form> — validação controlada pelo script
+
+  ACESSIBILIDADE
+    • aria-required nos campos
+    • aria-live="assertive" na div de erros (anuncia erro imediatamente)
+    • Skip link para o formulário
+    • VLibras integrado
+
+  DEPENDÊNCIAS
+    • bibvania.js (ES Module + UMD fallback)
+    • style.css
+  ===========================================================================
+-->
 <html lang="pt-BR">
 <head>
 <script>function navegarCom(url){window.location.href=url;}</script>
@@ -59,8 +94,7 @@
 
     <div class="accessibility-bar" role="toolbar" aria-label="Barra de acessibilidade">
         <button class="control-btn" onclick="window.open('https://github.com/ruanolima/BibVania', '_blank')" style="width:auto;padding:0 0.75rem;text-align:left;" aria-label="Abrir repositório no GitHub">📁 REPOSITÓRIO</button>
-        <button class="control-btn" onclick="abrirBibMakerCadastro()" style="width:auto;padding:0 0.75rem;text-align:left;" aria-label="Criar sua própria biblioteca">📚 CRIE SUA BIB!</button>
-        <button class="control-btn" onclick="abrirBibMakerAtualizar()" style="width:auto;padding:0 0.75rem;text-align:left;margin-right:auto;" aria-label="Atualizar esta biblioteca">🔄 ATUALIZAR</button>
+
         <button class="control-btn" onclick="toggleDarkMode()" id="darkModeBtn" aria-label="Alternar modo escuro" aria-pressed="false">🌙</button>
     </div>
 
@@ -92,6 +126,13 @@
         </nav>
     </main>
 
+    <!--
+    MÓDULO DO LOGIN (ES Module)
+    Importa DB de bibvania.js. Responsável por:
+      1. Verificar sessão existente e redirecionar se logado
+      2. Aplicar preferências de tema
+      3. Processar submit do formulário de login
+    -->
     <script type="module">
         import DB from './bibvania.js';
         window.DB = DB;
@@ -119,6 +160,8 @@
 
         (async () => {
             aplicarPreferencias();
+            // Verifica sessão: se logado, redireciona para admin.html imediatamente.
+            // Só revela o body se NÃO houver sessão (evita flash da tela de login).
             await window.DB.redirectIfLoggedIn();
             // Só revela se não foi redirecionado (sem sessão ativa)
             document.body.style.visibility = 'visible';
@@ -134,6 +177,9 @@
             
             try {
                 const loginData = await window.DB.signIn(email, password);
+                // Pré-popular localStorage com nome do admin ANTES do redirect.
+                // O script inline de admin.html lê bibvania_admin_nome para exibir
+                // o nome do usuário imediatamente, sem esperar o módulo ES carregar.
                 // Pré-popular cache de perfil ANTES de redirecionar —
                 // evita piscar de botão no admin.html (script inline lê este valor)
                 try {
@@ -168,61 +214,5 @@
         <p>BibVania v1.3 &copy; 2026 <a href="https://github.com/ruanolima" rel="author noopener" style="color:inherit;">Ruan Oliveira Lima</a> &mdash; <a href="https://creativecommons.org/licenses/by/4.0/" rel="license noopener" style="color:inherit;">CC-BY-4.0</a> &mdash; <a href="https://github.com/ruanolima/BibVania" rel="noopener" style="color:inherit;">GitHub</a></p>
     </footer>
     <script src="bibvania.js"></script>
-<script>
-// ── Abrir BibMaker (cadastro ou atualização) ─────────────────────────────────
-const BIBMAKER_BASE_URL = 'https://ruanolima.github.io/BibVania/bibmaker.html';
-
-function abrirBibMakerCadastro() {
-    window.open(BIBMAKER_BASE_URL + '?aba=cadastro', '_blank');
-}
-
-async function abrirBibMakerAtualizar() {
-    // Abrir o BibMaker primeiro para não ser bloqueado como popup
-    const janela = window.open(BIBMAKER_BASE_URL + '?aba=atualizacao', '_blank');
-    if (!janela) {
-        alert('Permita popups para usar o atualizador.');
-        return;
-    }
-
-    // Coletar arquivos da biblioteca atual via fetch
-    const arqTexto   = ['index.html','admin.html','login.html','bibvania.js','style.css','README.md','LICENCE.md','setup_private.sql'];
-    const arqBinario = ['logo.png','favicon.png','og-image.png','bibmaker-logo.png','bibmaker-favicon.png','bibmaker-og-image.png'];
-    const arquivos   = {};
-
-    for (const nome of arqTexto) {
-        try { const r = await fetch(nome); if (r.ok) arquivos[nome] = await r.text(); } catch(_) {}
-    }
-    for (const nome of arqBinario) {
-        try {
-            const r = await fetch(nome);
-            if (r.ok) {
-                const buf = await r.arrayBuffer();
-                const bytes = new Uint8Array(buf);
-                let b64 = '';
-                for (let i = 0; i < bytes.byteLength; i++) b64 += String.fromCharCode(bytes[i]);
-                arquivos[nome] = { tipo: 'binario', base64: btoa(b64) };
-            }
-        } catch(_) {}
-    }
-
-    // Aguardar o BibMaker carregar e enviar os dados (tenta por até 20 segundos)
-    const BIBMAKER_ORIGIN = new URL(BIBMAKER_BASE_URL).origin;
-    const MAX_TENTATIVAS  = 40;
-    let tentativas = 0;
-    const intervalo = setInterval(() => {
-        tentativas++;
-        if (janela.closed || tentativas > MAX_TENTATIVAS) { clearInterval(intervalo); return; }
-        try { janela.postMessage({ tipo: 'bibvania-atualizar', arquivos }, BIBMAKER_ORIGIN); } catch(_) {}
-    }, 500);
-
-    // Parar ao receber confirmação
-    window.addEventListener('message', function handler(e) {
-        if (e.origin === BIBMAKER_ORIGIN && e.data && e.data.tipo === 'bibvania-atualizar-ok') {
-            clearInterval(intervalo);
-            window.removeEventListener('message', handler);
-        }
-    });
-}
-</script>
 </body>
 </html>

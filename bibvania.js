@@ -1,8 +1,25 @@
 /**
  * BibVania — bibvania.js
- * Arquivo principal: banco de dados, utilitários e transições de página
+ * ===========================================================================
+ * Módulo central do sistema. Reúne três responsabilidades:
+ *
+ *   1. TRANSIÇÃO DE PÁGINA  — overlay animado exibido entre navegações,
+ *      com logo pulsante e bolinhas saltitantes. Sobrepõe window.navegarCom.
+ *
+ *   2. ACESSIBILIDADE       — busca por voz (Web Speech API), live region
+ *      para anúncios a leitores de tela, e função spanCategoria que converte
+ *      nomes de categoria em badges coloridos semanticamente.
+ *
+ *   3. BANCO DE DADOS       — objeto DB exportado como default. Encapsula
+ *      todas as operações Supabase: autenticação, CRUD de livros,
+ *      empréstimos, devoluções, pessoas, upload/remoção de capas e PDFs
+ *      via Edge Function, e canais Realtime.
  *
  * Unifica: database.js · bibvania-utils.js · bibvania-transition.js
+ *
+ * Importado como ES Module pelos três arquivos principais (index, admin, login).
+ * Também carregado como script UMD no final de cada página para retrocompatibilidade
+ * com chamadas síncronas de outros scripts inline.
  *
  * @author  Ruan Oliveira Lima <https://github.com/ruanolima>
  * @version 1.3
@@ -13,6 +30,11 @@
 
 // ============================================================================
 // TRANSIÇÃO DE PÁGINA
+// ----------------------------------------------------------------------------
+// Cria um overlay (#_bv-transition) injetado no <body> de qualquer página que
+// carregue este script. Quando window.navegarCom(url) é chamado, o overlay
+// aparece em 100ms (fade-in) antes de redirecionar — evitando a troca brusca
+// de URL. O overlay some automaticamente no evento "pageshow" (inclui bfcache).
 // ============================================================================
 
 (function () {
@@ -96,6 +118,14 @@
 
 // ============================================================================
 // UTILITÁRIOS DE ACESSIBILIDADE — BUSCA POR VOZ
+// ----------------------------------------------------------------------------
+// iniciarBuscaVoz(inputEl, onResult): injeta um botão de microfone ao lado do
+// campo de busca. Usa a Web Speech API (SpeechRecognition). O botão só aparece
+// em navegadores que suportam a API; em outros, nenhum elemento é adicionado.
+// Anuncia estados (ouvindo / resultado / erro) via live region ARIA para
+// compatibilidade com leitores de tela.
+//
+// _anunciar(texto): atualiza a live region global #_bv-live (aria-live="polite").
 // ============================================================================
 
 /** Anuncia texto para leitores de tela via live region */
@@ -195,6 +225,15 @@ export function iniciarBuscaVoz(inputEl, onResult) {
 
 // ============================================================================
 // COR POR CATEGORIA
+// ----------------------------------------------------------------------------
+// _CAT_CORES: mapa categoria → { bg, text } usado por spanCategoria().
+// As cores seguem a hierarquia pedagógica:
+//   • Paradidáticos: Infantil=amarelo, Infantojuvenil=verde, Juvenil=vermelho,
+//     Jovem Adulto=laranja, EJA Fund=roxo, EJA Médio=rosa, Referência=cinza
+//   • Didáticos por série: herdam a cor do nível paradidático equivalente
+//
+// spanCategoria(categoria): retorna uma string HTML <span> com a cor aplicada
+// via style inline. Retorna string vazia se categoria for nula/vazia.
 // ============================================================================
 
 const _CAT_CORES = {
@@ -253,6 +292,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ============================================================================
 // CONSTANTES
+// ----------------------------------------------------------------------------
+// CATEGORIAS_FIXAS: lista canônica de todas as 23 categorias aceitas pelo
+// sistema, na ordem exibida em selects. Exportada como DB.CATEGORIAS.
 // ============================================================================
 
 const CATEGORIAS_FIXAS = [
@@ -267,6 +309,16 @@ const CATEGORIAS_FIXAS = [
 
 // ============================================================================
 // HELPERS INTERNOS
+// ----------------------------------------------------------------------------
+// toUpper(val): converte string para maiúsculas com trim. Retorna o valor
+// original se não for string (evita erros em campos numéricos/nulos).
+//
+// _CAMPOS_CASE_SENSITIVE: Set de campos cujos valores NÃO devem ser
+// convertidos para maiúsculas (URLs de imagens, PDFs, alt_text etc.).
+//
+// padronizarObjeto(obj): aplica toUpper em todos os campos string do objeto,
+// exceto os campos em _CAMPOS_CASE_SENSITIVE. Também normaliza palavras_chave
+// para minúsculas, trim e limite de 25 caracteres por tag.
 // ============================================================================
 
 const toUpper = (val) => (val && typeof val === 'string') ? val.toUpperCase().trim() : val;
@@ -290,6 +342,22 @@ const padronizarObjeto = (obj) => {
 
 // ============================================================================
 // OBJETO DB
+// ----------------------------------------------------------------------------
+// Exportado como default e também exposto em window.DB para scripts inline.
+// Agrupa todos os métodos de acesso ao Supabase em categorias:
+//
+//   AUTENTICAÇÃO  — signIn, signOut, getSession, checkAuth, redirectIfLoggedIn,
+//                   onAuthStateChange
+//   LIVROS        — getLivros, getLivroPorId, getCapa, getIdsComCapa, getCapas,
+//                   getCapaUnica, getProximoIdDisponivel, salvarLivro,
+//                   atualizarLivro, excluirLivro
+//   EMPRÉSTIMOS   — registrarEmprestimo, atualizarEmprestimo, excluirEmprestimo,
+//                   registrarDevolucao, getEmprestimos, getHistoricoPessoa,
+//                   getEmprestimosAtivosComLivro, getEmprestimosAtivos
+//   REALTIME      — onLivrosChange, onEmprestimosChange, onPessoasChange
+//   STORAGE       — uploadCapa, removerCapa, uploadPdf, removerPdf
+//                   (todos via _iaEdgeFunction → Edge Function bibvania.ts)
+//   PESSOAS       — getPessoas, salvarPessoa, excluirPessoa, atualizarPessoa
 // ============================================================================
 
 const DB = {
@@ -401,6 +469,13 @@ const DB = {
         return candidato;
     },
 
+    /**
+     * Salva um livro novo ou mescla com um existente de mesmo título (case-insensitive).
+     * Se o título já existir: incrementa quantidade_total e quantidade_disponivel,
+     * atualizando metadados ausentes. Se não existir: insere com novo ID autogerido.
+     * @param {Object} livro — objeto livro (campos em UPPER_SNAKE_CASE após padronização)
+     * @returns {{ action: 'added'|'updated', data: Object }}
+     */
     async salvarLivro(livro) {
         try {
             livro = padronizarObjeto(livro);
@@ -439,6 +514,14 @@ const DB = {
         }
     },
 
+    /**
+     * Atualiza os metadados de um livro existente.
+     * Recalcula quantidade_disponivel automaticamente com base nos empréstimos ativos:
+     *   quantidade_disponivel = quantidade_total − empréstimos com status='emprestado'
+     * imagem_url e pdf_url só são enviados no payload se explicitamente presentes no objeto.
+     * @param {Object} livro — objeto livro com id obrigatório
+     * @returns {Object} registro atualizado retornado pelo Supabase
+     */
     async atualizarLivro(livro) {
         try {
             livro = padronizarObjeto(livro);
@@ -463,6 +546,15 @@ const DB = {
         }
     },
 
+    /**
+     * Exclui um livro e seus empréstimos históricos do banco.
+     * Bloqueia a exclusão se houver empréstimos com status='emprestado',
+     * lançando um Error com a lista de alunos/datas para o chamador exibir.
+     * Remove também os arquivos de capa e PDF do Internet Archive, se existirem.
+     * @param {number} id — ID do livro a excluir
+     * @returns {true} em caso de sucesso
+     * @throws {Error} se houver empréstimos ativos
+     */
     async excluirLivro(id) {
         try {
             const { data: ativos, error: empError } = await supabase
